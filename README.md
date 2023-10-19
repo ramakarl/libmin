@@ -20,16 +20,16 @@ The functionality in Libmin includes:
 
 ## Mains
 
-Libmin provides main wrappers for multiple platforms including Windows, Linux and Android.
-A main wrapper is used with the _REQUIRE_MAIN() cmake function.
+Libmin provides main wrappers for multiple platforms including Windows, Linux and Android.<br>
+A main wrapper is used by calling the _REQUIRE_MAIN() cmake function.
 
 ## Third-party Libraries
 
 Third party libs may be found in \libext.
 
-These are not built into libmin.
-They are provided for convenience to applications that use libmin.
-For example, the _REQUIRED_JPG() cmake function allows an application to request linkage to libjpg dynamic libs. 
+These are not built into libmin.<br>
+They are provided for convenience to applications that use libmin.<br>
+For example, the _REQUIRED_JPG() cmake function allows an application to request linkage to libjpg dynamic libs. <br>
 
 ## License
 
