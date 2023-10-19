@@ -1,0 +1,20 @@
+
+Site | is a | grid
+Site | has | root
+Site | has | Y layout | 100px | * | 10%
+Site | has | sections | Top Bar | Site Area | Footer
+
+Top Bar | is a | grid
+Top Bar | has | X layout | 100px | * | 40%
+Top Bar | has | sections | CSI Logo | . | CSI Links
+
+Site Area | is a | grid
+Site Area | has | X layout | 50px | 30% | 50px | 60%
+Site Area | has | sections | . | Site Menu | . | Content Area
+
+Content Area | is a | grid
+Content Area | has | Y layout | 30% | .
+
+Site Menu | is a | grid
+Site Menu | has | Y layout | 10% | 80px | 50px | 50px | 50px | 50px
+Site Menu | has | sections | . | Community Science Institute | Database Home | About the Database | Streams and Lakes | Harmful Algal Bloom
