@@ -47,6 +47,6 @@ Copyright (c) 2005-2013 Lode Vandevenne. BSD License (LodePNG, file_png)<br>
 Copyright (c) 2015-2017 Christian Stigen Larsen. BSD License (mersenne)<br>
 Copyright (c) 2002-2012 Nikolaus Gebhardt, Irrlicht Engine. BSD License (quaternion)<br>
 <br>
-Modifications to Libmin may append this copyright listing but should not modify it.<br>
+Derivative changes to Libmin may append this copyright listing but should not modify it.<br>
 
 Contact: Rama Hoetzlein at ramahoetzlein@gmail.com
