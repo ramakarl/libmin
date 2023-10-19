@@ -23,7 +23,8 @@ The functionality in Libmin includes:
 ## Mains
 
 Libmin provides main wrappers for multiple platforms including Windows, Linux and Android.<br>
-A main wrapper is used by calling the _REQUIRE_MAIN() cmake function.
+Main wrappers are optional. You may write your own main.<br>
+A main wrapper is used by calling the _REQUIRE_MAIN() function in your cmake.
 
 ## Third-party Libraries
 
