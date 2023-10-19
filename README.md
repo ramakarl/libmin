@@ -10,7 +10,8 @@ The functionality in Libmin includes:
 - Quaternions (quaternion.h)
 - Stateful Mersenee Twister RNG (mersenne.h)
 - Event system (event.h, event_system.h)
-- Drawing in 2D/3D in OpenGL core profile (gx/g2 lib)
+- Drawing in 2D/3D in OpenGL core profile (gxlib)
+- 2D GUI Interface library (g2lib)
 - Smart memory pointers for CPU/GPU via OpenGL/CUDA (dataptr.h)
 - Image class. Multiple image loaders for png, tga, tif. (imagex.h)
 - Mesh class. Handles large meshes, loads obj, also suppots .mtl files. (meshx.h)
@@ -18,7 +19,6 @@ The functionality in Libmin includes:
 - Directory listings (directory.h)
 - Http connections (httlib.h)
 - Time library, with nanosecond accuracy over millenia (timex.h)
-- Widget library, very basic GUI (widget.h)
 
 ## Mains
 
