@@ -4,7 +4,8 @@
 ### by [Rama Karl](http://ramakarl.com) (c) 2023. MIT license
 
 Libmin stands for *minimal utility library* for computer graphics. Libmin combines multiple useful functions into a single library but with no external dependencies.
-Projects with BSD and MIT Licenses have been merged into libmin. The full library is MIT Licensed. Copyrights may be appended but should not be modified or removed.
+Projects with BSD and MIT Licenses have been merged into libmin. The full library is MIT Licensed.<br>
+
 The functionality in Libmin includes:
 - Vectors, 4x4 Matrices, Cameras (vec.h, camera.h)
 - Quaternions (quaternion.h)
