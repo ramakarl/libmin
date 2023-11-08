@@ -142,12 +142,14 @@ void ImageX::ResizeChannel ( int chan, int xr, int yr, ImageOp::Format fmt, ucha
 
 void ImageX::ChangeFormat ( ImageOp::Format fmt )
 {
+	if ( GetFormat() == fmt ) return;
+
 	// save data in another image
 	ImageX save;
 	save.Copy ( this );			
 
 	// Resize to new format
-	Resize ( mXres, mYres, ImageOp::RGBA8 );
+	Resize ( mXres, mYres, fmt );
 
 	// Write existing to new
 	//  (uses format-specific get/set functions)
@@ -160,6 +162,21 @@ void ImageX::ChangeFormat ( ImageOp::Format fmt )
 	}
 	if (mAutocommit) Commit();
 } 
+
+void ImageX::Resample ( ImageX* src )
+{
+	Vec4F c;
+	float dx = float(src->GetWidth()) / mXres;
+	float dy = float(src->GetHeight()) / mYres;
+
+	for (int y=0; y < mYres; y++) {
+		for (int x=0; x < mXres; x++) {
+			c = src->GetPixel (x * dx, y * dy);
+			SetPixel ( x, y, c );
+		}
+	}
+
+}
 
 
 void ImageX::CopyToAlpha ()
@@ -416,6 +433,8 @@ float ImageX::GetPixelFilteredUV16 (float x, float y)
 	float v = y * (mYres - 1);
 	int xu = u;
 	int yu = v;	
+	u -= xu;
+	v -= yu;
 	
 	float c[7];
 	unsigned short i ;
@@ -425,7 +444,7 @@ float ImageX::GetPixelFilteredUV16 (float x, float y)
 	i = GetPixel16 ( xu,    yu );	c[0] = float(i) / 65535.0f;
 	i = GetPixel16 ( xu+1,  yu );	c[1] = float(i) / 65535.0f;
 	i = GetPixel16 ( xu,  yu+1 );	c[2] = float(i) / 65535.0f;
-	i = GetPixel16 ( xu+1,yu+1 );   c[3] = float(i) / 65535.0f;
+	i = GetPixel16 ( xu+1,yu+1 ); c[3] = float(i) / 65535.0f;
 	
 	// bi-linear filtering
 	c[4] = c[0] + (c[1]-c[0]) * u;
@@ -626,7 +645,7 @@ bool ImageX::Load (char* filename, char* alphaname )
 
 bool ImageX::Load ( std::string filename, std::string& errmsg)
 {	
-	char msg[1000];
+	char msg[2048];
 
 	// NOTES ABOUT CImageFormats:
 	// 1) Load functions return 'true' if the file was successfully loaded by
@@ -637,7 +656,8 @@ bool ImageX::Load ( std::string filename, std::string& errmsg)
 	// 3) Each image format loader will maintain its own error status if it fails.
 	
 	// Get image type
-	FILE* fp = fopen( filename.c_str(), "rb" );  
+	strncpy ( msg, filename.c_str(), 2048 );
+	FILE* fp = fopen( msg, "rb" );  
 	if ( !fp ) {		
 		errmsg = std::string("ERROR: File not found: ") + filename;
 		return false;

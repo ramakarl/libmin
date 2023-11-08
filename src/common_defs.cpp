@@ -39,6 +39,16 @@ static std::vector<std::string> gPaths;
 
 static xlong gMemStart = 0;       // amount of used memory when application starts
 
+bool cuAvailable ()
+{
+  // indicate if CUDA was built with libmin
+	#ifdef USE_CUDA
+		return true;
+	#else
+		return false;
+	#endif
+}
+
 void dbgprintf(const char * fmt, ...)
 {
     va_list  vlist;

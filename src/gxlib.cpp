@@ -76,10 +76,15 @@ void glib::setTextSz ( float hgt, float kern )
 	gx.m_text_kern = kern;
 }
 
+void glib::clear2D ()
+{
+	gx.clearSet ( G_STAT2 );
+}
+
 void glib::start2D ( int w, int h, bool bStatic )
 {
-    gx.m_curr_grp = (bStatic ? G_STAT2 : G_DYN2 );
-    gx.m_curr_prim = PRIM_NONE;	
+  gx.m_curr_grp = (bStatic ? G_STAT2 : G_DYN2 );
+  gx.m_curr_prim = PRIM_NONE;	
 	gx.m_curr_num = 0;	
 	setview2D ( w,  h);
 }
@@ -144,6 +149,39 @@ void glib::drawFill ( Vec2F a, Vec2F b, Vec4F clr )
 	// repeat last for jump
 	v->x = a.x; v->y = b.y; v->z = 0; vclr(v,clr); v++;
 }
+void glib::drawGradient ( Vec2F a, Vec2F b, Vec4F c0, Vec4F c1, Vec4F c2, Vec4F c3 )
+{
+	gxVert* v = gx.allocGeom2D ( 6, PRIM_TRI );
+
+	// repeat first for jump
+	v->x = a.x; v->y = a.y; v->z = 0; vclr(v,Vec4F(0,0,0,0)); v++;
+		
+	// two triangles (as strip, must start top right)
+	v->x = a.x; v->y = a.y; v->z = 0; vclr(v,c0); v++;
+	v->x = b.x; v->y = a.y; v->z = 0; vclr(v,c1); v++;		
+	v->x = a.x; v->y = b.y; v->z = 0; vclr(v,c2); v++;
+	v->x = b.x; v->y = b.y; v->z = 0; vclr(v,c3); v++;
+		
+	// repeat last for jump
+	v->x = b.x; v->y = b.y; v->z = 0; vclr(v,Vec4F(0,0,0,0)); v++;
+}
+
+void glib::drawImg ( ImageX* img, Vec2F a, Vec2F b, Vec4F clr )
+{
+	gxVert* v = gx.allocImg2D ( 6, PRIM_TRI, img );
+
+	// repeat first for jump
+	v->x = a.x; v->y = a.y; v->z = 0; vclr(v,clr,0); v++;
+		
+	// two triangles (as strip, must start top right)
+	v->x = a.x; v->y = a.y; v->z = 0; vclr(v,clr,1); v->tx = 0; v->ty = 0;	v++;
+	v->x = b.x; v->y = a.y; v->z = 0; vclr(v,clr,1); v->tx = 1; v->ty = 0;	v++;		
+	v->x = a.x; v->y = b.y; v->z = 0; vclr(v,clr,1); v->tx = 0; v->ty = 1;	v++;
+	v->x = b.x; v->y = b.y; v->z = 0; vclr(v,clr,1); v->tx = 1; v->ty = 1;	v++;
+		
+	// repeat last for jump
+	v->x = b.x; v->y = b.y; v->z = 0; vclr(v,clr,0); v++;
+}
 
 void glib::drawText ( Vec2F a, char* msg, Vec4F clr )
 {
@@ -151,7 +189,7 @@ void glib::drawText ( Vec2F a, char* msg, Vec4F clr )
 	if ( len == 0 ) 
 		return;
 
-	gxVert* v = gx.allocFont2D ( len*6, PRIM_TRI, &gx.m_font_img );
+	gxVert* v = gx.allocImg2D ( len*6, PRIM_TRI, &gx.m_font_img );
 
 	// get current font
 	gxFont& font = gx.getCurrFont ();	
@@ -493,9 +531,9 @@ void glib::drawAll ()
 	checkGL ( "drawAll start");
 	
 	// draw each group
-	gx.drawSet ( G_STAT3 );
-	gx.drawSet ( G_DYN3 );
 	gx.drawSet ( G_STAT2 );
+	gx.drawSet ( G_STAT3 );
+	gx.drawSet ( G_DYN3 );	
 	gx.drawSet ( G_DYN2 );
 
 	// clear dynamic buffers
@@ -562,26 +600,26 @@ void gxLib::expandSet ( gxSet* s, uchar typ, uchar prim, int64_t add_bytes )
     }
     // attach a prim start marker if needed
     if ( need_marker ) {
-		// write prim count to last prim
-		finishPrim ( s );
-		// attach new prim
-        attachPrim ( s, typ, prim );
-		// reset prim count
-		m_curr_type = typ;
-        m_curr_prim = prim;		
-		m_curr_num = 0;
-	}
+		  // write prim count to last prim
+		  finishPrim ( s );
+		  // attach new prim
+      attachPrim ( s, typ, prim );
+		  // reset prim count
+		  m_curr_type = typ;
+      m_curr_prim = prim;		
+		  m_curr_num = 0;
+	  }
 }
 
 void gxLib::attachPrim ( gxSet* s, uchar typ, uchar prim )
 {
-    gxPrim* p = (gxPrim*) (s->geom + s->size);
-    p->typ = typ;
-    p->prim = prim;
+  gxPrim* p = (gxPrim*) (s->geom + s->size);
+  p->typ = typ;
+  p->prim = prim;
 	p->img_ptr = m_curr_img;
-    p->cnt = 0;
+  p->cnt = 0;
 	s->lastpos = s->size;	// save position of prim
-    s->size += sizeof(gxPrim);	
+  s->size += sizeof(gxPrim);	
 }
 
 gxVert* gxLib::allocGeom2D ( int cnt, uchar prim )
@@ -603,15 +641,15 @@ gxVert3D* gxLib::allocGeom3D ( int cnt, uchar prim )
     return start;
 }
 
-gxVert* gxLib::allocFont2D (int cnt, uchar prim, ImageX* font_img )
+gxVert* gxLib::allocImg2D (int cnt, uchar prim, ImageX* img )
 {
-	m_curr_img = (uint64_t) font_img;		// assign image to prims
-    gxSet* s = gx.getCurrSet();	
-    expandSet ( s, 'i', prim, cnt * sizeof(gxVert) );    
+	m_curr_img = (uint64_t) img;			// assign image to prims
+  gxSet* s = gx.getCurrSet();	
+  expandSet ( s, 'i', prim, cnt * sizeof(gxVert) );    
 	m_curr_num += cnt;
 	gxVert* start = (gxVert*) (s->geom + s->size);
 	s->size += cnt*sizeof(gxVert);
-    return start;
+  return start;
 }
 
 void gxLib::createShader2D ()
@@ -668,7 +706,7 @@ void gxLib::createShader2D ()
 			"\n"
 			"void main()\n"
 			"{\n"					
-			"    vec4 imgclr = texture(imgTex, texcoord);\n"						
+			"    vec4 imgclr = texture(imgTex, texcoord);\n"									
 			"    outColor = color * imgclr;\n"
 			"}\n"
 		;
@@ -1190,7 +1228,7 @@ void gxLib::drawSet ( int g )
 			checkGL ( "glVertAttrPtr uv 2d");
 
 			// bind image
-			imgGL = (p->typ=='x') ? m_white_img.getGLID() : (p->typ=='i') ? ((ImageX*) p->img_ptr)->getGLID() : 0;
+			imgGL = (p->typ=='x') ? m_white_img.getGLID() : (p->typ=='i') ? ((ImageX*) p->img_ptr)->getGLID() : 0;			
 			glBindTexture ( GL_TEXTURE_2D, imgGL );
 		
 			// render elements	

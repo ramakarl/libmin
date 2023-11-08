@@ -160,7 +160,11 @@
     HELPAPI unsigned long getFilePos ( FILE* fp );
     HELPAPI void dbgprintf(const char * fmt, ...);
 
-    //--- OpenGL include
+    //--- report CUDA availability 
+    HELPAPI bool cuAvailable ();
+    
+
+    //--- OpenGL 
     #ifdef USE_OPENGL
         #define GLEW_STATIC             // make sure glew is static
 

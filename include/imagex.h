@@ -165,20 +165,22 @@
         ImageX* CopyNew ();						// Create new ImageX by direct copy of this one.
 				
 		// Pixel Operations
-		inline Vec4F GetPixel ( int x, int y )								{ Vec4F c;  (this->*m_getPixelFunc) (x,y, c); return c; }
-		inline Vec4F GetPixelUV ( float u, float v )						{ Vec4F c;  (this->*m_getPixelFunc) ( int(u)*(mXres-1), int(v)*(mYres-1), c); return c; }		
-		inline float	 GetPixelUV16 ( float u, float v );
-		Vec4F		 GetPixelFilteredUV (float x, float y);
-		float			 GetPixelFilteredUV16 (float x, float y);
-
-		inline void		 SetPixel  ( int x, int y, Vec4F c )				{ (this->*m_setPixelFunc) (x,y, c); }
-		inline void		 SetPixelF ( int x, int y, float v )					{ *			(((float*) m_Pix.mCpu) + (y*mXres+x)) = v; }
+		inline Vec4F   GetPixel ( int x, int y )								{ Vec4F c;  (this->*m_getPixelFunc) (x,y, c); return c; }
+		inline Vec4F   GetPixelUV ( float u, float v )					{ Vec4F c;  (this->*m_getPixelFunc) ( int(u)*(mXres-1), int(v)*(mYres-1), c); return c; }			
+		Vec4F					 GetPixelFilteredUV (float x, float y);		
+		inline void		 SetPixel  ( int x, int y, Vec4F c )			{ (this->*m_setPixelFunc) (x,y, c); }
+		inline void		 SetPixelF ( int x, int y, float v )			{ *			(((float*) m_Pix.mCpu) + (y*mXres+x)) = v; }
 		inline float	 GetPixelF ( int x, int y )								{ return *	(((float*) m_Pix.mCpu) + (y*mXres+x)); }
-		inline void		 SetPixel16 ( int x, int y, uint16_t v )				{ *			(((uint16_t*) m_Pix.mCpu) + (y*mXres+x)) = v; }
-		inline uint16_t	 GetPixel16 ( int x, int y )							{ return *	(((uint16_t*) m_Pix.mCpu) + (y*mXres+x)); }
-	
+
+		// Pixel Ops - 16-bit grayscale only
+		inline uint16_t	GetPixel16 ( int x, int y )							{ return *	(((uint16_t*) m_Pix.mCpu) + (y*mXres+x)); }
+		inline float	  GetPixelUV16 ( float u, float v );
+		float					  GetPixelFilteredUV16 (float x, float y);
+		inline void		  SetPixel16 ( int x, int y, uint16_t v )				{ *			(((uint16_t*) m_Pix.mCpu) + (y*mXres+x)) = v; }
+		
 		// Image Operations
 		void ChangeFormat ( ImageOp::Format fmt );
+		void Resample ( ImageX* src );
 		void Fill (float v);
 		void Fill (float r, float g, float b, float a);
 

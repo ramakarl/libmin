@@ -165,12 +165,12 @@ if ( t < EPS ) { t=0; return false; } */
 
 
 
-
 Vec3F projectPointLine(Vec3F p, Vec3F p0, Vec3F p1 )
 {
-	Vec3F dir = p1-p0;
+	Vec3F dir = p1-p0; 
 	return p0 + dir * float( (p-p0).Dot(dir) / dir.Dot(dir));
 }
+
 Vec3F projectPointLine(Vec3F p, Vec3F dir, float& t )
 {
 	t = float(p.Dot(dir) / dir.Dot(dir));

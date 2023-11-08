@@ -26,6 +26,8 @@ add_definitions ( -DGLEW_STATIC)	    	# static build GLEW into libmin
 add_definitions ( -DBUILD_PNG)			# always build PNG
 add_definitions ( -DBUILD_TIF)			# always build TIF
 
+set( USE_NVTX true CACHE BOOL "")		# performance markers available
+
 #####################################################################################
 # Include OpenGL
 #
@@ -58,6 +60,9 @@ if (BUILD_CUDA)
 		LIST(APPEND LIBRARIES_DEBUG ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} )
 		LIST(APPEND PACKAGE_SOURCE_FILES ${CUDA_TOOLKIT_INCLUDE} )
 		source_group(CUDA FILES ${CUDA_TOOLKIT_INCLUDE} ) 
+		if (USE_NVTX)
+		  add_definitions(-DUSE_NVTX)
+		endif()
 	else()
  		message ( FATAL_ERROR "---> Unable to find package CUDA")
 	endif()
@@ -105,6 +110,9 @@ if (BUILD_OPENGL)
 	list( APPEND ALL_SOURCE_FILES ${OPENGL_FILES} )
 endif()
 # list( APPEND ALL_SOURCE_FILES ${UTIL_OPTIX_FILES} )
+if (BUILD_CUDA)
+	file (GLOB CUDA_FILES cuda/*.cuh cuda/*.cu)	
+endif()
 
 # Definitions
 add_definitions(-DLIBHELP_EXPORTS)	# Export dll symbols
@@ -124,6 +132,7 @@ if( WIN32 AND NOT GLUT_FOUND)
 endif()
 
 add_library (${PROJNAME} ${LIB_TYPE} ${ALL_SOURCE_FILES} ${CUDA_FILES} ${PTX_FILES} )
+
 # debug and relase libs
 set ( CMAKE_DEBUG_POSTFIX "d" CACHE STRING "" )
 set_target_properties( ${PROJNAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
@@ -158,6 +167,10 @@ if (BUILD_OPENGL)
 	file (COPY "${CMAKE_CURRENT_SOURCE_DIR}/include/GL" DESTINATION ${INSTALL_INC_PATH} )
 	file (COPY "${CMAKE_CURRENT_SOURCE_DIR}/include/GL/glew.c" DESTINATION ${INSTALL_INC_PATH} )
 endif()
+if (BUILD_CUDA)
+	install ( FILES ${CUDA_FILES} DESTINATION ${INSTALL_INC_PATH} )
+endif()
+
 install ( FILES ${INCLUDE_FILES} DESTINATION ${INSTALL_INC_PATH} )
 
 install ( FILES ${INSTALL_LIST} DESTINATION ${INSTALL_BIN_PATH} )

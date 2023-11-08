@@ -63,6 +63,7 @@
 			inline __device__ int*	  bufI(int n)	{ return (int*) mbuf[n]; }
 			inline __device__ uint*	  bufUI(int n)	{ return (uint*) mbuf[n]; }
 			inline __device__ char*	  bufC(int n)	{ return (char*) mbuf[n]; }
+			inline __device__ void*   data(int n)	{ return (void*) mbuf[n]; }	
 		#endif
 	};		
 
@@ -80,7 +81,7 @@
 		public:
 			ushort		cnt;
 			ushort		max;
-			hpos		pos;
+			hpos			pos;
 		};
 
 		class HELPAPI DataX {
@@ -176,13 +177,13 @@
 			// new API interface
 			char*			bufC(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((char*) mBuf[b].mCpu+n); }
 			int*			bufI(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((int*) mBuf[b].mCpu+n); }
-			short*			bufS(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((short*) mBuf[b].mCpu+n); }
+			short*		bufS(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((short*) mBuf[b].mCpu+n); }
 			uint*			bufUI(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((uint*) mBuf[b].mCpu+n); }
-			ushort*			bufUS(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((ushort*) mBuf[b].mCpu+n); }
-			float*			bufF(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((float*) mBuf[b].mCpu+n); }
+			ushort*		bufUS(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((ushort*) mBuf[b].mCpu+n); }
+			float*		bufF(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((float*) mBuf[b].mCpu+n); }
 			Vec3F*		bufF3(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((Vec3F*) mBuf[b].mCpu+n); }
 			Vec4F*		bufF4(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((Vec4F*) mBuf[b].mCpu+n); }
-			Matrix4F*		bufM4(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((Matrix4F*) mBuf[b].mCpu+n); }
+			Matrix4F*	bufM4(int i, int n=0)	{ int b=mRef[i];	return (b==BUNDEF) ? 0 : ((Matrix4F*) mBuf[b].mCpu+n); }
 
 			bool			hasBuf( int i )			{ int b=mRef[i]; return (b!=BUNDEF); }
 			int				getBufSz ( int i )		{ int b=mRef[i]; return (b==BUNDEF) ? 0 : mBuf[b].mSize; }		// max size (not num)			

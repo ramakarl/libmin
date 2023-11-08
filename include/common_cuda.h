@@ -16,21 +16,25 @@
 // BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF 
 // OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-#ifdef USE_CUDA
+
 #ifndef DEF_MAIN_CUDA
-	#define DEF_MAIN_CUDA
+  #define DEF_MAIN_CUDA
 
+	#include "common_defs.h"
 
-	#include <cuda.h>    
-	#include <cudaGL.h>
+	#ifdef USE_CUDA
 
-	#define DEV_FIRST		-1
-	#define DEV_CURRENT		-2
-	#define DEV_EXISTING	-3
+			#include <cuda.h>    
+			#include <cudaGL.h>			
 
-	HELPAPI bool cuCheck(CUresult launch_stat, char* method, char* apicall, char* arg, bool bDebug);
-	HELPAPI void cuStart(int devsel, CUcontext ctxsel, CUdevice& dev, CUcontext& ctx, CUstream* strm, bool verbose);
-	HELPAPI void cuGetMemUsage(int& total, int& used, int& free);
+			#define DEV_FIRST		-1
+			#define DEV_CURRENT		-2
+			#define DEV_EXISTING	-3
 
-#endif
+			HELPAPI bool cuCheck(CUresult launch_stat, char* method, char* apicall, char* arg, bool bDebug);
+			HELPAPI void cuStart(int devsel, CUcontext ctxsel, CUdevice& dev, CUcontext& ctx, CUstream* strm, bool verbose);
+			HELPAPI void cuGetMemUsage(int& total, int& used, int& free);
+
+	#endif
+
 #endif

@@ -17,11 +17,12 @@
 // OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+#include "common_defs.h"
+#include "common_cuda.h"
+#include <assert.h>
+
 #ifdef USE_CUDA
 
-	#include "common_defs.h"
-	#include "common_cuda.h"
-	#include <assert.h>
 
 	bool cuCheck(CUresult launch_stat, char* method, char* apicall, char* arg, bool bDebug)
 	{
@@ -35,20 +36,22 @@
 			const char* kern_statmsg = "";
 			cuGetErrorString(launch_stat, &launch_statmsg);
 			cuGetErrorString(kern_stat, &kern_statmsg);
+			
 			dbgprintf("------- CUDA ERROR:\n");
-			dbgprintf("  Launch status: %s\n", launch_statmsg);
-			dbgprintf("  Kernel status: %s\n", kern_statmsg);
-			dbgprintf("  Caller: Particles::%s\n", method);
-			dbgprintf("  Call:   %s\n", apicall);
-			dbgprintf("  Args:   %s\n", arg);
-
-			if (bDebug) {
-				dbgprintf("  Generating assert to examine call stack.\n");
-				assert(0);		// debug - trigger break (see call stack)
-			}
-			else {
-				exit(-1);
-			}
+			if (launch_stat==CUDA_ERROR_NOT_INITIALIZED) {
+				dbgprintf("  ERROR: CUDA NOT INITIALIZED. Call cuStart().\n" );
+			} else {
+				dbgprintf("  Launch status: %s\n", launch_statmsg);
+				dbgprintf("  Kernel status: %s\n", kern_statmsg);
+				dbgprintf("  Caller: Particles::%s\n", method);
+				dbgprintf("  Call:   %s\n", apicall);
+				dbgprintf("  Args:   %s\n", arg);
+				if (bDebug) {
+					dbgprintf("  Generating assert to examine call stack.\n");
+					assert(0);		// set debug breakpoint here - see call stack
+				}
+			}			
+			exit(-1);			
 			return false;
 		}
 		return true;

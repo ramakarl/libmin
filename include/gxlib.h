@@ -35,6 +35,7 @@
     // 2D Interface Functions
     GXAPI bool init2D ( const char* fontName );    
     GXAPI void debug2D ( bool tf );    
+    GXAPI void clear2D ();
     GXAPI void start2D ( int w, int h, bool bStatic = false );
     GXAPI void setview2D ( int w, int h );
     GXAPI void setMatrices2D ( int grp, int xr, int yr );    
@@ -43,7 +44,9 @@
     GXAPI void drawLine ( Vec2F a, Vec2F b, Vec4F clr );
     GXAPI void drawBox  ( Vec2F a, Vec2F b, Vec4F clr );
     GXAPI void drawFill ( Vec2F a, Vec2F b, Vec4F clr );
+    GXAPI void drawGradient ( Vec2F a, Vec2F b, Vec4F c0, Vec4F c1, Vec4F c2, Vec4F c3 );
     GXAPI void drawText ( Vec2F a, char* msg, Vec4F clr );    
+    GXAPI void drawImg ( ImageX* img, Vec2F a, Vec2F b, Vec4F clr );
     
     // 3D Interface
     GXAPI void start3D ( Camera3D* cam, bool bStatic = false );
@@ -87,7 +90,7 @@
         void        attachPrim ( gxSet* s, uchar typ, uchar prim );
         void        finishPrim ( gxSet* s );
         gxVert*     allocGeom2D (int vert_cnt, uchar prim );
-        gxVert*     allocFont2D (int vert_cnt, uchar prim, ImageX* font_img );
+        gxVert*     allocImg2D (int vert_cnt, uchar prim, ImageX* font_img );
         gxVert3D*   allocGeom3D (int vert_cnt, uchar prim );        
         void        updateVBO ( gxSet* s );
 

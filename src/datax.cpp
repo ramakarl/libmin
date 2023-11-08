@@ -134,12 +134,11 @@ void DataX::SetNum ( int num )
 	}
 #endif
 
+
 void DataX::UpdateGPUAccess ()
 {
 	#ifdef USE_CUDA
 	int userid;
-
-	memset ( &cuDataGPU, 0, sizeof(cuDataX) );
 
 	//dbgprintf ("------\n" );
 	for (int i=0; i < mBuf.size(); i++) {		

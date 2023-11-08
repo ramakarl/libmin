@@ -173,7 +173,7 @@
 				g_nvtxPush = (nvtxRangePushFunc) GetProcAddress( mod, "nvtxRangePushA");
 				g_nvtxPop  = (nvtxRangePopFunc)  GetProcAddress( mod, "nvtxRangePop");
 			#else
-				if (g_perfConsOut) PERF_PRINTF("WARNING: GPU markers not enabled for GVDB Library. Set cmake flag USE_NVTX.\n");
+				PERF_PRINTF("WARNING: GPU markers not enabled for GVDB Library. Set cmake flag USE_NVTX.\n");
 				g_perfGPU = false;
 			#endif
 
