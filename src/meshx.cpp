@@ -6,9 +6,7 @@
 #include "meshx.h"
 #include "meshx_info.h"
 #include "string_helper.h"
-
-//#include "main.h"		// for dbgprintf
-
+#include "geom_helper.h"
 
 //-----------------------------------------------------
 //  Mesh 
@@ -38,7 +36,14 @@ bool MeshX::Load (std::string fname, float scal )
 	return false;
 }
 
-
+Vec4F MeshX::GetStats()
+{
+	// stats. x=memused(MB), y=elements, z=resolution
+	float mem=0;
+	for (int i=0; i < GetNumBuf(); i++)
+		mem += (GetNumElem(i)*GetBufStride(i)) / (1024.0f*1024.0f);
+	return Vec4F( mem, GetNumFace3(), 0, 0);
+}
 
 void MeshX::SetFormatFunc ()
 {
@@ -190,6 +195,66 @@ Vec3F MeshX::NormalizeMesh ( float sz, Vec3F& ctr, int vmin, int vmax )
 	return (bmax - bmin)*0.5f;
 }
 
+// Raytrace mesh
+// Returns:
+//  vndx  - index of the hit face and nearest vertex
+//  vhit  - position of hit in face
+//  vnear - position of nearest vertex
+//
+bool MeshX::Raytrace ( Vec3F orig, Vec3F dir, Matrix4F& xform, Vec3I& vndx, Vec3F& vnear, Vec3F& vhit, Vec3F& vnorm )
+{
+	AttrV3* f;	
+	int fbest;
+	float t, tbest, d, dbest;
+	Vec3F v[3], hit;
+	float alpha, beta;
+	bool front;
+	
+	// find nearest hit triangle	
+	fbest = -1;
+	t = 1.0e10;
+	tbest = 1.0e10;
+	f = (AttrV3*) GetStart(BFACEV3);
+	for ( int fi=0; fi < GetNumElem(BFACEV3); fi++) {
+
+		v[0] = *GetVertPos( f->v1 );	v[0] *= xform;							// mesh transform
+		v[1] = *GetVertPos( f->v2 );	v[1] *= xform;
+		v[2] = *GetVertPos( f->v3 );	v[2] *= xform;	
+
+		if ( intersectRayTriangle ( orig, dir, v[0], v[1], v[2], t, alpha, beta, front ) ) {	// check for triangle hit
+			if ( t < tbest ) {													// find nearest hit
+				fbest = fi;
+				tbest = t;
+			}			
+		}
+		f++;
+	}
+	if ( fbest==-1 ) return false;		// no hit
+
+	// find nearest vertex in triangle
+	dbest = 1.0e20;
+	f = (AttrV3*) GetElem(BFACEV3, fbest );
+	v[0] = *GetVertPos( f->v1 );	v[0] *= xform;
+	v[1] = *GetVertPos( f->v2 );	v[1] *= xform;
+	v[2] = *GetVertPos( f->v3 );	v[2] *= xform;	
+	
+	for (int i=0; i < 3; i++ ) {
+		d = sqrt( (v[i].x-hit.x)*(v[i].x-hit.x) + (v[i].y-hit.y)*(v[i].y-hit.y) + (v[i].z-hit.z)*(v[i].z-hit.z) );		// distance from hit to each vertex
+		if ( d < dbest ) {													// find nearest vertex
+			vndx.x = fbest;													// face id
+			vndx.y = (i==0) ? f->v1 : ((i==1) ? f->v2 : f->v3);				// vertex id					
+			vndx.z = i;
+			dbest = d;
+		}
+	}
+	vhit = orig + dir * tbest;							// return best hit
+	vnear = v[ vndx.z ];								// and nearest vertex
+	
+	xform.SetTranslate( Vec3F(0, 0, 0) );						// remove translation from transform
+	vnorm = *GetVertNorm(vndx.y);	vnorm *= xform;		// get oriented normal
+	return true;
+}
+
 void MeshX::Smooth ( int iter )
 {
 	Vec3F norm, side;	
@@ -238,6 +303,71 @@ void MeshX::Smooth ( int iter )
 	
 	ComputeNormals ();	//	-- No normal smoothing = preserves visual detail (interesting)
 }
+
+
+void MeshX::AppendMesh ( MeshX* src, int maxf, int maxv )
+{
+	// assumes FV mesh!
+
+	//isActive(BVERTNORM)
+
+	int src_numv = src->GetNumVert();
+	int src_numf = src->GetNumFace3();
+	int dest_numv = GetNumElem ( BVERTNORM );
+	int dest_numf = GetNumElem ( BFACEV3 );
+
+	// confirm same active buffers
+	//  (note: we could check src->isActive, but generate these regardless because of lack of flexible array binding in RenderGL)
+	if ( !isActive(BVERTNORM))	AddBuffer ( BVERTNORM, "norm", sizeof(Vec3F), 0 );
+	if ( !isActive(BVERTTEX))   AddBuffer ( BVERTTEX, "tex", sizeof(Vec2F), 0 );
+	if ( !isActive(BVERTCLR))	AddBuffer ( BVERTCLR, "clr", sizeof(uint), 0 );
+
+	// expand buffers to hold src
+	if ( maxf == 0 ) maxf = dest_numf + src_numf;
+	if ( maxv == 0 ) maxv = dest_numv + src_numv;
+	ExpandBuffer ( BFACEV3,		maxf );	
+	ExpandBuffer ( BVERTPOS,	maxv );	
+	ExpandBuffer ( BVERTNORM,	maxv );
+	ExpandBuffer ( BVERTTEX,	maxv );
+	ExpandBuffer ( BVERTCLR,	maxv );	
+	
+	// copy vertices
+	Vec3F* src_vpos =	src->GetElemVec3 ( BVERTPOS,	0 );
+	Vec3F* src_vnorm =	src->GetElemVec3 ( BVERTNORM,	0 );
+	Vec2F* src_vtex =	src->GetElemVec2 ( BVERTTEX,	0 );	
+	uint*	   src_vclr =	(uint*) src->GetElem (BVERTCLR,	0 );
+	Vec3F* dest_vpos =	GetElemVec3 ( BVERTPOS,		dest_numv );
+	Vec3F* dest_vnorm =	GetElemVec3 ( BVERTNORM,	dest_numv );
+	Vec2F* dest_vtex =	GetElemVec2 ( BVERTTEX,		dest_numv );
+	uint*	   dest_vclr =	(uint*) GetElem ( BVERTCLR,	dest_numv );
+	memcpy ( dest_vpos,		src_vpos,	sizeof(Vec3F) * src_numv );
+	if (src->isActive(BVERTNORM)) 		memcpy ( dest_vnorm,	src_vnorm,	sizeof(Vec3F) * src_numv );	
+	if (src->isActive(BVERTTEX)) 		memcpy ( dest_vtex,		src_vtex,	sizeof(Vec2F) * src_numv );
+	if (src->isActive(BVERTCLR))
+		memcpy ( dest_vclr,		src_vclr,	sizeof(uint) * src_numv );
+	else
+		memset ( dest_vclr,		0xFF, 		sizeof(uint) * src_numv );
+
+	// copy faces (with indexing adjustment)
+	AttrV3* src_f =		(AttrV3*) src->GetElem( BFACEV3, 0 );
+	AttrV3* dest_f =	(AttrV3*) GetElem( BFACEV3, dest_numf );
+	AttrV3 f;
+	for (int i=0; i < src_numf; i++) {
+		f = *src_f++;
+		f.v1 += dest_numv;
+		f.v2 += dest_numv;
+		f.v3 += dest_numv;
+		*dest_f++ = f;		
+	}
+
+	// set usage to max count
+	ReserveBuffer ( BFACEV3,	dest_numf + src_numf );
+	ReserveBuffer ( BVERTPOS,	dest_numv + src_numv );
+	ReserveBuffer ( BVERTNORM,	dest_numv + src_numv );
+	ReserveBuffer ( BVERTTEX,	dest_numv + src_numv );
+	ReserveBuffer ( BVERTCLR,	dest_numv + src_numv );	
+}
+
 
 
 //------------------------------------------------------------------ FV - Face-Vertex Mesh
@@ -945,7 +1075,7 @@ bool MeshX::LoadObj ( const char* fname, float scal )
 	int64_t grp_start, grp_end;
 	
 	while ( feof( fp ) == 0 ) {
-		chp = fgets ( buf, 4096, fp );
+		fgets ( buf, 16384, fp );
 		strline = buf;
 		word = strSplitLeft ( strline, " " );
 

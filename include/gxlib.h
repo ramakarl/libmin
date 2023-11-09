@@ -42,9 +42,10 @@
     GXAPI void setTextSz ( float hgt, float kern );
     GXAPI void end2D ();    
     GXAPI void drawLine ( Vec2F a, Vec2F b, Vec4F clr );
-    GXAPI void drawBox  ( Vec2F a, Vec2F b, Vec4F clr );
+    GXAPI void drawRect ( Vec2F a, Vec2F b, Vec4F clr );
     GXAPI void drawFill ( Vec2F a, Vec2F b, Vec4F clr );
     GXAPI void drawGradient ( Vec2F a, Vec2F b, Vec4F c0, Vec4F c1, Vec4F c2, Vec4F c3 );
+    GXAPI void drawCircle ( Vec2F a, float r, Vec4F clr  );
     GXAPI void drawText ( Vec2F a, char* msg, Vec4F clr );    
     GXAPI void drawImg ( ImageX* img, Vec2F a, Vec2F b, Vec4F clr );
     
@@ -59,6 +60,7 @@
     GXAPI void drawLineDotted3D ( Vec3F a, Vec3F b, Vec4F clr, int segs=10 );
     GXAPI void drawCircle3D ( Vec3F p1, Vec3F p2, float r, Vec4F clr  );
     GXAPI void drawBox3D (Vec3F p, Vec3F q, Vec4F clr );
+    GXAPI void drawBox3D (Vec3F p, Vec3F q, Vec4F clr, Matrix4F& xform );
     GXAPI void drawBoxDotted3D (Vec3F p, Vec3F q, Vec4F clr, int segs=10 );
     GXAPI void drawTri3D( Vec3F a, Vec3F b, Vec3F c, Vec3F n, Vec4F clr, bool solid=false);
     GXAPI void drawFace3D( Vec3F a, Vec3F b, Vec3F c, Vec3F d, Vec3F n, Vec4F clr, bool solid=false);

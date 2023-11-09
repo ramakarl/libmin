@@ -166,14 +166,13 @@
 
     //--- OpenGL 
     #ifdef USE_OPENGL
-        #define GLEW_STATIC             // make sure glew is static
-
+    
         #if defined(__ANDROID__)
             #include <EGL/egl.h>
             #include <GLES3/gl3.h>
         #elif defined(__linux__)
 
-        #elif defined(_WIN32)
+        #elif defined(_WIN32)                
             #include <GL/glew.h>
             #include <GL/gl.h>
         #endif

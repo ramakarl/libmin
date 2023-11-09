@@ -21,25 +21,16 @@ include_directories(${LIBMIN_SRC_INC})
 
 add_definitions ( -DLIBMIN_EXPORTS)		# we are building the libmin.dll. create export funcs
 
-add_definitions ( -DGLEW_STATIC)	    	# static build GLEW into libmin
-
 add_definitions ( -DBUILD_PNG)			# always build PNG
 add_definitions ( -DBUILD_TIF)			# always build TIF
 
+_REQUIRE_JPG ()
+
+_REQUIRE_GL ()
+
+_REQUIRE_GLEW ()	       
+
 set( USE_NVTX true CACHE BOOL "")		# performance markers available
-
-#####################################################################################
-# Include OpenGL
-#
-OPTION (BUILD_OPENGL "Build with OpenGL" ON)
-if (BUILD_OPENGL)
-   add_definitions(-DUSE_OPENGL)  		# Use OpenGL
-
-   IF (WIN32)
-     LIST(APPEND LIBRARIES_OPTIMIZED "opengl32.lib" )
-     LIST(APPEND LIBRARIES_DEBUG "opengl32.lib" )
-   ENDIF()
-endif()
 
 OPTION (BUILD_CUDA "Build with CUDA" OFF)
 if (BUILD_CUDA) 
@@ -164,17 +155,15 @@ endif()
 # Install Binaries
 #
 if (BUILD_OPENGL)
-	file (COPY "${CMAKE_CURRENT_SOURCE_DIR}/include/GL" DESTINATION ${INSTALL_INC_PATH} )
-	file (COPY "${CMAKE_CURRENT_SOURCE_DIR}/include/GL/glew.c" DESTINATION ${INSTALL_INC_PATH} )
+	file (COPY "${LIBEXT_PATH}/include/GL" DESTINATION ${INSTALL_INC_PATH} )
+	file (COPY "${LIBEXT_PATH}/include/GL/glew.c" DESTINATION ${INSTALL_INC_PATH} )
 endif()
 if (BUILD_CUDA)
 	install ( FILES ${CUDA_FILES} DESTINATION ${INSTALL_INC_PATH} )
 endif()
 
+install ( FILES ${GLEW_FILES} DESTINATION ${INSTALL_BIN_PATH} )
 install ( FILES ${INCLUDE_FILES} DESTINATION ${INSTALL_INC_PATH} )
-
-install ( FILES ${INSTALL_LIST} DESTINATION ${INSTALL_BIN_PATH} )
-
 install ( FILES ${INSTALL_CMAKES} DESTINATION "${LIB_OUTPUT_PATH}/cmake" )
 install ( FILES ${INSTALL_MAINS} DESTINATION "${LIB_OUTPUT_PATH}/mains" )
 

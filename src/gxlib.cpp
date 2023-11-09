@@ -125,7 +125,7 @@ void glib::drawLine ( Vec2F a, Vec2F b, Vec4F clr )
 	v->x = b.x; v->y = b.y; v->z = 0; vclr(v,clr); v++;
 }
 
-void glib::drawBox  ( Vec2F a, Vec2F b, Vec4F clr )
+void glib::drawRect  ( Vec2F a, Vec2F b, Vec4F clr )
 {
 	glib::drawLine ( a, Vec2F(b.x,a.y), clr );
 	glib::drawLine ( Vec2F(b.x,a.y), b, clr );
@@ -164,6 +164,25 @@ void glib::drawGradient ( Vec2F a, Vec2F b, Vec4F c0, Vec4F c1, Vec4F c2, Vec4F 
 		
 	// repeat last for jump
 	v->x = b.x; v->y = b.y; v->z = 0; vclr(v,Vec4F(0,0,0,0)); v++;
+}
+
+void glib::drawCircle ( Vec2F a, float r, Vec4F clr  )
+{
+	int ndx;
+	int du = 15;
+	gxVert* v = gx.allocGeom2D ( 2*(360/du), PRIM_LINES );	
+
+	// draw circle
+	Vec2F pl, p, c;
+	pl = a + Vec2F(1 * r, 0);
+	for (int u=du; u < 360; u += du ) {
+		c = Vec3F( gx.cos_table[u*100] * r, gx.sin_table[u*100] * r, 0 );
+		p = a + c;
+		v->x = pl.x; v->y = pl.y; vclr (v,clr); v++;
+		v->x = p.x; v->y = p.y;   vclr (v,clr);  v++;
+		pl = p;
+	}		
+
 }
 
 void glib::drawImg ( ImageX* img, Vec2F a, Vec2F b, Vec4F clr )
@@ -344,6 +363,36 @@ void glib::drawBox3D (Vec3F p, Vec3F q, Vec4F clr )
 	drawLine3D( Vec3F(p.x, p.y, q.z), Vec3F(p.x, q.y, q.z), clr );
 	drawLine3D( Vec3F(q.x, p.y, q.z), Vec3F(q.x, q.y, q.z), clr );
 	drawLine3D( Vec3F(q.x, p.y, p.z), Vec3F(q.x, q.y, p.z), clr );
+}
+
+void glib::drawBox3D (Vec3F b1, Vec3F b2, Vec4F clr, Matrix4F& xform )
+{
+	Vec3F p[8];
+	p[0].Set ( b1.x, b1.y, b1.z );	p[0] *= xform;
+	p[1].Set ( b2.x, b1.y, b1.z );  p[1] *= xform;
+	p[2].Set ( b2.x, b1.y, b2.z );  p[2] *= xform;
+	p[3].Set ( b1.x, b1.y, b2.z );  p[3] *= xform;
+
+	p[4].Set ( b1.x, b2.y, b1.z );	p[4] *= xform;
+	p[5].Set ( b2.x, b2.y, b1.z );  p[5] *= xform;
+	p[6].Set ( b2.x, b2.y, b2.z );  p[6] *= xform;
+	p[7].Set ( b1.x, b2.y, b2.z );  p[7] *= xform;
+
+	drawLine3D ( p[0], p[1], clr );
+	drawLine3D ( p[1], p[2], clr );
+	drawLine3D ( p[2], p[3], clr );
+	drawLine3D ( p[3], p[0], clr );
+
+	drawLine3D ( p[4], p[5], clr );
+	drawLine3D ( p[5], p[6], clr );
+	drawLine3D ( p[6], p[7], clr );
+	drawLine3D ( p[7], p[4], clr );
+
+	drawLine3D ( p[0], p[4], clr );
+	drawLine3D ( p[1], p[5], clr );
+	drawLine3D ( p[2], p[6], clr );
+	drawLine3D ( p[3], p[7], clr );
+
 }
 
 void glib::drawBoxDotted3D (Vec3F p, Vec3F q, Vec4F clr, int segs )

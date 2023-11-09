@@ -264,6 +264,13 @@ Vec2F &Vec2F::Normalize (void) {
 double Vec2F::Length (void) { double n; n = (double) x*x + (double) y*y; if (n != 0.0) return sqrt(n); return 0.0; }
 VTYPE *Vec2F::Data (void)			{return &x;}
 
+Vec2F Vec2F::operator- (const float op)		{ return Vec2F(x - op, y - op); }
+Vec2F Vec2F::operator- (const Vec2F &op)		{ return Vec2F(x - op.x, y - op.y); }
+Vec2F Vec2F::operator+ (const float op)		{ return Vec2F(x + op, y + op); }
+Vec2F Vec2F::operator+ (const Vec2F &op)		{ return Vec2F(x + op.x, y + op.y); }
+Vec2F Vec2F::operator* (const float op)		{ return Vec2F(x * op, y * op); }
+Vec2F Vec2F::operator* (const Vec2F &op)		{ return Vec2F(x*op.x, y*op.y); }	
+
 #undef VTYPE
 #undef VNAME
 
@@ -520,6 +527,7 @@ Vec4F::Vec4F (const Vec3F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; z=(VTYPE) op.z; 
 Vec4F::Vec4F (const Vec3F &op, const float opw) {x=(VTYPE) op.x; y=(VTYPE) op.y; z=(VTYPE) op.z; w=(VTYPE) opw;}
 Vec4F::Vec4F (const Vec4F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; z=(VTYPE) op.z; w=(VTYPE) op.w;}
 Vec4F::Vec4F (const Vec4D &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; z=(VTYPE) op.z; w=(VTYPE) op.w;}
+Vec4F::Vec4F (const Quaternion& op) {x=op.X; y=op.Y; z=op.Z; w=op.W; }
 
 // Member Functions
 Vec4F &Vec4F::operator= (const int op) {x= (VTYPE) op; y= (VTYPE) op; z= (VTYPE) op; w = (VTYPE) op; return *this;}

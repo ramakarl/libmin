@@ -80,11 +80,7 @@
 
 		bool Load ( std::string fname, float scal=1.0 );
 
-		#ifdef USE_NVGUI
-			void DrawNormals (float ln, Matrix4F& xform);
-			void Sketch (int w, int h, Camera3D * cam);
-		#endif
-		
+		Vec4F GetStats();				
 
 		// Generic creation functions
 		void		Clear ();		
@@ -107,7 +103,9 @@
 		xref		SetMtlGroup (int n, xref fa, xref fb);
 
 		void		ComputeBounds (Vec3F& bmin, Vec3F& bmax, int vmin=0, int vmax=0);
-		Vec3F	NormalizeMesh ( float sz, Vec3F& ctr, int vmin = 0, int vmax = 0);		
+		Vec3F		NormalizeMesh ( float sz, Vec3F& ctr, int vmin = 0, int vmax = 0);	
+		bool		Raytrace ( Vec3F orig, Vec3F dir, Matrix4F& xform, Vec3I& vndx, Vec3F& vnear, Vec3F& vhit, Vec3F& vnorm );
+		void		AppendMesh ( MeshX* src, int maxf=0, int maxv=0 );
 
 		//void		BindFormat ( bufPos b );
 		void		SetFormatFunc ();

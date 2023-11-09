@@ -20,6 +20,7 @@
 	#define DEF_DATAX
 
 	#include "common_defs.h"
+	#include "common_cuda.h"
 
 	#define	HEAP_MAX			2147483640	// largest heap size (range of hpos)
 	#define	ELEM_MAX			2147483640	// largest number of elements in a buffer (range of hval)
@@ -41,17 +42,6 @@
 	typedef hval				href;		// values are typically references 	
 	typedef signed short		bufPos;
 	
-	#ifdef CUDA_KERNEL
-		typedef char*			devdata_t;
-	#else
-		#ifdef USE_CUDA
-			#include <cuda.h>
-			typedef CUdeviceptr		devdata_t;
-		#else	
-			typedef void*			devdata_t;
-		#endif
-	#endif
-
 	// DataX buffers (GPU)
 	#define	DMAXBUF		16				// fixed for now
 	struct HELPAPI cuDataX {
@@ -232,9 +222,15 @@
 			int						mRef[REF_MAX];
 
 			#ifdef USE_CUDA
-			std::string				cuDataName;			// name of datax device variable
-			CUdeviceptr				cuDataGPU;			// data on gpu (all buffers, see above)
-			cuDataX					cuDataCPU;			// data on cpu
+			  // CUDA member vars
+				std::string		cuDataName;			// name of datax device variable
+				CUdeviceptr		cuDataGPU;			// data on gpu (all buffers, see above)
+				cuDataX				cuDataCPU;			// data on cpu
+			#else
+			  // ensure DataX is same size even when CUDA disabled
+				std::string		cuDataName;			
+				devdata_t			cuDataGPU;
+				cuDataX				cuDataCPU;
 			#endif
 
 			hpos					mHeapNum;			// data buffer heap

@@ -19,10 +19,11 @@ endif()
 
 set( LIBMIN_FOUND "YES" )
 
-# We *also* need the libmin config cmake
-# before searching for files
-find_package(Libmin QUIET CONFIG )
+# Provide functions from LibminConfig.cmake
+# We need the libmin config cmake before searching for files
+find_package(Libmin CONFIG )
 
+message ( "------ FindLibmin.cmake -------" )
 message ( STATUS "LIBMIN:")
 message ( STATUS "  Searching for libmin at.. ${LIBMIN_ROOT_DIR}")
 

@@ -248,7 +248,7 @@ void Widgets::Draw ()
 			if (hasOp(w, OP_VISIBLE)) {
 				entryx = w->pos.x + 0.30 * (w->pos.z - w->pos.x);		// this widget has an entry portion (30% indented)
 				drawFill ( Vec2F(entryx + mFocusX, w->pos.y + 2), Vec2F(entryx + mFocusX + 2, w->pos.w - 2), Vec4F(1, 1, 1, 1) );
-				drawBox  ( Vec2F(entryx, w->pos.y),				 Vec2F(w->pos.z, w->pos.w), Vec4F(1, 1, 1, 1) );
+				drawRect ( Vec2F(entryx, w->pos.y),				 Vec2F(w->pos.z, w->pos.w), Vec4F(1, 1, 1, 1) );
 			}
 		}
 

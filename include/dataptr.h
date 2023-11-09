@@ -20,6 +20,7 @@
 	#define DEF_DATAPTR_H
 
 	#include "common_defs.h"
+	#include "common_cuda.h"
 	#include <assert.h>
 	#include <vector>
 	#include <string>
@@ -110,11 +111,19 @@
 		int				mGLID=0;				// OpenGL
 
 		#ifdef USE_CUDA
-			CUdeviceptr		mGpu;			// CUDA
-			CUgraphicsResource	mGrsc;		// CUDA-GL interop
-			CUarray			mGarray;	
-			CUtexObject		mGtex;			// CUDA texture/surface interop
+		  // CUDA data storage
+			CUdeviceptr		mGpu;					// CUDA
+			CUgraphicsResource	mGrsc;	// CUDA-GL interop
+			CUarray				mGarray;	
+			CUtexObject		mGtex;				// CUDA texture/surface interop
 			CUsurfObject	mGsurf;
+		#else
+			// ensure DataPtr is same size even when CUDA disabled
+			devdata_t			mGpu;
+			devdata_t			mGrsc;
+			devdata_t			mGarray;
+			devdata_t			mGtex;
+			devdata_t			mGsrf;
 		#endif
 
 		static int		mFBO;

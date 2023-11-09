@@ -79,12 +79,13 @@
 		inline Vec2I &operator*= (const Vec3I &op);
 		inline Vec2I &operator*= (const Vec3F &op);
 		inline Vec2I &operator*= (const Vec4F &op);
+		inline Vec2I &operator* (const Vec2F &op);
 
 		inline Vec2I &operator/= (const Vec2I &op);
 		inline Vec2I &operator/= (const Vec2F &op);
 		inline Vec2I &operator/= (const Vec3I &op);
 		inline Vec2I &operator/= (const Vec3F &op);
-		inline Vec2I &operator/= (const Vec4F &op);
+		inline Vec2I &operator/= (const Vec4F &op);		
 
 		// Note: Cross product does not exist for 2D vectors (only 3D)
 		inline double Dot (const Vec2I &v);
@@ -142,25 +143,20 @@
 		 Vec2F &operator+= (const Vec2F &op);
 		 Vec2F &operator+= (const Vec3I &op);
 		 Vec2F &operator+= (const Vec3F &op);
-		 Vec2F &operator+= (const Vec4F &op);
-		 Vec2F  operator+  (const float op)		{ return Vec2F(x + op, y + op); }
-		 Vec2F  operator+  (const Vec2F &op) { return Vec2F(x + op.x, y + op.y); }
+		 Vec2F &operator+= (const Vec4F &op);		 
 
 		 Vec2F &operator-= (const Vec2I &op);
 		 Vec2F &operator-= (const Vec2F &op);
 		 Vec2F &operator-= (const Vec3I &op);
 		 Vec2F &operator-= (const Vec3F &op);
-		 Vec2F &operator-= (const Vec4F &op);
-		 Vec2F  operator-  (const float op)		{ return Vec2F(x - op, y - op); }
-		 Vec2F  operator-  (const Vec2F &op) { return Vec2F(x - op.x, y - op.y); }
+		 Vec2F &operator-= (const Vec4F &op);		 
 
 		 Vec2F &operator*= (const Vec2I &op);
 		 Vec2F &operator*= (const Vec2F &op);
 		 Vec2F &operator*= (const Vec3I &op);
 		 Vec2F &operator*= (const Vec3F &op);
 		 Vec2F &operator*= (const Vec4F &op);
-		 Vec2F &operator*= (const float op)		{ x *= op; y *= op; return *this; }
-		 Vec2F  operator*  (const float op)		{ return Vec2F(x * op, y * op); }
+		 Vec2F &operator*= (const float op)		{ x *= op; y *= op; return *this; }		 
 
 		 Vec2F &operator/= (const Vec2I &op);
 		 Vec2F &operator/= (const Vec2F &op);
@@ -169,8 +165,15 @@
 		 Vec2F &operator/= (const Vec4F &op);
 		 Vec2F &operator/= (const double v)		{x /= (float) v; y /= (float) v; return *this;}
 
-		// Note: Cross product does not exist for 2D vectors (only 3D)
-		
+		 // Slower operations (makes temporary)
+		 Vec2F operator- (const float op);
+		 Vec2F operator- (const Vec2F &op);
+		 Vec2F operator+ (const float op);
+		 Vec2F operator+ (const Vec2F &op);
+		 Vec2F operator* (const float op);
+		 Vec2F operator* (const Vec2F &op);		 
+
+		// Note: Cross product does not exist for 2D vectors (only 3D)		
 		 double Dot(const Vec2I &v);
 		 double Dot(const Vec2F &v);
 
@@ -658,6 +661,38 @@
 		const VTYPE &Z(void) const	{return z;}
 		const VTYPE &W(void) const	{return w;}
 		VTYPE *Data (void)			{return &x;}
+	};
+	
+	#undef VNAME
+	#undef VTYPE
+
+		// Vector8S Declaration - 8x short ints
+
+	#define VNAME		8S
+	#define VTYPE		unsigned short
+
+	class HELPAPI Vec8S {
+	public:
+		VTYPE x,y,z,w,x2,y2,z2,w2;
+	
+		// Constructors/Destructors
+		Vec8S()								{ x=0;y=0;z=0;w=0;x2=0;y2=0;z2=0;w2=0; }		
+		Vec8S(VTYPE c0, VTYPE c1, VTYPE op)	{ x=c0; y=op;z=op;w=op; x2=c1; y2=op;z2=op;w2=op; }
+		Vec8S(VTYPE op)						{  for (int i=0; i<8; i++) ((VTYPE*) &x)[i] = op; }
+		Vec8S(const Vec4F& c, VTYPE op)  { x=c.x; y=c.y; z=c.z; w=c.w; x2=op;y2=op;z2=op;w2=op; }
+
+		Vec8S& Set (VTYPE op)				{ x=op;y=op;z=op;w=op;x2=op;y2=op;z2=op;w2=op; return *this;}
+		Vec8S& Set (int i, VTYPE op)			{ ((VTYPE*) &x)[i] = op; return *this;}
+		
+		Vec8S &operator= (const int op)			{ for (int i=0; i<8; i++) ((VTYPE*) &x)[i] = op; return *this;}
+		Vec8S &operator= (const Vec8S &op)	{ for (int i=0; i<8; i++) ((VTYPE*) &x)[i] = ((VTYPE*) &op.x)[i]; return *this;}
+		Vec8S &operator+= (const Vec8S &op)	{ for (int i=0; i<8; i++) ((VTYPE*) &x)[i] += ((VTYPE*) &op.x)[i]; return *this;}
+		Vec8S &operator-= (const Vec8S &op)	{ for (int i=0; i<8; i++) ((VTYPE*) &x)[i] -= ((VTYPE*) &op.x)[i]; return *this;}
+		Vec8S &operator*= (const Vec8S &op)	{ for (int i=0; i<8; i++) ((VTYPE*) &x)[i] *= ((VTYPE*) &op.x)[i]; return *this;}
+		Vec8S &operator/= (const Vec8S &op)	{ for (int i=0; i<8; i++) ((VTYPE*) &x)[i] /= ((VTYPE*) &op.x)[i]; return *this;}
+
+		VTYPE get (int i)						{ return ((VTYPE*) &x)[i]; }
+		VTYPE *getData ()						{ return &x;}		
 	};
 	
 	#undef VNAME

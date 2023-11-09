@@ -3,19 +3,19 @@
 # LIBMIN CONFIG
 
 # Cmake paths
+# NOTE: CMAKE_CURRENT_LIST_DIR is the location of this LibminConfig.cmake,
+# typically in the /build/libmin/cmake *installed* cmake path.
+# Does not provide access to the cmake source path.
+#
 get_filename_component ( _libmin "${CMAKE_CURRENT_LIST_DIR}/.." REALPATH )
 set ( LIBMIN_PATH ${_libmin} )
-set ( EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "Executable path" )
 set ( BASE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} CACHE PATH "" )
 
-# Libmin source
-# - these are the original source paths. NOT the output build paths
-set ( LIBMIN_SRC "${LIBMIN_PATH}/src" CACHE PATH "Path to libhelp/src")
-set ( LIBMIN_SRC_INC "${LIBMIN_PATH}/include" CACHE PATH "Path to libhelp/include")
+# Libmin *installed* includes, mains
 set ( LIBMIN_MAINS "${LIBMIN_PATH}/mains" CACHE PATH "Path to libhelp/mains")
 
 # Third-party Libraries
-set ( LIBEXT_DIR "d:/codes/libmin/libext" CACHE PATH "Third-party libs.")        
+set ( LIBEXT_PATH "d:/codes/libmin/libext" CACHE PATH "Default libmin third-party libs.")
 
 #set ( DEBUG_HEAP false CACHE BOOL "Enable heap checking (debug or release).")
 set ( DEBUG_HEAP true CACHE BOOL "Enable heap checking (debug or release).")
@@ -24,11 +24,9 @@ if ( ${DEBUG_HEAP} )
    add_definitions( -D_CRTDBG_MAP_ALLOC)
 endif()
 
-message ( "-------- LIBMIN CONFIG ----------------" )
-message ( "BASE DIRECTORY:           ${BASE_DIRECTORY}" )
-message ( "LIBMIN PATH:              ${LIBMIN_PATH}" )
-message ( "LIBMIN_SRC:               ${LIBMIN_SRC}" )
-message ( "LIBMIN_SRC_INC:           ${LIBMIN_SRC_INC}" )
+message ( "------ LibminConfig.cmake -------" )
+message ( STATUS "CURRENT DIRECTORY:     ${BASE_DIRECTORY}" )
+message ( STATUS "LIBMIN INSTALL PATH:   ${LIBMIN_PATH}" )
 
 #-------------------------------------- COPY CUDA BINS
 # This macro copies all binaries for the CUDA library to the target executale location. 
@@ -40,7 +38,35 @@ macro(_copy_cuda_bins projname )
 	)
 endmacro()
 
+####################################################################################
+# Provide Libext - extended 3rd party libraries: 
+#  OpenSSL, Laszip, OptiX, PortAudio, CUFFT, PixarUSD, LibGDVB, LibOptiX
+#
+function (_REQUIRE_LIBEXT)
+    if ( NOT DEFINED LIBEXT_FOUND ) 
+      get_filename_component ( _libextpath "d:/codes/libext" REALPATH )
+      set ( LIBEXT_PATH "${_libextpath}" CACHE STRING "Location of libext third-party libs" FORCE)
+    endif()
+    message (STATUS "  Searching for LIBEXT... ${LIBEXT_PATH}")
+    if (EXISTS "${LIBEXT_PATH}" AND IS_DIRECTORY "${LIBEXT_PATH}")
+        set( LIBEXT_FOUND TRUE )
+        message (STATUS "  ---> Using LIBEXT: ${LIBEXT_PATH}")
+        list( APPEND CMAKE_MODULE_PATH "${LIBEXT_PATH}/cmake" )
+        list( APPEND CMAKE_PREFIX_PATH "${LIBEXT_PATH}/cmake" )
+        set( LIBEXT_PATH ${LIBEXT_PATH} PARENT_SCOPE)
+        set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} PARENT_SCOPE)
+        set( CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
+        set( LIBEXT_FOUND ${LIBEXT_FOUND} PARENT_SCOPE)
+    else()
+message (FATAL_ERROR "  LIBEXT Not Found at: ${LIBEXT_PATH}. 
+Set LIBEXT_PATH to the location of libext.
+")
+    endif()
+endfunction()
 
+###################################################################################
+# Provide a cross-platform main
+#
 function ( _REQUIRE_MAIN )
     # Add Main to build
 
@@ -64,16 +90,59 @@ function ( _REQUIRE_MAIN )
     set ( PACKAGE_SOURCE_FILES ${SRC_FILES} PARENT_SCOPE )
 endfunction()
 
-function ( _REQUIRE_JPG )
-    #####################################################################################
-    # Include JPG    
+###################################################################################
+# Include OpenGL & GLEW
+#
+function ( _REQUIRE_GL )
+    OPTION (BUILD_OPENGL "Build with OpenGL" ON)
+    if (BUILD_OPENGL)            
+        message ( STATUS "  Searching for GL.." )
+        find_package(OpenGL)
+        if (OPENGL_FOUND)          
+          add_definitions(-DUSE_OPENGL)  		# Use OpenGL
+          add_definitions(-DBUILD_OPENGL)  		
+          IF (WIN32)
+	       LIST(APPEND LIBRARIES_OPTIMIZED "opengl32.lib" )
+	       LIST(APPEND LIBRARIES_DEBUG "opengl32.lib" )
+           set(LIBRARIES_OPTIMIZED ${LIBRARIES_OPTIMIZED} PARENT_SCOPE)
+           set(LIBRARIES_DEBUG ${LIBRARIES_DEBUG} PARENT_SCOPE)
+          ENDIF()
+          message ( STATUS "  ---> Using GL" )
+        endif()
+    endif()
+endfunction()
+
+function ( _REQUIRE_GLEW)    
+    OPTION (BUILD_GLEW "Build with GLEW" ON)
+    if (BUILD_GLEW)
+      if (WIN32)        
+	    LIST(APPEND LIBRARIES_OPTIMIZED "${LIBEXT_PATH}/win64/glew64.lib" )
+	    LIST(APPEND LIBRARIES_DEBUG "${LIBEXT_PATH}/win64/glew64d.lib" )
+        set(LIBRARIES_OPTIMIZED ${LIBRARIES_OPTIMIZED} PARENT_SCOPE)
+        set(LIBRARIES_DEBUG ${LIBRARIES_DEBUG} PARENT_SCOPE)
+        LIST(APPEND GLEW_FILES "${LIBEXT_PATH}/win64/glew64.dll" )
+        LIST(APPEND GLEW_FILES "${LIBEXT_PATH}/win64/glew64d.dll" )
+        set(GLEW_FILES ${GLEW_FILES} PARENT_SCOPE)
+      endif()
+      message ( STATUS "  ---> Using GLEW (dll)" )        
+    endif()
+endfunction()
+
+#####################################################################################
+# Include JPG    
+#   
+function ( _REQUIRE_JPG )   
      set ( OK_H "0" )    
-     set ( _jpg_srch "${LIBEXT_DIR}/win64" )
+     set ( _jpg_srch "${LIBEXT_PATH}/win64" )
 	_FIND_FILE ( JPG_LIBS _jpg_srch "libjpg_2019x64.lib" "" OK_H )		
 	if ( OK_H EQUAL 1 )
-      list ( APPEND LIBRARIES_OPTIMIZED "${LIBEXT_DIR}/win64/libjpg_2019x64.lib" PARENT_SCOPE )
-      list ( APPEND LIBRARIES_DEBUG "${LIBEXT_DIR}/win64/libjpg_2019x64d.lib" PARENT_SCOPE )
-      include_directories( "${LIBEXT_DIR}/include" )
+      add_definitions(-DBUILD_JPG) 
+      list ( APPEND LIBRARIES_OPTIMIZED "${LIBEXT_PATH}/win64/libjpg_2019x64.lib" )
+      list ( APPEND LIBRARIES_DEBUG "${LIBEXT_PATH}/win64/libjpg_2019x64d.lib" )
+      set(LIBRARIES_OPTIMIZED ${LIBRARIES_OPTIMIZED} PARENT_SCOPE)
+      set(LIBRARIES_DEBUG ${LIBRARIES_DEBUG} PARENT_SCOPE)
+      include_directories( "${LIBEXT_PATH}/include" )
+      message ( STATUS "  ---> Using libjpg" )
     else ()
       message ( FATAL_ERROR "
       JPG libraries not found. 
@@ -81,6 +150,74 @@ function ( _REQUIRE_JPG )
       ")
     endif()
 endfunction()
+
+
+####################################################################################
+# Include CUDA
+#
+function ( _REQUIRE_CUDA use_cuda_default kernel_path)
+
+    OPTION (BUILD_CUDA "Build with CUDA" ${use_cuda_default})
+    if (BUILD_CUDA) 
+        if (NOT CUDA_TOOLKIT_ROOT_DIR) 
+	        set ( CUDA_TOOLKIT_ROOT_DIR "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2" CACHE PATH "CUDA Toolkit path")
+        endif()        
+        message( STATUS "  Searching for CUDA..") 
+        find_package(CUDA)
+        if ( CUDA_FOUND )
+            ##########################################
+            # Link CUDA
+            #
+	        message( STATUS "  ---> Using package CUDA (ver ${CUDA_VERSION})") 
+	        add_definitions(-DUSE_CUDA)    
+	        include_directories(${CUDA_TOOLKIT_INCLUDE})
+	        LIST(APPEND LIBRARIES_OPTIMIZED ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} )
+	        LIST(APPEND LIBRARIES_DEBUG ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} )
+	        LIST(APPEND PACKAGE_SOURCE_FILES ${CUDA_TOOLKIT_INCLUDE} )    
+            set(LIBRARIES_OPTIMIZED ${LIBRARIES_OPTIMIZED} PARENT_SCOPE)
+            set(LIBRARIES_DEBUG ${LIBRARIES_DEBUG} PARENT_SCOPE)
+            set(PACKAGE_SOURCE_FILES ${PACKAGE_SOURCE_FILES} PARENT_SCOPE)
+	        source_group(CUDA FILES ${CUDA_TOOLKIT_INCLUDE} ) 	        
+
+            ##########################################
+            # Compile PTX Files
+            #
+            set( USE_DEBUG_PTX OFF CACHE BOOL "Enable CUDA debugging with NSight")  
+            if ( USE_DEBUG_PTX )
+	           set ( DEBUG_FLAGS ";-g;-G;-D_DEBUG;-DEBUG")
+            else()
+	           set ( DEBUG_FLAGS "")
+            endif()
+            if ( NOT DEFINED CUDA_ARCH )	        
+	           set( CUDA_ARCH "compute_50" CACHE STRING "CUDA Architecture target" )
+  	           set( CUDA_CODE "sm_50" CACHE STRING "CUDA Code target" )
+               message( "WARNING: CUDA_ARCH not set by parent cmake. Using default. arch: ${CUDA_ARCH}, code: ${CUDA_CODE}")
+               set( CUDA_ARCH ${CUDA_ARCH} PARENT_SCOPE)
+               set( CUDA_CODE ${CUDA_CODE} PARENT_SCOPE)
+            endif ()
+            get_filename_component (_cuda_kernels "${BASE_DIRECTORY}/${kernel_path}" REALPATH)
+            file(GLOB CUDA_FILES "${_cuda_kernels}/*.cu" "${_cuda_kernels}/*.cuh")              
+            message ( STATUS "Searching for kernels.. ${_cuda_kernels}")
+            message ( STATUS "Building CUDA kernels: ${CUDA_FILES}" )
+            message ( STATUS "Requested CUDA arch: ${CUDA_ARCH}, code: ${CUDA_CODE}") 
+            # parent cmake can specify: ADDITIONAL_CUDA_INCLUDES, CUDA_ARCH and CUDA_CODE
+            if ( USE_DEBUG_PTX )
+	            _COMPILEPTX ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${CMAKE_CURRENT_SOURCE_DIR},${LIBMIN_INC_DIR},${ADDITIONAL_CUDA_INCLUDES}" OPTIONS --ptx -arch=${CUDA_ARCH} -code=${CUDA_CODE} -dc -Xptxas -v -G -g --use_fast_math --maxrregcount=32 )
+            else()
+	            _COMPILEPTX ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${CMAKE_CURRENT_SOURCE_DIR},${LIBMIN_INC_DIR},${ADDITIONAL_CUDA_INCLUDES}" OPTIONS --ptx -arch=${CUDA_ARCH} -code=${CUDA_CODE} -dc -Xptxas -v -O3 --use_fast_math --maxrregcount=32 )
+            endif()
+            set (CUDA_FILES ${CUDA_FILES} PARENT_SCOPE)
+            set (CUDA_PTX ${CUDA_PTX} PARENT_SCOPE)
+            set (CUDA_PTX_PATHS ${CUDA_PTX_PATHS} PARENT_SCOPE)
+        endif()
+    else()
+	    message ( FATAL_ERROR "  ---> Unable to find package CUDA")
+    endif()
+    if (USE_NVTX)
+        add_definitions(-DUSE_NVTX)
+	endif()	
+endfunction()
+
 
 
 #------------------------------------ CROSS-PLATFORM PTX COMPILE 
@@ -100,14 +237,7 @@ FUNCTION( _COMPILEPTX )
     set( MACHINE "--machine=64" )
   endif()
   unset ( PTX_FILES CACHE )
-  unset ( PTX_FILES_PATH CACHE )
-
-  set( USE_DEBUG_PTX OFF CACHE BOOL "Enable CUDA debugging with NSight")  
-  if ( USE_DEBUG_PTX )
-	 set ( DEBUG_FLAGS ";-g;-G;-D_DEBUG;-DEBUG")
-  else()
-	 set ( DEBUG_FLAGS "")
-  endif()
+  unset ( PTX_FILES_PATH CACHE )  
   
   if ( WIN32 ) 
 		# Windows - PTX compile
@@ -294,6 +424,40 @@ function( _INSTALL_PTX )
 
 endfunction()
 
+#----------- COPY_AT_BUILD
+# Copies files at post-build time rather than cmake time.
+# Useful for assets, shaders and other dynamic content files.
+#
+function( _COPY_AT_BUILD )
+  set (options "")
+  set (oneValueArgs FOLDER DESTINATION )
+  CMAKE_PARSE_ARGUMENTS(_COPY_AT_BUILD "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  
+  file(GLOB fileList "${_COPY_AT_BUILD_FOLDER}/*.*")
+
+  file(MAKE_DIRECTORY ${_COPY_AT_BUILD_DESTINATION} )
+
+  foreach(file ${fileList})
+  
+    get_filename_component ( fileext ${file} EXT )
+    get_filename_component ( filebase ${file} NAME )
+    set( newFile "${_COPY_AT_BUILD_DESTINATION}/${filebase}")
+    message ( "ASSET: ${file} -> ${newFile}" )
+
+    add_custom_command (
+        OUTPUT ${newFile}
+        MAIN_DEPENDENCY ${file}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${file} ${newFile}
+     )    
+     if ( ${fileext} STREQUAL ".obj" )
+        set_source_files_properties ( ${file} PROPERTIES HEADER_FILE_ONLY TRUE)
+     endif()
+  endforeach()
+
+  # add_custom_target ( export_files ALL DEPENDS ${fileList} )
+
+endfunction()
+
 
 #----------------------------------------------- CROSS-PLATFORM FIND FILES
 # Find one or more of a specific file in the given folder
@@ -384,32 +548,21 @@ macro(_MSVC_PROPERTIES)
 	    # Instruct CMake to automatically build INSTALL project in Visual Studio 
 	    set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
 
-	    set_target_properties( ${PROJNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${EXECUTABLE_OUTPUT_PATH} )
-        set_target_properties( ${PROJNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${EXECUTABLE_OUTPUT_PATH} )
-        set_target_properties( ${PROJNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${EXECUTABLE_OUTPUT_PATH} )    	
+	    set_target_properties( ${PROJNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
+        set_target_properties( ${PROJNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR} )
+        set_target_properties( ${PROJNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR} )
 
 	    # Set startup PROJECT	
 	    if ( (${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 5) OR (${CMAKE_MAJOR_VERSION} GREATER 3) )
 		    message ( STATUS "VS Startup Project: ${CMAKE_CURRENT_BINARY_DIR}, ${PROJNAME}")
 		    set_property ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJNAME} )
 	    endif()		
-        
-	    # Source groups
-	    source_group(CUDA FILES ${CUDA_FILES})
-        source_group(OPTIX FILES ${UTIL_OPTIX_KERNELS})
-        source_group(Helpers FILES ${UTIL_SOURCE_FILES})	    
-        source_group(Source FILES ${SOURCE_FILES})
+
     endif()
 endmacro ()
 
 macro(_DEFAULT_INSTALL_PATH)
-	if ( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )
-	   if (WIN32)
-		  get_filename_component ( _instpath "${CMAKE_CURRENT_SOURCE_DIR}/../../_output" REALPATH )
-	   else()
-		  get_filename_component ( _instpath "/usr/local/gvdb/_output" REALPATH )
-	   endif()
-	   set ( CMAKE_INSTALL_PREFIX ${_instpath} CACHE PATH "default install path" FORCE)   
-	endif()
-	get_filename_component( BIN_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/bin REALPATH)
+	if ( CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT )	   
+	   set ( CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "Install path" FORCE)   
+	endif()	
 endmacro()

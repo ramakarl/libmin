@@ -25,7 +25,7 @@ void g2TextBox::drawBackgrd ()
 }
 void g2TextBox::drawBorder ()
 {
-    drawBox ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_borderclr );
+    drawRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_borderclr );
 }
 void g2TextBox::drawForegrd ()
 {

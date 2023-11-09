@@ -22,6 +22,17 @@
 
 	#include "common_defs.h"
 
+	#ifdef CUDA_KERNEL
+		typedef char*					devdata_t;
+	#else
+		#ifdef USE_CUDA
+			#include <cuda.h>
+			typedef CUdeviceptr	devdata_t;
+		#else	
+			typedef void*				devdata_t;
+		#endif
+	#endif
+
 	#ifdef USE_CUDA
 
 			#include <cuda.h>    

@@ -4,7 +4,11 @@
 
 	#include "common_defs.h"
 
-	typedef int64_t			xref;
+	#ifdef LARGE_MESHES
+		typedef uint64_t			xref;
+	#else	
+		typedef uint32_t			xref;
+	#endif
 
 	#define MAX_MFORMAT		6
 	#define MAX_BFORMAT		3
