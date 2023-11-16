@@ -34,23 +34,6 @@
 #include "imageformat_bmp.h"
 
 
-bool CImageFormatBmp::Load ( char *filename, Image* pImg )
-{
-	StartLoad ( filename, pImg );
-	bool result = LoadBmp ( filename );	
-	if (result) FinishLoad ();
-	return result;
-}
-
-bool CImageFormatBmp::Save (char *filename, Image*  pImg)
-{
-	m_pOrigImage = pImg;
-	m_pNewImage = 0x0;
-	m_eStatus = ImageOp::Saving;
-	strcpy (m_Filename, filename);
-	return SaveBmp (filename);	
-}
-
 // Read BMP palette
 int CImageFormatBmp::readPaletteBMP ( FILE* fp, RGBQUAD*& palette, int bit_count )
 {
@@ -175,7 +158,7 @@ int bitcount (DWORD w)
 }
 
 
-bool CImageFormatBmp::LoadBmp ( char* filename )
+bool CImageFormatBmp::LoadFmt ( char* filename )
 {
 	RGBQUAD*	palette;
 	int			palSize;
@@ -492,7 +475,7 @@ bool CImageFormatBmp::LoadBmp ( char* filename )
 
 
 
-bool CImageFormatBmp::SaveBmp ( char* filename )
+bool CImageFormatBmp::SaveFmt ( char* filename )
 {
 	// Open file
 	FILE* fp = fopen(filename, "wb");

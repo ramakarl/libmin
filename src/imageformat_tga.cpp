@@ -17,25 +17,6 @@
 //
 #include "imageformat_tga.h"
 
-bool CImageFormatTga::Load ( char *filename, ImageX* pImg )
-{
-	StartLoad ( filename, pImg );
-	bool result = LoadTga ( filename );	
-	if (result) FinishLoad ();
-	return result;
-}
-
-bool CImageFormatTga::Save (char *filename, ImageX*  pImg)
-{
-	m_pOrigImage = pImg;
-	m_pNewImage = 0x0;
-	m_eStatus = ImageOp::Saving;
-	strcpy (m_Filename, filename);
-	//return SaveTga (filename);	
-	return false;
-}
-
-
 unsigned char *CImageFormatTga::getRGBA( FILE *s, unsigned char* rgba, int size )
 {
     // Read in RGBA data for a 32bit image.     
@@ -189,7 +170,7 @@ void CImageFormatTga::writeGray( FILE *s, const unsigned char *externalImage, in
 
 
 
-bool CImageFormatTga::LoadTga ( char* filename )
+bool CImageFormatTga::LoadFmt ( char* filename )
 {
 	// Loads up a targa file. Supported types are 8, 24 and 32 
     // uncompressed images.
@@ -212,47 +193,47 @@ bool CImageFormatTga::LoadTga ( char* filename )
         return false;
 	}
 
-    m_Xres = info[0] + info[1] * 256; 
-    m_Yres = info[2] + info[3] * 256;
-    m_BitsPerPixel   = info[4]; 
+    m_xres = info[0] + info[1] * 256; 
+    m_yres = info[2] + info[3] * 256;
+    m_bpp  = info[4]; 
 
     // Make sure we are loading a supported type  
-    if( m_BitsPerPixel != 32 && m_BitsPerPixel != 24 && m_BitsPerPixel != 8 ) {
+    if( m_bpp  != 32 && m_bpp != 24 && m_bpp != 8 ) {
 		m_eStatus = ImageOp::InvalidFile;
 		return false;
 	}     
 	ImageOp::Format eNewFormat;	
 
-	size = m_Xres * m_Yres;
+	size = m_xres * m_yres;
 	
-	switch ( m_BitsPerPixel ) {     // *NOTE* BitsPerPixel is NOT bits per channel
+	switch ( m_bpp ) {     // *NOTE* BitsPerPixel is NOT bits per channel
 	case 32:	eNewFormat = ImageOp::RGBA8;	size *= 4;	break;		// 8-bit, 4 channel
 	case 24:	eNewFormat = ImageOp::RGB8; 	size *= 3;	break;	    // 8-bit, 3 channel
 	case 8:		eNewFormat = ImageOp::RGB8;	            	break;      // 8-bit, 1 channel
 	};
 
 	// Allocate image
-	CreateImage ( m_pNewImage, m_Xres, m_Yres, eNewFormat );
-	unsigned char* buf = GetData ( m_pNewImage );
+  m_pImg->Resize ( m_xres, m_yres, eNewFormat );
+	unsigned char* buf = m_pImg->GetData ();
 	if ( buf == 0x0 ) {
 		printf ( "TGA Error: No new image data created.\n" );
 	}
 
 	// Read data		
 	//printf ( "Load TGA: %d x %d x %d, %d\n", m_Xres, m_Yres, m_BitsPerPixel, size );
-	switch ( m_BitsPerPixel ) {     // *NOTE* BitsPerPixel is NOT bits per channel
+	switch ( m_bpp ) {     // *NOTE* BitsPerPixel is NOT bits per channel
 	case 32:	getRGBA( tga, buf, size );	break;
 	case 24:	getRGB( tga, buf, size );	break;
 	case 8:		getGray( tga, buf, size );	break;
 	};
 
     // Flip Y
-    int stride = size / m_Yres;
+    int stride = size / m_yres;
     unsigned char* tmp = (unsigned char*) malloc(stride);
-    for (int y = 0; y < m_Yres / 2; y++) {
+    for (int y = 0; y < m_yres / 2; y++) {
         memcpy(tmp, buf + (y * stride), stride);
-        memcpy(buf + (y * stride), buf + ((m_Yres - y - 1) * stride), stride);
-        memcpy(buf + ((m_Yres - y - 1) * stride), tmp, stride);
+        memcpy(buf + (y * stride), buf + ((m_yres - y - 1) * stride), stride);
+        memcpy(buf + ((m_yres - y - 1) * stride), tmp, stride);
     }
 
     fclose( tga );

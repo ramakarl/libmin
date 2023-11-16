@@ -35,20 +35,18 @@
 
 	class HELPAPI CImageFormatJpg : public CImageFormat {
 	public:		
-		virtual bool Load (char *filename, ImageX* pImg );
-		virtual bool Save (char *filename, ImageX* pImg );	
-		virtual bool LoadIncremental ( char* filename, ImageX* pImg );
-		virtual ImageOp::FormatStatus LoadNextRow ();
+		CImageFormatJpg ();
+
+		virtual bool LoadFmt (char *filename);
+		virtual bool SaveFmt (char *filename);			
+		virtual ImageOp::FormatStatus LoadIncremental ();
 
 	private:
-		bool LoadJpg (char *filename, bool bIncremental);
-		bool SaveJpg (char *filename, int iQuality);		
-
 		jpeg_compress_struct			m_jpeg_cinfo;
-		jpeg_decompress_struct			m_jpeg_dinfo;
+		jpeg_decompress_struct		m_jpeg_dinfo;
 		extended_error_mgr				m_jerr;
-		FILE*							m_jpeg_file;
-		XBYTE*							m_pDest;	
+		FILE*											m_jpeg_file;
+		XBYTE*										m_pDest;	
 	};
 
 #endif

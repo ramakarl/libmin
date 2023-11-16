@@ -144,9 +144,8 @@
 		void CopyToAlpha ();
 
 		// GPU
-		void SetUsage ( uchar use_flags );
-		void Commit ();
-		void Commit (uchar use_flags);		
+		void SetUsage ( uchar use_flags );		
+		void Commit (uchar use_flags = 0);
 		void Retrieve();
 		int getGLID() { 
 			if ( !(m_Pix.mUseFlags & DT_GLTEX) )	
@@ -254,17 +253,17 @@
 		void setPixelF32 ( int x, int y, Vec4F c );
 		
 	public:
-		ImageOp::Format		mFmt;					// Image Format
+		ImageOp::Format	mFmt;					// Image Format
 		unsigned int		mFlags;					// Image Flags
 		unsigned char		mBitsPerPix;			// BPP = Bits-per-Pixel
 		unsigned long		mBytesPerRow;			// Bytes per Row = BPP*Xres >> 3. Size = mBPP*Xres*Yres >> 3
-		bool				mAutocommit;			// Automatically update on GPU after each func
+		bool						mAutocommit;			// Automatically update on GPU after each func
 	
-		int					mXres, mYres;			// Image Resolution
+		int							mXres, mYres;			// Image Resolution
 
-		DataPtr				m_Pix;
+		DataPtr					m_Pix;
 
-		uchar				m_UseFlags;
+		uchar						m_UseFlags;
 
 		static CImageFormat*		mpImageLoader;		// For incremental image loading
 		static XBYTE fillbuf[];

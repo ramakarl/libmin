@@ -24,14 +24,13 @@
 	
 	class HELPAPI CImageFormatBmp : public CImageFormat {
 	public:		
-		virtual bool Load (char *filename, Image* pImg );
-		virtual bool Save (char *filename, Image* pImg );
+		virtual bool LoadFmt (char *filename);
+		virtual bool SaveFmt (char *filename);
 
 		int readPaletteBMP ( FILE* fp, RGBQUAD*& palette, int bit_count );
 	
 	private:
-		bool LoadBmp (char *filename);
-		bool SaveBmp (char *filename);		
+
 	};
 
 #endif

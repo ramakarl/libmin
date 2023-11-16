@@ -26,13 +26,11 @@
 
 	class HELPAPI CImageFormatPng : public CImageFormat {
 	public:		
-		virtual bool Load (char *filename, ImageX* pImg );
-		virtual bool Save (char *filename, ImageX* pImg );	
+		virtual bool LoadFmt (char *filename);
+		virtual bool SaveFmt (char *filename);	
 
 	private:
-		bool LoadPng (char *filename );
-		bool SavePng (char *filename );
-
+	
 		FILE*			m_png_file;
 	};
 

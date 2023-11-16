@@ -33,40 +33,35 @@
 		CImageFormat ();
 		~CImageFormat ();
 
-		virtual bool Save (char *filename, ImageX* pImg) {return false;}		
-		virtual bool Load (char *filename, ImageX* pImg) {return false;}		
-		virtual bool LoadIncremental ( const char* filename, ImageX* pImg) { return false; }
-		virtual ImageOp::FormatStatus LoadNextRow () { return ImageOp::LoadNotReady; }		
+		// Interface functions (called by Image)
+		bool Load (char *filename, ImageX* pImg);
+		bool Save (char *filename, ImageX* pImg);
+		void SetQuality (int q)	{m_quality= q;}
 
-#if defined(BUILD_VC)
-		bool TransferBitmap ( HBITMAP hBmp );
-#endif
-		// Helper functions		
-		int GetWidth ( ImageX* img )				{ return img->GetWidth();  }
-		int GetHeight ( ImageX* img )				{ return img->GetHeight(); }
-		ImageOp::Format GetFormat ( ImageX* img )	{ return img->GetFormat(); }
-		int GetBitsPerPixel ( ImageX* img )			{ return img->GetBitsPerPix ();}
-		int GetBytesPerPixel ( ImageX* img )		{ return img->GetBytesPerPix ();}
-		int GetBytesPerRow ( ImageX* img )			{ return img->GetBytesPerRow ();}
-		uchar* GetData ( ImageX* img )				{ return img->GetData  (); }
-		void CreateImage ( ImageX*& img, int xr, int yr, ImageOp::Format fm );
+		// Format-specific load functions (virtual)
+		virtual bool LoadFmt ( char *filename )	{return false;}				
+		virtual bool SaveFmt ( char *filename )	{return false;}				
+		virtual ImageOp::FormatStatus LoadIncremental () {return ImageOp::LoadNotReady;}		
 
+		#if defined(BUILD_VC)
+				bool TransferBitmap ( HBITMAP hBmp );
+		#endif
+		// Helper functions				
 		ImageOp::FormatStatus GetStatus ()	{ return m_eStatus; }
 		void GetStatusMsg (char* buf);
 
-		void StartLoad ( char* filename, ImageX* pImg );		
-		void FinishLoad ();
-
-	protected:
-		ImageX*				m_pOrigImage;			// Original image. (ImageFormat does not own it)
-		ImageX*				m_pNewImage;
-		char				m_Filename[FILE_NAMELEN];
+	public:
+		ImageX*				m_pImg;				// Image (ImageFormat does not own it)		
+		
+		char					m_Filename[FILE_NAMELEN];
 		ImageOp::FormatStatus 	m_eStatus;		
+		bool					m_incremental;
+		int						m_quality;
 
-		// General format data
-		int					m_Xres, m_Yres;		
-		int					m_BytesPerRow;
-		int					m_BitsPerPixel;
+		// General format data		
+		int						m_xres, m_yres;		
+		int						m_bpr;
+		int						m_bpp;
 	};
 
 

@@ -29,27 +29,6 @@
 //#include "pnginfo.h"		// for PNG 1.5
 #include "file_png.h"
 
-bool CImageFormatPng::Load ( char *filename, ImageX*  pImg )
-{
-	StartLoad ( filename, pImg );
-	bool result = LoadPng ( filename );
-	if (result) FinishLoad ();
-	return result;
-}
-
-bool CImageFormatPng::Save (char *filename, ImageX*  pImg)
-{
-	m_pOrigImage = pImg;
-	m_eStatus = ImageOp::Saving;
-#ifdef WIN32
-	strcpy_s (m_Filename, FILE_NAMELEN, filename);
-#else
-	strcpy (m_Filename, filename);
-#endif
-	return SavePng ( filename );	
-}
-
-
 /* -- FOR PNG 1.5
 typedef jmp_buf* (*png_set_longjmp_fnPtr)(png_structp png_ptr, png_longjmp_ptr longjmp_fn, size_t jmp_buf_size);
 png_set_longjmp_fnPtr mypng_set_longjmp_fnPtr = 0;
@@ -62,7 +41,7 @@ extern "C" {
    }
 }*/
 
-bool CImageFormatPng::LoadPng (char *filename )
+bool CImageFormatPng::LoadFmt (char *filename )
 {
 	bool bGrey = false;
 
@@ -88,97 +67,21 @@ bool CImageFormatPng::LoadPng (char *filename )
 		break;
 	}
 	// Allocate new image space or use existing one
-	CreateImage(m_pNewImage, nx, ny, eNewFormat);
+	m_pImg->Resize (nx, ny, eNewFormat);
 
-	int stride = m_pNewImage->GetBytesPerRow();
-	XBYTE *dest = GetData(m_pNewImage);
+	int stride = m_pImg->GetBytesPerRow();
+	XBYTE *dest = m_pImg->GetData();
 	for (uint y = 0; y < ny; y++)
 		memcpy(dest + y*stride, &out[y*stride], stride);
-
-
-	/*
-	//-------------------------- Using libpng library
-	png_byte	color_type;
-	png_byte	bit_depth;
-	png_structp png_ptr;
-	png_infop	info_ptr;
-	int number_of_passes;
-	png_bytep * row_pointers; 
-
-	// open file
-#ifdef WIN32
-	fopen_s ( &m_png_file, filename, "rb");
-#else
-	m_png_file = fopen ( filename, "rb");
-#endif
-
-	// Error opening (does not exist, etc.)
-	if ( m_png_file == 0x0 ) {		
-		m_eStatus = ImageOp::FileNotFound;
-		return false;
-	}
-
-	// check for png header
-	char header[8];	// 8 is the maximum size that can be checked
-	fread(header, 1, 8, m_png_file );
-	if (png_sig_cmp( (png_bytep) header, 0, 8 ) ) {
-		m_eStatus = ImageOp::InvalidFile;		
-		return false;
-	}
-	// initialize stuff 
-	png_ptr = png_create_read_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
-	if (!png_ptr)	{ m_eStatus = ImageOp::LibVersion; return false; }
-
-	// Set custom error handlers
-    png_set_error_fn ( png_ptr, png_get_error_ptr(png_ptr), user_error_fn, user_warning_fn  );
-
-	info_ptr = png_create_info_struct( png_ptr );
-	if ( !info_ptr )	{ 
-		png_destroy_read_struct(&png_ptr, NULL, NULL);
-		m_eStatus = ImageOp::LibVersion; 
-		return false; 
-	}		
-
-	if ( setjmp( png_jmpbuf(png_ptr) ) )  { 
-		png_destroy_read_struct ( &png_ptr, &info_ptr, NULL );
-		m_eStatus = ImageOp::LibVersion; 
-		return false; 
-	}		
-	png_init_io(png_ptr, m_png_file );
-	png_set_sig_bytes(png_ptr, 8);
-	png_read_info(png_ptr, info_ptr);
-	png_set_strip_16(png_ptr);									// STRIP 16-bit down to 8-bit
-
-	if (info_ptr->color_type == PNG_COLOR_TYPE_PALETTE)			// EXPAND PALETTES TO RGB
-      png_set_palette_to_rgb(png_ptr);	
-
-	number_of_passes = png_set_interlace_handling(png_ptr);
-
-	png_read_update_info(png_ptr, info_ptr);
-
-	// read file 
-	if (setjmp(png_jmpbuf(png_ptr)))  { m_eStatus = ImageOp::InvalidFile; return false; }				
-
-	int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
-	png_bytep row = (png_bytep) png_malloc ( png_ptr, row_bytes ); 			// Allocate memory in PNG memory space
-	for (int y=0; y < ny; y++ ) {
-		png_read_row ( png_ptr, row, NULL );
-		memcpy ( dest + y*row_bytes, row, row_bytes );		// Copy data from PNG memory to Luna Image
-	}
-	png_free ( png_ptr, row );								// Free PNG memory
-
-	// Close image file
-	fclose (m_png_file);*/
-
 
 	return true;
 }
 
-bool CImageFormatPng::SavePng (char *filename)
+bool CImageFormatPng::SaveFmt (char *filename)
 {
 	int ch = 3;
 
-	switch ( GetFormat ( m_pOrigImage ) ) {
+	switch ( m_pImg->GetFormat() ) {
 	case ImageOp::BW8: 	ch = 1; break;
 	case ImageOp::BW16: ch = 1; break;
 	case ImageOp::BW32: ch = 1; break;		
@@ -186,7 +89,8 @@ bool CImageFormatPng::SavePng (char *filename)
 	case ImageOp::RGBA8: ch = 4; break;
 	};
 
-	save_png ( filename, GetData(m_pOrigImage), GetWidth(m_pOrigImage), GetHeight(m_pOrigImage), ch );
+	save_png ( filename, m_pImg->GetData(), m_pImg->GetWidth(), m_pImg->GetHeight(), ch );
+
 	return true;
 	
 	

@@ -60,34 +60,13 @@ METHODDEF(void) extended_output_message(j_common_ptr cinfo)
 //*************************************
 
 
-bool CImageFormatJpg::Load ( char *filename, ImageX* pImg )
+CImageFormatJpg::CImageFormatJpg ()
 {
-	StartLoad ( filename, pImg );
-	bool result = LoadJpg ( filename, false );
-	if (result) FinishLoad ();
-	return result;
+	m_incremental = false;
+	m_quality = 95;
 }
 
-bool CImageFormatJpg::LoadIncremental ( char* filename, ImageX* pImg )
-{
-	StartLoad ( filename, pImg );	
-	bool result = LoadJpg (filename, true );
-	return result;
-}
-
-bool CImageFormatJpg::Save (char *filename, ImageX* pImg)
-{
-	m_pOrigImage = pImg;
-	m_eStatus = ImageOp::Saving;
-#ifdef WIN32
-	strcpy_s (m_Filename, FILE_NAMELEN, filename);
-#else
-	strcpy (m_Filename, filename);
-#endif
-	return SaveJpg (filename, 95);		// <-- jpeg quality	
-}
-
-bool CImageFormatJpg::LoadJpg (char *filename, bool bIncremental)
+bool CImageFormatJpg::LoadFmt ( char *filename )
 {
 	// Attempt to open file
 #ifdef WIN32
@@ -157,17 +136,17 @@ bool CImageFormatJpg::LoadJpg (char *filename, bool bIncremental)
 	}
 	
 	// Allocate new image space or use existing one
-	CreateImage ( m_pNewImage, nx, ny, eNewFormat );
+	m_pImg->Resize ( nx, ny, eNewFormat );
 
 	// Load image now
-	if ( !bIncremental ) {		
+	if ( !m_incremental ) {		
 		// Compute bytes per block for load
 		int	bytes_per_block;
 		int	result;
 		bytes_per_block = m_jpeg_dinfo.output_width * m_jpeg_dinfo.output_components;	// This is bytes per row...
 		//bytes_per_block *= jpeg_info.rec_outbuf_height;							// and number of rows per block
 
-		XBYTE *dest = GetData ( m_pNewImage );	
+		XBYTE *dest = m_pImg->GetData();
 
 		if (m_jpeg_dinfo.quantize_colors==false) {			
 			if (m_jpeg_dinfo.output_components==1) {
@@ -218,13 +197,13 @@ bool CImageFormatJpg::LoadJpg (char *filename, bool bIncremental)
 			m_eStatus = ImageOp::DepthNotSupported;
 			return false;
 		}
-		m_pDest = GetData ( m_pNewImage );
+		m_pDest = m_pImg->GetData ();
 		m_eStatus = ImageOp::Loading;
 	}
 	return true;
 }
 
-bool CImageFormatJpg::SaveJpg (char *filename, int iQuality)
+bool CImageFormatJpg::SaveFmt ( char *filename )
 {
 	struct jpeg_compress_struct		jpeg_info;
 	struct extended_error_mgr		jerr;
@@ -258,8 +237,8 @@ bool CImageFormatJpg::SaveJpg (char *filename, int iQuality)
 	
 	jpeg_stdio_dest( &jpeg_info, jpeg_file );
 	
-	jpeg_info.image_width = GetWidth ( m_pOrigImage );
-	jpeg_info.image_height = GetHeight ( m_pOrigImage );
+	jpeg_info.image_width = m_pImg->GetWidth ();
+	jpeg_info.image_height = m_pImg->GetWidth ();
 	
 	XBYTE* pBuffer = 0x0;
 
@@ -269,10 +248,10 @@ bool CImageFormatJpg::SaveJpg (char *filename, int iQuality)
 	mMin = ((unsigned long) 1 << 32) - 1;
 	mMax = 0;
 
-	pBuffer = GetData ( m_pOrigImage );				// Original data OK to save
-	iPitch = GetBytesPerRow ( m_pOrigImage );
+	pBuffer = m_pImg->GetData();				// Original data OK to save
+	iPitch = m_pImg->GetBytesPerRow();
 
-	switch ( GetFormat ( m_pOrigImage ) ) {
+	switch ( m_pImg->GetFormat() ) {
 	case ImageOp::BW8: {
 		jpeg_info.input_components = 1;	
 		jpeg_info.in_color_space = JCS_GRAYSCALE; 
@@ -343,7 +322,7 @@ bool CImageFormatJpg::SaveJpg (char *filename, int iQuality)
 	*/
 
 	jpeg_set_defaults(&jpeg_info);
-	jpeg_set_quality(&jpeg_info, iQuality, TRUE);
+	jpeg_set_quality(&jpeg_info, m_quality, TRUE);
 
 	jpeg_start_compress (&jpeg_info, TRUE);
 
@@ -362,7 +341,7 @@ bool CImageFormatJpg::SaveJpg (char *filename, int iQuality)
 	return true;
 }
 
-ImageOp::FormatStatus CImageFormatJpg::LoadNextRow ()
+ImageOp::FormatStatus CImageFormatJpg::LoadIncremental ()
 {
 	if (m_eStatus!=ImageOp::Loading) return ImageOp::LoadNotReady;
 
@@ -375,7 +354,6 @@ ImageOp::FormatStatus CImageFormatJpg::LoadNextRow ()
 		jpeg_finish_decompress (&m_jpeg_dinfo);
  		jpeg_destroy_decompress (&m_jpeg_dinfo);
 		fclose (m_jpeg_file);
-		FinishLoad ();
 		return ImageOp::LoadDone;
 	} else {
 		return ImageOp::LoadOk;

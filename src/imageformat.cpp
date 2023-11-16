@@ -6,20 +6,13 @@
 
 CImageFormat::CImageFormat ()
 {
-	m_pOrigImage = 0x0;
-	m_pNewImage = 0x0;
+	m_pImg = 0x0;
 	m_eStatus = ImageOp::Idle;
 }
 
 CImageFormat::~CImageFormat ()
-{
-	// Do not del original image as CImageFormat does not own it.
-	// Delete new image (temporary).
-	if (m_pNewImage != 0x0 && m_pNewImage != m_pOrigImage ) {
-		printf ( "Deleting image.\n" );
-		delete ( m_pNewImage );
-		m_pNewImage = 0x0;
-	}
+{	
+	// imageformat does not own pimg. do nothing
 }
 
 // Windows bitmaps not cross-platform
@@ -236,53 +229,41 @@ void CImageFormat::GetStatusMsg (char* msg)
 
 }
 
-void CImageFormat::CreateImage ( ImageX*& img, int xr, int yr, ImageOp::Format fm )
-{
-	// Can we use existing image structure? (faster)
-	if ( m_pOrigImage != 0x0 ) {
-		if ( GetWidth( m_pOrigImage ) == xr && GetHeight( m_pOrigImage ) == yr && GetFormat( m_pOrigImage ) == fm ) {
-			img = m_pOrigImage;
-			return;
-		}
-	} 
-	img = new ImageX ( xr, yr, fm );	
-}
 
-void CImageFormat::StartLoad ( char* filename, ImageX* pImg )
+//-- Load starting point 
+//
+bool CImageFormat::Load ( char* filename, ImageX* pImg )
 {
-	m_pOrigImage = pImg;
+	// set current image
+	m_pImg = pImg;
 	m_eStatus = ImageOp::Loading;
-#ifdef WIN32
-	strcpy_s ( m_Filename, FILE_NAMELEN, filename);
-#else
-	strcpy ( m_Filename, filename);
-#endif
+	#ifdef WIN32
+		strcpy_s ( m_Filename, FILE_NAMELEN, filename);
+	#else
+		strcpy ( m_Filename, filename);
+	#endif
 
-	if ( m_pNewImage != 0x0 ) {
-		delete ( m_pNewImage );
-		m_pNewImage = 0x0;
-	}
+	// format-specific load function
+	bool result = LoadFmt ( filename );
+
+	return result;
 }
 
-void CImageFormat::FinishLoad ()
+//-- Save starting point 
+//
+bool CImageFormat::Save ( char* filename, ImageX* pImg )
 {
-	// Get master image control
+	// set current image
+	m_pImg = pImg;
+	m_eStatus = ImageOp::Saving;	
+	#ifdef WIN32
+		strcpy_s ( m_Filename, FILE_NAMELEN, filename);
+	#else
+		strcpy ( m_Filename, filename);
+	#endif
 
-	if (m_pNewImage == 0x0) return;			// Load failed
-	
-	if ( m_pOrigImage != m_pNewImage ) {
-		
-		if ( m_pOrigImage == 0x0 ) {	// no original (empty) 
-			m_pOrigImage = m_pNewImage;
-		} else {						// new image, transfer data from it to original image		
-			m_pOrigImage->TransferFrom ( m_pNewImage );		
-			delete ( m_pNewImage );
-			m_pNewImage = 0x0;
-		}	
+	// format-specific save function
+	bool result = SaveFmt ( filename );
 
-	} else {		
-		//m_pOrigImage->Update ( 1 );			// -- This is also done in TransferFrom
-	}
-
-	m_eStatus = ImageOp::Successs;
+	return result;
 }

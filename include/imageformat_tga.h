@@ -22,8 +22,8 @@
 
 	class HELPAPI CImageFormatTga : public CImageFormat {
 	public:		
-		virtual bool Load (char *filename, ImageX* pImg );
-		virtual bool Save (char *filename, ImageX* pImg );
+		virtual bool LoadFmt (char *filename);
+		//virtual bool SaveFmt (char *filename);
 	
 	private:
 		unsigned char *getRGBA(FILE *s, unsigned char* rgba, int size);
@@ -32,10 +32,7 @@
 		void           writeRGBA(FILE *s, const unsigned char *externalImage, int size);
 		void           writeRGB(FILE *s, const unsigned char *externalImage, int size);
 		void           writeGrayAsRGB(FILE *s, const unsigned char *externalImage, int size);
-		void           writeGray(FILE *s, const unsigned char *externalImage, int size);
-
-		bool LoadTga (char *filename);
-		//bool SaveTga (char *filename);		
+		void           writeGray(FILE *s, const unsigned char *externalImage, int size);		
 	};
 
 #endif

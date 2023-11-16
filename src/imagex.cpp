@@ -81,30 +81,23 @@ void ImageX::DeleteBuffers ()
 
 void ImageX::SetUsage ( uchar use_flags )
 {
+	if (use_flags == 0 ) return;
 	m_UseFlags = use_flags;
+	m_Pix.SetUsage (  GetDataType ( mFmt ), use_flags, mXres, mYres, 1 );
 	m_Pix.UpdateUsage ( m_UseFlags );
+}
+
+void ImageX::Commit ( uchar use_flags )
+{	
+	if (use_flags == 0) use_flags = m_UseFlags;
+	if ( !(use_flags & DT_GLTEX) ) use_flags |= DT_GLTEX;
+	SetUsage ( use_flags );			// reserves GLID
+	m_Pix.Commit();							// assumes allocated on gpu
 }
 
 void ImageX::Retrieve()
 {		
 	m_Pix.Retrieve();
-}
-void ImageX::Commit ( uchar use_flags )
-{	
-	if ( use_flags != 0 ) {
-		m_UseFlags = use_flags;		
-		m_Pix.UpdateUsage(m_UseFlags);
-	}
-	m_Pix.Commit();				// assumes allocated on gpu
-}
-
-void ImageX::Commit ()
-{
-	if ( !(m_UseFlags & DT_GLTEX) ) {
-		m_UseFlags = DT_CPU | DT_GLTEX;
-		m_Pix.UpdateUsage(m_UseFlags);
-	}
-	m_Pix.Commit();	
 }
 
 void ImageX::Resize ( int xr, int yr )
@@ -130,7 +123,7 @@ void ImageX::ResizeChannel ( int chan, int xr, int yr, ImageOp::Format fmt, ucha
 		// Set new pixel format parameters		
 		uchar dt = GetDataType ( fmt );
 		SetFormat ( xr, yr, fmt );		
-		m_Pix.SetUsage ( dt, use_flags, xr, yr,1 );
+		m_Pix.SetUsage ( dt, use_flags, xr, yr, 1 );
 		m_Pix.Resize ( GetBytesPerPix(), xr*yr, 0x0, use_flags );		
 		m_Pix.mNum = xr*yr;
 				
@@ -573,26 +566,31 @@ bool ImageX::LoadIncremental ( char *filename )
 #ifdef BUILD_JPG
 	CImageFormatJpg*	pJpgLoader;
 
+	// create new jpg reader
 	pJpgLoader = new CImageFormatJpg;
-	if ( pJpgLoader->LoadIncremental ( filename, this ) ) {
-		mpImageLoader = pJpgLoader;
-		return true;
+	pJpgLoader->m_incremental = true;		// set incremental
+
+	// start incremental load
+	if ( !pJpgLoader->Load (filename, this) ) {
+		delete ( pJpgLoader ); mpImageLoader = 0x0;
+		return false;
 	}
-	// Load failed. Delete loader.
-	delete ( pJpgLoader );
 #endif
 
-	mpImageLoader = 0x0;
-	return false;
+	// loading..
+	mpImageLoader = pJpgLoader;
+	return true;	
 }
 
 ImageOp::FormatStatus ImageX::LoadNextRow ()
 {
 	if ( mpImageLoader == 0x0) return ImageOp::LoadNotReady;
 
-	ImageOp::FormatStatus eStatus = mpImageLoader->LoadNextRow ();	
+	// still loading..
+	ImageOp::FormatStatus eStatus = mpImageLoader->LoadIncremental ();	
 	if ( eStatus == ImageOp::LoadDone ) {		
-		// Remove image loader when done
+		// load complete. 
+		// delete image loader.
 		delete mpImageLoader;
 		mpImageLoader = 0x0;				
 	}
@@ -740,6 +738,8 @@ bool ImageX::Load ( std::string filename, std::string& errmsg)
 	
 	// Default filtering
 	SetFilter( ImageOp::Filter::Linear );
+
+	if (mAutocommit) Commit();
 
 	return false;	
 }

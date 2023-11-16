@@ -17,7 +17,8 @@
 // OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#define DEBUG_TIF	false		// enable this for tif debug output
+#define DEBUG_TIF		false		// enable this for tif debug output
+
 
 //**************************************
 //
@@ -53,8 +54,8 @@ CImageFormatTiff::CImageFormatTiff () : CImageFormat()
 	m_eCompression = TifCompNone;
 	m_ePhoto = TifRgb;
 	m_eMode = TifColor;
-	m_Xres = 0;
-	m_Yres = 0;
+	m_xres = 0;
+	m_xres = 0;
 	m_bHasAlpha = false;
 	m_NumChannels = 0;
 	m_BitsPerChannelOffset = 0;
@@ -62,28 +63,9 @@ CImageFormatTiff::CImageFormatTiff () : CImageFormat()
 	m_StripOffsets = 0;
 	m_StripCounts = 0;
 	m_RowsPerStrip = 0;
-	m_BitsPerPixel = 0;
-	m_BytesPerRow = 0;
+	m_bpp = 0;
+	m_bpr = 0;
 }
-
-bool CImageFormatTiff::Load ( char *filename, ImageX* pImg )
-{
-	StartLoad ( filename, pImg );
-	bool result = LoadTiff ( filename );
-	if (result) FinishLoad ();
-	return result;
-}
-
-bool CImageFormatTiff::Save (char *filename, ImageX* pImg)
-{
-	m_pOrigImage = pImg;
-	m_pNewImage = 0;
-	m_eStatus = ImageOp::Saving;
-	strcpy (m_Filename, filename);
-	return SaveTiff (filename);
-}
-
-
 
 // Function: LoadTiff
 //
@@ -99,9 +81,12 @@ bool CImageFormatTiff::Save (char *filename, ImageX* pImg)
 //		m_photo			Photometric interpretation
 //		m_num_strips		Number of strips
 //		m_rps				Rows per strip
-bool CImageFormatTiff::LoadTiff (char *filename)
+//
+bool CImageFormatTiff::LoadFmt (char *filename)
 {
 	unsigned long pnt;
+
+	if ( m_DebugTif )	dbgprintf ("----- TIFF LOADING: %s\n", filename );
 
 	m_Tif = fopen ( filename, "rb" );	
 	if ( m_Tif == 0x0 ) {
@@ -112,14 +97,14 @@ bool CImageFormatTiff::LoadTiff (char *filename)
 	uint64_t sz = ftell ( m_Tif );
 	fseek ( m_Tif, 0, SEEK_SET );	
 
-	m_Buf = new_event ( 4, 'app ', 'tiff', 0, 0x0 );
+	m_Buf = new_event ( 16384, 'app ', 'tiff', 0, 0x0 );
 
 	m_Buf.attachFromFile (m_Tif, sz);
 	m_Buf.startRead ();
 
 	m_bHasAlpha = false;
-	m_Xres = 0;
-	m_Yres = 0;		
+	m_xres = 0;
+	m_yres = 0;		
 	unsigned short byteorder = m_Buf.getUShort();
 	if (byteorder  != (XBYTE2) TIFF_BYTEORDER) {
 		//m_Buf.SetOrder (BUFFER_ORDER_MBF);				
@@ -127,7 +112,7 @@ bool CImageFormatTiff::LoadTiff (char *filename)
 	unsigned short magic = m_Buf.getUShort ();
 	if ( magic != TIFF_MAGIC) {
 		m_eTiffStatus = TifNoMagic; m_eStatus = ImageOp::InvalidFile;
-		m_pNewImage = 0x0; fclose ( m_Tif );
+		fclose ( m_Tif );
 		return false;
 	}
 
@@ -135,7 +120,10 @@ bool CImageFormatTiff::LoadTiff (char *filename)
 	
 	m_Buf.setPos (pnt);
 
-	if ( !LoadTiffDirectory () ) { m_pNewImage = 0x0; fclose ( m_Tif ); return false; }		
+	if ( !LoadTiffDirectory () ) { 
+		fclose ( m_Tif ); 
+		return false; 
+	}		
 	
 	// success
 	m_eTiffStatus = TifOk;
@@ -150,7 +138,7 @@ void CImageFormatTiff::ComputeMinMaxData (unsigned long count, unsigned long off
 
 	m_Buf.setPos (offset);						// Set file position to TIFF data
 	lastrow = row + m_RowsPerStrip - 1;
-	if (lastrow > m_Yres-1) lastrow = m_Yres-1;		// Determine last row to process
+	if (lastrow > m_yres-1) lastrow = m_yres-1;		// Determine last row to process
 	
 	switch (m_eMode) {
 	case TifBw: {							// Black & White TIFF		
@@ -161,9 +149,9 @@ void CImageFormatTiff::ComputeMinMaxData (unsigned long count, unsigned long off
 		case 8: {									// 8 Bits per Channel			
 			uchar* pIn;			
 			for (y = row; y <= lastrow; y++) {
-				m_Buf.getBuf ( in, m_BytesPerRow );
+				m_Buf.getBuf ( in, m_bpr );
 				pIn = (uchar*) in;
-				for (x=0; x < m_Xres; x++) {
+				for (x=0; x < m_xres; x++) {
 					if ( *pIn < m_Min ) m_Min = *pIn;
 					if ( *pIn > m_Max ) m_Max = *pIn;
 					pIn++;
@@ -173,9 +161,9 @@ void CImageFormatTiff::ComputeMinMaxData (unsigned long count, unsigned long off
 		case 16: {									// 16 Bits per Channel			
 			XBYTE2 *pIn;			
 			for (y = row; y <= lastrow;	y++) {
-				m_Buf.getBuf ( in, m_BytesPerRow );
+				m_Buf.getBuf ( in, m_bpr );
 				pIn = (XBYTE2 *) in;
-				for (x=0; x < m_Xres; x++) {
+				for (x=0; x < m_xres; x++) {
 					if ( *pIn < m_Min ) m_Min = *pIn;
 					if ( *pIn > m_Max ) m_Max = *pIn;
 					pIn++;
@@ -185,9 +173,9 @@ void CImageFormatTiff::ComputeMinMaxData (unsigned long count, unsigned long off
 		case 32: {									// 32 Bits per Channel
 			XBYTE4 *pIn;
 			for (y = row; y <= lastrow;	y++) {
-				m_Buf.getBuf (in, m_BytesPerRow );
+				m_Buf.getBuf (in, m_bpr );
 				pIn = (XBYTE4 *) in;
-				for (x=0; x < m_Xres; x++ ) {
+				for (x=0; x < m_xres; x++ ) {
 					if ( *pIn < m_Min ) m_Min = *pIn;
 					if ( *pIn > m_Max ) m_Max = *pIn;
 					pIn++;
@@ -243,6 +231,13 @@ bool CImageFormatTiff::LoadTiffDirectory ()
 	// Read Number of TIFF Directory Entries
 	num = m_Buf.getUShort();	
 
+	// Reset BPC
+	m_BitsPerChannel[TifGray] = 0;
+	m_BitsPerChannel[TifRed] =	0;
+	m_BitsPerChannel[TifGreen] = 0;
+	m_BitsPerChannel[TifBlue] =	0;
+	m_BitsPerChannel[TifAlpha] = 0;		
+
 	// Read TIFF Directory Entries to fill ImageFormat Info
 	for (unsigned int n = 0; n <= num; n++)	{
 		if (!LoadTiffEntry ()) {
@@ -258,64 +253,53 @@ bool CImageFormatTiff::LoadTiffDirectory ()
 		return false;
 	}
 
-	// Create and prepare Image
+	// Determine new image specs
 	ImageOp::Format eNewFormat;
 
 	switch (m_eMode) {						
 	case TifColor: {									// Color Image
+
 		pos = m_Buf.getPosInt();
 		m_Buf.setPos (m_BitsPerChannelOffset);			// Get bits per channel
+		
 		m_BitsPerChannel[TifRed] =		m_Buf.getUShort();
 		m_BitsPerChannel[TifGreen] =	m_Buf.getUShort();
 		m_BitsPerChannel[TifBlue] =		m_Buf.getUShort();
-		if ( m_DebugTif ) {
+		m_BitsPerChannel[TifAlpha] =  m_bHasAlpha ? m_Buf.getUShort() : 0;
+		
+		// support color with or without alpha
+		// *limitation*: stores into 8-bit RGB even if the data is 16 or 32-bit color		
+		eNewFormat = (m_bHasAlpha) ? ImageOp::RGBA8 : ImageOp::RGB8;	
+		
+		m_Buf.setPos (pos);			// Calculate bits per pixel and bytes per row
+		
+	} break;
+
+	case TifGrayscale: {	
+		// support both 16-bit and 8-bit grayscale
+		eNewFormat = (m_BitsPerChannel[TifGray] == 16) ? ImageOp::BW16 : ImageOp::BW8;	
+	} break;	
+	}
+	// Compute bpp and bpr
+	m_bpp = m_BitsPerChannel[TifGray] + m_BitsPerChannel[TifRed] + m_BitsPerChannel[TifGreen] + m_BitsPerChannel[TifBlue] + m_BitsPerChannel[TifAlpha];
+	m_bpr = (int) floor ( (m_xres * m_bpp) / 8.0);
+
+	if ( m_DebugTif ) {
+			dbgprintf ( "BPC Grayscale:   %d\n", m_BitsPerChannel[TifGray] );		
 			dbgprintf ( "BPC Red:   %d\n", m_BitsPerChannel[TifRed] );
 			dbgprintf ( "BPC Green: %d\n", m_BitsPerChannel[TifGreen] );
 			dbgprintf ( "BPC Blue:  %d\n", m_BitsPerChannel[TifBlue] );
-		}
-
-		eNewFormat = ImageOp::RGB8;	
-		if ( m_bHasAlpha ) {
-			eNewFormat = ImageOp::RGBA8;							
-			m_BitsPerChannel[TifAlpha] = m_Buf.getUShort();	// Get bits for alpha channel
-			if ( m_DebugTif ) dbgprintf ( "BPC Alpha: %d\n", m_BitsPerChannel[TifAlpha] );
-		} else {
-			m_BitsPerChannel[TifAlpha] = 0;		// No alpha channel.
-		}
-
-		// Create ImageX to load data into
-		CreateImage ( m_pNewImage, m_Xres, m_Yres, eNewFormat);		// Create RGBA Image		
-		
-		m_Buf.setPos (pos);			// Calculate bits per pixel and bytes per row
-		m_BitsPerPixel = m_BitsPerChannel[TifRed] + m_BitsPerChannel[TifGreen] + m_BitsPerChannel[TifBlue] + m_BitsPerChannel[TifAlpha];
-		m_BytesPerRow = (int) floor ( (m_Xres * m_BitsPerPixel) / 8.0);
-	} break;
-	case TifGrayscale: {
-		
-		m_BitsPerPixel = m_BitsPerChannel[TifGray];
-		m_BytesPerRow = (int) floor ( (m_Xres * m_BitsPerPixel) / 8.0);
-
-		if ( m_BitsPerChannel[TifGray] == 16 ) {
-			eNewFormat = ImageOp::BW16;
-		} else {
-			eNewFormat = ImageOp::BW8;
+			dbgprintf ( "BPC Alpha: %d\n", m_BitsPerChannel[TifAlpha] );
+			dbgprintf ( "Resizing: %d x %d, bpp %d\n", m_xres, m_yres, m_bpp );
 		}		
-		// Create ImageX to load data into
-		if ( m_pOrigImage != 0x0 ) {		// Can we use existing image structure? (faster for movies)
-			if ( GetWidth(m_pOrigImage)==m_Xres && GetHeight(m_pOrigImage)==m_Yres && GetFormat(m_pOrigImage) == eNewFormat )
-				m_pNewImage = m_pOrigImage;
-			else
-				CreateImage ( m_pNewImage, m_Xres, m_Yres, eNewFormat );	// Create Grayscale Image
-		} else {		
-			CreateImage ( m_pNewImage, m_Xres, m_Yres, eNewFormat);		// Create Grayscale Image
-		}		
-	} break;	
-	}
+
+	// Resize image	
+	m_pImg->Resize ( m_xres, m_yres, eNewFormat ); 
 	
 	// If no RowsPerStrip tag, assume full image in 1 strip
 	//  (see libtiff 4.4.0, TIFFReadEncodedStripGetStripSize)
 	if ( m_RowsPerStrip==0 ) {
-		m_RowsPerStrip = m_Yres;
+		m_RowsPerStrip = m_yres;
 		m_NumStrips  = 1;
 	}
 
@@ -356,18 +340,20 @@ bool CImageFormatTiff::LoadTiffEntry ()
 	// Add information to ImageFormat info based on Entry Tag
 	switch (tag) {	
 	case TifImageWidth:		
-		m_Xres = offset;			
-		if (m_DebugTif) dbgprintf ( "XRes: %d\n", m_Xres );		
+		m_xres = offset;			
+		if (m_DebugTif) dbgprintf ( "TifImgWidth: %d xres\n", m_xres );		
 		break;
 	case TifImageHeight:		
-		m_Yres = offset;
-		if (m_DebugTif) dbgprintf ( "YRes: %d\n", m_Yres );		
+		m_yres = offset;
+		if (m_DebugTif) dbgprintf ( "TifImgHeight: %d yres\n", m_yres );		
 		break;
 	case TifExtraSamples:		
 		m_bHasAlpha = true;		
+		if (m_DebugTif) dbgprintf ( "TifExtraSamples - has alpha\n" );		
 		break;
 	case TifSamplesPerPixel:
 		m_SamplesPerPix = count;
+		if (m_DebugTif) dbgprintf ( "TifSamplesPerPix: %d\n", count );		
 		break;
 	case TifBitsPerSample:
 		// NOTE: The TIFF specification defines 'samples',
@@ -421,7 +407,7 @@ bool CImageFormatTiff::LoadTiffEntry ()
 		break;
 	case TifRowsPerStrip:
 		m_RowsPerStrip = offset;
-		m_NumStrips = (unsigned long) int ((m_Yres + m_RowsPerStrip - 1) / m_RowsPerStrip);		
+		m_NumStrips = (unsigned long) int ((m_yres + m_RowsPerStrip - 1) / m_RowsPerStrip);		
 		if (m_DebugTif) dbgprintf ( "Rows/Strip:  %d\n", m_RowsPerStrip );
 		if (m_DebugTif) dbgprintf ( "Num Strips:  %d\n", m_NumStrips );		
 		break;
@@ -477,13 +463,13 @@ void CImageFormatTiff::LoadTiffData (unsigned long count, unsigned long offset, 
 	char *pData;
 	int x, y, lastrow;	
 
-	pData = (char*) GetData ( m_pNewImage ) + row * GetBytesPerRow ( m_pNewImage );
+	pData = (char*) m_pImg->GetData() + row * m_pImg->GetBytesPerRow();
 	
 	if (m_DebugTif) dbgprintf ( "Data %d: pos %d, num %d\n", row, offset, count );	
 
 	m_Buf.setPos (offset);						// Set file position to TIFF data
 	lastrow = row + m_RowsPerStrip - 1;
-	if (lastrow > m_Yres-1) lastrow = m_Yres-1;		// Determine last row to process
+	if (lastrow > m_yres-1) lastrow = m_yres-1;		// Determine last row to process
 	
 	switch (m_eMode) {
 	case TifBw: {							// Black & White TIFF		
@@ -493,7 +479,7 @@ void CImageFormatTiff::LoadTiffData (unsigned long count, unsigned long offset, 
 		exit(-18);
 
 		for (y = row; y <= lastrow; y++) {			// Assume 1 Bit Per Pixel
-			m_Buf.getBuf (in, m_BytesPerRow);					// Read row in TIFF
+			m_Buf.getBuf (in, m_bpr);					// Read row in TIFF
 			
 			//code.UnstuffEachBit (in, out, m_BytesPerRow);	// Unstuff row from bits to bytes
 			//code.Scale (out, m_BytesPerRow*8, 255);			// Rescale row from 0-1 to 0-255
@@ -502,40 +488,44 @@ void CImageFormatTiff::LoadTiffData (unsigned long count, unsigned long offset, 
 			//				code.Invert (out, m_BytesPerRow*8);				
 			
 			pIn = in;
-			for (x=0; x < m_Xres; x++) {
+			for (x=0; x < m_xres; x++) {
 				*pData++ = (XBYTE) *pIn;				// Copy Black/White byte data 
 				*pData++ = (XBYTE) *pIn;				// into Red, Green and Blue bytes.
 				*pData++ = (XBYTE) *pIn++;
 			}
 		}		
 	} break;
+
 	case TifGrayscale: {						// Grayscale TIFF
 		switch (m_BitsPerChannel[TifGray]) {
 		case 8: case 16: case 32: {									// 8 Bits per Channel				
 			for (y = row; y <= lastrow; y++) {
-				m_Buf.getBuf ( pData, m_BytesPerRow );				
-				pData += m_BytesPerRow;
+				m_Buf.getBuf ( pData, m_bpr );				
+				pData += m_bpr;
 			}
 		} break;
 		}
 	} break;
+
 	case TifColor: {									// Full Color TIFF
 		switch (m_BitsPerChannel[TifRed]) {					
 		case 8: {											// 8 Bits per Channel
-			int bpr = GetBytesPerPixel( m_pNewImage ) * m_Xres;
+			
+			// Supports 3 (RGB) and 4 components (RGBA, /w alpha)
 			for (y = row; y <= lastrow; y++) {
-				m_Buf.getBuf (pData, bpr);
-				pData += GetBytesPerRow( m_pNewImage );
-			}
-			//tiff.Read (m_BytesPerRow * m_RowsPerStrip, pData);			
+				m_Buf.getBuf (pData, m_bpr);
+				pData += m_bpr;
+			}			
 		} break;
+			 
 		case 16: {											// 16 Bits per Channel
+
 			XBYTE2 *pIn;
-			if (m_bHasAlpha) {								// Alpha included.										
+			if (m_bHasAlpha) {						// Alpha included.										
 				for (y = row; y <= lastrow;	y++) {
-					m_Buf.getBuf (in, m_BytesPerRow);
+					m_Buf.getBuf (in, m_bpr);
 					pIn = (XBYTE2 *) in;
-					for (x=0; x < m_Xres; x++) {
+					for (x=0; x < m_xres; x++) {
 						*pData++ = (XBYTE) (*pIn++ >> 8); 
 						*pData++ = (XBYTE) (*pIn++ >> 8);
 						*pData++ = (XBYTE) (*pIn++ >> 8); 
@@ -544,9 +534,9 @@ void CImageFormatTiff::LoadTiffData (unsigned long count, unsigned long offset, 
 				}
 			} else {
 				for (y = row; y <= lastrow; y++) {			// No Alpha.
-					m_Buf.getBuf (in, m_BytesPerRow);
+					m_Buf.getBuf (in, m_bpr);
 					pIn = (XBYTE2 *) in;
-					for (x=0; x < m_Xres; x++) {
+					for (x=0; x < m_xres; x++) {
 						*pData++ = (XBYTE) (*pIn++ >> 8); 
 						*pData++ = (XBYTE) (*pIn++ >> 8);
 						*pData++ = (XBYTE) (*pIn++ >> 8);					
@@ -554,13 +544,14 @@ void CImageFormatTiff::LoadTiffData (unsigned long count, unsigned long offset, 
 				}
 			}
 		} break;
+
 		case 32: {									// 32 Bits per Channel
  			XBYTE4 *pIn;
 			if (m_bHasAlpha) {				
 				for (y = row; y <= lastrow;	y++) {
-					m_Buf.getBuf (in, m_BytesPerRow);
+					m_Buf.getBuf (in, m_bpr);
 					pIn = (XBYTE4 *) in;
-					for (x=0; x < m_Xres; x++) {
+					for (x=0; x < m_xres; x++) {
 						*pData++ = (XBYTE) (*pIn++ >> 24); 
 						*pData++ = (XBYTE) (*pIn++ >> 24);
 						*pData++ = (XBYTE) (*pIn++ >> 24); 
@@ -570,9 +561,9 @@ void CImageFormatTiff::LoadTiffData (unsigned long count, unsigned long offset, 
 			} else {
 				
 				for (y = row; y <= lastrow; y++) {
-					m_Buf.getBuf (in, m_BytesPerRow);
+					m_Buf.getBuf (in, m_bpr);
 					pIn = (XBYTE4 *) in;
-					for (x=0; x < m_Xres; x++) {
+					for (x=0; x < m_xres; x++) {
 						*pData++ = (XBYTE) (*pIn++ >> 24); 
 						*pData++ = (XBYTE) (*pIn++ >> 24);
 						*pData++ = (XBYTE) (*pIn++ >> 24);					
@@ -583,15 +574,16 @@ void CImageFormatTiff::LoadTiffData (unsigned long count, unsigned long offset, 
 		}
 	} break;
 	}
-}
 
+	bool stop=true;
+}
 
 bool CImageFormatTiff::SaveTiffData ()
 {	
 	uchar* pData;
 	int y;
 
-	pData = GetData( m_pOrigImage );						// Get ImageX color data	
+	pData = m_pImg->GetData();						// Get ImageX color data	
 
 	if (m_DebugTif) dbgprintf ( "Data Start: pos: %ld\n", m_Buf.getPosInt () );	
 	// DEBUG OUTPUT
@@ -603,18 +595,18 @@ bool CImageFormatTiff::SaveTiffData ()
 		switch (m_BitsPerChannel[TifGray]) {
 		case 16: {									// 16 Bits per Channel
 			XBYTE2 out[TIFF_BUFFER];						
-			for (y=0; y < m_Yres; y++) {				
-				memcpy ( out, pData, m_BytesPerRow );				
-				m_Buf.attachBuf ( (char*) out, m_BytesPerRow );
-				pData += m_BytesPerRow;				
+			for (y=0; y < m_yres; y++) {				
+				memcpy ( out, pData, m_bpr );				
+				m_Buf.attachBuf ( (char*) out, m_bpr );
+				pData += m_bpr;
 			}			
 		} break;		
 		case 32: {									// 32 Bits per Channel
 			XBYTE4 out[TIFF_BUFFER];						
-			for (y=0; y < m_Yres; y++) {				
-				memcpy ( out, pData, m_BytesPerRow );				
-				m_Buf.attachBuf ( (char*) out, m_BytesPerRow );
-				pData += m_BytesPerRow;				
+			for (y=0; y < m_yres; y++) {				
+				memcpy ( out, pData, m_bpr );
+				m_Buf.attachBuf ( (char*) out, m_bpr );
+				pData += m_bpr;				
 			}			
 		} break;		
 		}
@@ -623,18 +615,18 @@ bool CImageFormatTiff::SaveTiffData ()
 		switch (m_BitsPerChannel[TifRed]) {
 		case 8: {									// 8 Bits per Channel
 			XBYTE out[TIFF_BUFFER];			
-			for (y=0; y < m_Yres; y++) {								
-				memcpy ( out, pData, m_BytesPerRow );				
-				m_Buf.attachBuf ( (char*) out, m_BytesPerRow );
-				pData += m_BytesPerRow;
+			for (y=0; y < m_yres; y++) {								
+				memcpy ( out, pData, m_bpr );	
+				m_Buf.attachBuf ( (char*) out, m_bpr );
+				pData += m_bpr;
 			}			
 		} break;	
 		case 16: {
 			XBYTE2 out[TIFF_BUFFER];
-			for (y=0; y < m_Yres; y++) {								
-				memcpy ( out, pData, m_BytesPerRow );				
-				m_Buf.attachBuf ( (char*) out, m_BytesPerRow );
-				pData += m_BytesPerRow;
+			for (y=0; y < m_yres; y++) {								
+				memcpy ( out, pData, m_bpr );	
+				m_Buf.attachBuf ( (char*) out, m_bpr );
+				pData += m_bpr;
 			}
 		} break;
 		default: {		
@@ -661,14 +653,14 @@ bool CImageFormatTiff::SaveTiffEntry (enum TiffTag eTag)
 	case TifImageWidth: {
 		eType = TifShort;
 		iCount = 1;
-		iOffset = m_Xres;
-		if (m_DebugTif) dbgprintf ( "XRes: %d\n", m_Xres );
+		iOffset = m_xres;
+		if (m_DebugTif) dbgprintf ( "XRes: %d\n", m_xres );
 	} break;
 	case TifImageHeight: {
 		eType = TifShort;
 		iCount = 1;
-		iOffset = m_Yres;
-		if (m_DebugTif) dbgprintf ( "YRes: %d\n", m_Yres );
+		iOffset = m_yres;
+		if (m_DebugTif) dbgprintf ( "YRes: %d\n", m_yres );
 	} break;		
 	case TifBitsPerSample: {
 		// NOTE: The TIFF specification defines 'samples',
@@ -685,7 +677,7 @@ bool CImageFormatTiff::SaveTiffEntry (enum TiffTag eTag)
 		case TifGrayscale: {
 			eType = TifShort;
 			iCount = 1;
-			iOffset = m_BitsPerPixel;
+			iOffset = m_bpp;
 		} break;
 		case TifColor: {
 			eType = TifShort;
@@ -717,8 +709,8 @@ bool CImageFormatTiff::SaveTiffEntry (enum TiffTag eTag)
 	} break;
 	case TifStripOffsets: {
 		eType = TifLong;
-		iCount = m_Yres;							// how many in list
-		iOffset = TIFF_SAVE_POSOFFSETS + m_Yres*4;	// where is the list
+		iCount = m_yres;							// how many in list
+		iOffset = TIFF_SAVE_POSOFFSETS + m_yres*4;	// where is the list
 		if (m_DebugTif) dbgprintf ( "Num Strips:  %d\n", iCount );
 		if (m_DebugTif) dbgprintf ( "Pos Offsets: %d\n", iOffset );
 	} break;		
@@ -732,16 +724,16 @@ bool CImageFormatTiff::SaveTiffEntry (enum TiffTag eTag)
 		iCount = 1;
 		iOffset = 1;
 		m_RowsPerStrip = 1;
-		m_NumStrips = m_Yres;
+		m_NumStrips = m_yres;
 	} break;
 	case TifStripByteCounts: {
 		eType = TifLong;
-		iCount = m_Yres;					// how many in list 
+		iCount = m_yres;					// how many in list 
 		iOffset = TIFF_SAVE_POSOFFSETS;		// where is the list
 		switch (m_eMode) {
-		case TifBw: m_BytesPerRow = (int) floor ((m_Xres / 8.0) + 1.0); break;
-		case TifGrayscale: m_BytesPerRow = (int) floor ((m_Xres * m_BitsPerPixel) / 8.0); break;
-		case TifColor: m_BytesPerRow = (int) floor ((m_Xres * m_BitsPerPixel) / 8.0); break;
+		case TifBw: m_bpr = (int) floor ((m_xres / 8.0) + 1.0); break;
+		case TifGrayscale: m_bpr = (int) floor ((m_xres * m_bpp) / 8.0); break;
+		case TifColor: m_bpr = (int) floor ((m_xres * m_bpp) / 8.0); break;
 		}		
 		if (m_DebugTif) dbgprintf ( "Pos Counts:   %d\n", iOffset );
 		//m_StripCounts = m_BytesPerRow;
@@ -795,7 +787,7 @@ bool CImageFormatTiff::SaveTiffExtras (enum TiffTag eTag)
 		// DEBUG OUTPUT
 		// printf ("BPC pos: %u\n", tiff.GetPosition());
 		// printf ("Est.BPC pos: %u\n", TIFF_SAVE_POSBPC);		
-		int bpc = (m_BitsPerPixel==24) ? 8 : 16;
+		int bpc = (m_bpp==24) ? 8 : 16;
 		m_Buf.attachUShort ( bpc );
 		m_Buf.attachUShort ( bpc );
 		m_Buf.attachUShort ( bpc );
@@ -830,15 +822,15 @@ bool CImageFormatTiff::SaveTiffDirectory ()
 		m_BitsPerChannel[TifGray] = 1; 
 		break;
 	case TifGrayscale: 
-		m_BitsPerChannel[TifGray] = m_BitsPerPixel; 
-		m_BytesPerRow = (int) floor ((m_Xres * m_BitsPerPixel) / 8.0); 
+		m_BitsPerChannel[TifGray] = m_bpp; 
+		m_bpr = (int) floor ((m_xres * m_bpp) / 8.0); 
 		break;
 	case TifColor: {
-		int bpc = (m_BitsPerPixel==24) ? 8 : 16;
+		int bpc = (m_bpp==24) ? 8 : 16;
 		m_BitsPerChannel[TifRed] = bpc;
 		m_BitsPerChannel[TifGreen] = bpc;
 		m_BitsPerChannel[TifBlue] = bpc;
-		m_BytesPerRow = (int) floor ((m_Xres * m_BitsPerPixel) / 8.0); 
+		m_bpr = (int) floor ((m_xres * m_bpp) / 8.0); 
 	} break;
 	}
 	
@@ -861,21 +853,21 @@ bool CImageFormatTiff::SaveTiffDirectory ()
 	int offs = m_Buf.getPosInt();
 	assert ( offs == TIFF_SAVE_POSOFFSETS );
 
-	int strip_header_size = (m_Yres*4) * 2;		// 2x = counts & offsets
+	int strip_header_size = (m_yres*4) * 2;		// 2x = counts & offsets
 
 	// Strip counts -- List of # of bytes in each strip. 
 	// 4-byte list (2x ushort) per row	
-	for (int n=0; n < m_Yres; n++) {
-		if (m_DebugTif) dbgprintf ( "Counts #%d: pos: %d, val: %d\n", n, m_Buf.getPos(), m_BytesPerRow );
-		m_Buf.attachUShort ( m_BytesPerRow );		
+	for (int n=0; n < m_yres; n++) {
+		if (m_DebugTif) dbgprintf ( "Counts #%d: pos: %d, val: %d\n", n, m_Buf.getPos(), m_bpr );
+		m_Buf.attachUShort ( m_bpr );		
 		m_Buf.attachUShort ( 0 );
 	}
 	
 	// Strip offsets -- List of strip offsets. 
 	// 4-byte list (ulong) per row
-	for (int n=0; n < m_Yres; n++) {
-		if (m_DebugTif) dbgprintf ( "Offset #%d: pos: %d, val: %d\n", n, m_Buf.getPos(), TIFF_SAVE_POSOFFSETS + m_Yres*4*2 + n * m_BytesPerRow);
-		m_Buf.attachULong ( TIFF_SAVE_POSOFFSETS + strip_header_size + n * m_BytesPerRow );
+	for (int n=0; n < m_yres; n++) {
+		if (m_DebugTif) dbgprintf ( "Offset #%d: pos: %d, val: %d\n", n, m_Buf.getPos(), TIFF_SAVE_POSOFFSETS + m_yres*4*2 + n * m_bpr);
+		m_Buf.attachULong ( TIFF_SAVE_POSOFFSETS + strip_header_size + n * m_bpr );
 	}
 
 	SaveTiffData ();
@@ -920,7 +912,7 @@ bool CImageFormatTiff::SaveTiffDirectory ()
 //   TIF: BPC Blue:  8
 //
 
-bool CImageFormatTiff::SaveTiff (char *filename)
+bool CImageFormatTiff::SaveFmt (char *filename)
 {
 	m_Tif = fopen ( filename, "wb" );
 	if ( m_Tif == 0x0 ) { 
@@ -928,7 +920,7 @@ bool CImageFormatTiff::SaveTiff (char *filename)
 		return false;
 	}	
 	
-	switch ( GetFormat( m_pOrigImage) ) {
+	switch ( m_pImg->GetFormat() ) {
 	case ImageOp::RGB8: case ImageOp::RGBA8: case ImageOp::RGBA32F: case ImageOp::RGB16: 
 		m_eMode = TifColor;
 		break;
@@ -936,11 +928,11 @@ bool CImageFormatTiff::SaveTiff (char *filename)
 		m_eMode = TifGrayscale;
 		break;
 	}
-	m_Xres = GetWidth( m_pOrigImage );
-	m_Yres = GetHeight( m_pOrigImage );
-	m_BitsPerPixel = GetBitsPerPixel ( m_pOrigImage );
+	m_xres = m_pImg->GetWidth();
+	m_yres = m_pImg->GetHeight();
+	m_bpp = m_pImg->GetBitsPerPix ();
 	
-	m_Buf = new_event ( 4, 'app ', 'tiff', 0, 0x0 );
+	m_Buf = new_event ( 16384, 'app ', 'tiff', 0, 0x0 );
 
 	m_Buf.startWrite ();
 	m_Buf.attachUShort ( TIFF_BYTEORDER );

@@ -27,6 +27,7 @@
 	#include "common_cuda.h"
 #endif
 
+
 int DataPtr::mFBO = -1;
 
 DataPtr::~DataPtr()
@@ -97,11 +98,12 @@ void DataPtr::SetUsage ( uchar dt, uchar flags, int rx, int ry, int rz )
   if ( rz != -1) { mUseRX=rx; mUseRY=ry; mUseRZ=rz; }
 }
 
+
 void DataPtr::UpdateUsage ( uchar flags )
 {
   mUseFlags |= flags;              // append usage, e.g. GPU
   SetUsage ( mUseType, mUseFlags, mUseRX, mUseRY, mUseRZ );
-  Append ( mStride, 0, 0x0, mUseFlags );    // reallocate on new usage
+  Append ( mStride, 0, mCpu, mUseFlags );    // reallocate on new usage
   mNum = mMax;
   Commit ();                  // commit to new usage
 }
@@ -146,7 +148,7 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
   if ( new_size==0 ) return 0;
 
   // CPU allocation
-  if ( dest_flags & DT_CPU ) {
+  if ( (dest_flags & DT_CPU) && (added_size > 0) ) {
     ReallocateCPU ( old_size, new_size );
     if ( dat != 0x0 && mCpu != 0 ) {
       memcpy ( mCpu + old_size, dat, added_size );
@@ -161,8 +163,8 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
       if ( mGLID==-1 ) glGenTextures( 1, (GLuint*) &mGLID );
       checkGL ( "glGenTextures (DataPtr::Append)" );
       glBindTexture ( GL_TEXTURE_2D, mGLID );
-      glPixelStorei ( GL_PACK_ALIGNMENT, 4 );
-      glPixelStorei ( GL_UNPACK_ALIGNMENT, 4 );
+      glPixelStorei ( GL_PACK_ALIGNMENT, 1 );
+      glPixelStorei ( GL_UNPACK_ALIGNMENT, 1 );     // must be 1 for DT_UCHAR3
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -171,14 +173,14 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
 
       checkGL ( "glBindTexture (DataPtr::Append)" );
       switch (mUseType) {
-      case DT_UCHAR:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_R8,    mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_BYTE, src );  break;
-      case DT_UCHAR3:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGB,  GL_UNSIGNED_BYTE, src );  break; // <-- NOTE: GL_RGBA8 (4 chan) as GL_RGB8 (3 chan) not supported by CUDA interop
- 	  case DT_USHORT3: glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB16,  mUseRX, mUseRY, 0, GL_RGB,	GL_UNSIGNED_SHORT,src );  break;
-      case DT_UCHAR4:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGBA,  GL_UNSIGNED_BYTE, src );  break;
-      case DT_USHORT: glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_SHORT,src );  break;
-      case DT_INT:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_INT,  src );  break;
-      case DT_FLOAT:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,  mUseRX, mUseRY, 0, GL_RED,  GL_FLOAT, src);        break;
-      case DT_FLOAT4:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA32F, mUseRX, mUseRY, 0, GL_RGBA,  GL_FLOAT, src);        break;
+      case DT_UCHAR:    glTexImage2D ( GL_TEXTURE_2D, 0, GL_R8,    mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_BYTE, src );  break;
+      case DT_UCHAR3:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB8,  mUseRX, mUseRY, 0, GL_RGB,  GL_UNSIGNED_BYTE, src );  break; // <-- NOTE: GL_RGBA8 (4 chan) as GL_RGB8 (3 chan) not supported by CUDA interop
+ 	    case DT_USHORT3:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB16,  mUseRX, mUseRY, 0, GL_RGB,	GL_UNSIGNED_SHORT,src );  break;
+      case DT_UCHAR4:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGBA,  GL_UNSIGNED_BYTE, src );  break;
+      case DT_USHORT:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_SHORT,src );  break;
+      case DT_INT:      glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_INT,  src );  break;
+      case DT_FLOAT:    glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,  mUseRX, mUseRY, 0, GL_RED,  GL_FLOAT, src);        break;
+      case DT_FLOAT4:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA32F, mUseRX, mUseRY, 0, GL_RGBA,  GL_FLOAT, src);        break;
       };
       checkGL ( "glTexImage2D (DataPtr::Append)" );
 

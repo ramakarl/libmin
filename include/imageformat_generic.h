@@ -27,11 +27,9 @@
 	public:		
 		CImageFormatGeneric ();
 
-		virtual bool Load (char *filename, const Image* pOrigImg, Image*& pNewImg);
-		virtual bool Save (char *filename, const Image* pOrigImg);		
-	private:
-		bool LoadGeneric (char *filename);
-		bool SaveGeneric (char *filename);		
+		virtual bool LoadFmt (char *filename, const Image* pOrigImg, Image*& pNewImg);
+		virtual bool SaveFmt (char *filename, const Image* pOrigImg);		
+	private:		
 		
 	};
 */

@@ -105,18 +105,16 @@
 
 		CImageFormatTiff ();
 
-		virtual bool Load (char *filename, ImageX* pImg );
-		virtual bool Save (char *filename, ImageX* pImg );	
+		virtual bool LoadFmt (char *filename);
+		virtual bool SaveFmt (char *filename);	
 		void DebugTif ( bool v )	{ m_DebugTif = v; }
 		
-	private:
-		bool LoadTiff (char *filename);
+	private:		
 		bool LoadTiffDirectory ();
 		bool LoadTiffEntry ();		
 		void LoadTiffStrips ();
 		void LoadTiffData (unsigned long count, unsigned long offset, int row);
 		
-		bool SaveTiff (char *filename);
 		bool SaveTiffDirectory ();
 		bool SaveTiffExtras (enum TiffTag eTag);
 		bool SaveTiffEntry ( enum TiffTag eTag);
