@@ -63,12 +63,6 @@ void glib::debug2D (bool tf)
 {
 	gx.m_debug = tf;
 }
-void glib::setview2D (int w, int h)
-{
-    gx.m_Xres = w;
-    gx.m_Yres = h;
-	setMatrices2D ( gx.m_curr_grp, gx.m_Xres, gx.m_Yres );   
-}
 
 void glib::setTextSz ( float hgt, float kern )
 {
@@ -95,19 +89,34 @@ void glib::end2D ()
 	gx.finishPrim ( gx.getCurrSet() );    
 }
 
-void glib::setMatrices2D ( int grp, int xr, int yr )
+// set view matrices for full screen 2D window
+void glib::setview2D (int w, int h)
 {
-    Matrix4F proj, view, model;
-    view.Scale ( 2.0/xr, -2.0/yr, 1.0 );
-    model.Translate ( -xr/2.0, -yr/2.0, 0 );
-    view *= model;
-    model.Identity();
-    proj.Identity();
+  gx.m_Xres = w;
+  gx.m_Yres = h;
 
-    // assign 2D view matrices to a cmd set
-    gxSet* set = gx.getSet(grp);
+	Matrix4F proj, view, model;
+	view.Scale ( 2.0/w, -2.0/h, 1.0 );	
+  model.Translate ( -w/2.0, -h/2.0, 0 );
+  view *= model;
+  model.Identity();
+  proj.Identity();
 
-    memcpy ( set->model, model.GetDataF(), 16 * sizeof(float) );
+	setMatrices2D ( gx.m_curr_grp, gx.m_Xres, gx.m_Yres, model, view, proj );   
+}
+
+// set view matrices explicitly
+void glib::setview2D ( Matrix4F& model, Matrix4F& view, Matrix4F& proj )
+{
+	setMatrices2D( gx.m_curr_grp, gx.m_Xres, gx.m_Yres, model, view, proj );
+}
+
+void glib::setMatrices2D ( int grp, int xr, int yr, Matrix4F& model, Matrix4F& view, Matrix4F& proj )
+{	
+	// assign 2D view matrices to a cmd set
+  gxSet* set = gx.getSet(grp);
+
+  memcpy ( set->model, model.GetDataF(), 16 * sizeof(float) );
 	memcpy ( set->view,  view.GetDataF(), 16 * sizeof(float) );
 	memcpy ( set->proj,  proj.GetDataF(), 16 * sizeof(float) );	
 }

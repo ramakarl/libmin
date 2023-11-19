@@ -79,7 +79,7 @@ char getPathDelimOpposite()
     #endif
 }
 
-void addSearchPath ( const char* path )
+bool addSearchPath ( const char* path )
 {
     std::string p = path;
     
@@ -92,7 +92,13 @@ void addSearchPath ( const char* path )
     }    
 
     gPaths.push_back ( p );
+
+    // check for path existence
+    struct stat  info;
+    bool exists = (stat ( path, &info ) == 0);
+    return exists;
 }
+
 
 bool getFileLocation ( const char* filename, char* outpath )
 {

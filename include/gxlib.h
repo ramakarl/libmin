@@ -38,7 +38,8 @@
     GXAPI void clear2D ();
     GXAPI void start2D ( int w, int h, bool bStatic = false );
     GXAPI void setview2D ( int w, int h );
-    GXAPI void setMatrices2D ( int grp, int xr, int yr );    
+    GXAPI void setview2D ( Matrix4F& model, Matrix4F& view, Matrix4F& proj );      
+    GXAPI void setMatrices2D ( int grp, int xr, int yr, Matrix4F& model, Matrix4F& view, Matrix4F& proj );    
     GXAPI void setTextSz ( float hgt, float kern );
     GXAPI void end2D ();    
     GXAPI void drawLine ( Vec2F a, Vec2F b, Vec4F clr );

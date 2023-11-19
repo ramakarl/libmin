@@ -152,7 +152,8 @@
     #include <string>    
     HELPAPI void checkMem( xlong& total, xlong& used, xlong& app);    
     HELPAPI char getPathDelim();
-    HELPAPI void addSearchPath ( const char* path );
+    HELPAPI char getPathDelimOpposite();
+    HELPAPI bool addSearchPath ( const char* path );
     HELPAPI bool getFileLocation ( const char* filename, char* outpath );
     HELPAPI bool getFileLocation ( const char* filename, char* outpath, std::vector<std::string> paths );
     HELPAPI bool getFileLocation ( const std::string filename, std::string &outpath );

@@ -70,6 +70,15 @@ int strToI (std::string s, int &x) {
   return -1;
 };
 
+xlong strToI64 (std::string s) 
+{
+	#ifdef _WIN32	
+		return _strtoui64( s.c_str(), NULL, 0 );
+	#else
+		return strtoull( s.c_str(), NULL< 0 );
+	#endif
+}
+
 float strToDateF( std::string s, int mp, int mc, int dp, int dc, int yp, int yc )
 {
   #ifdef USE_TIMEX

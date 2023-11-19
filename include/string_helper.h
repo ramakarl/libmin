@@ -44,6 +44,7 @@
 	HELPAPI bool isFloat (std::string s);	// fast	
 	HELPAPI int strToI (std::string s);
 	HELPAPI int strToI (std::string s, int &val);
+	HELPAPI xlong strToI64 (std::string s);
 	HELPAPI float strToF (std::string s);
 	HELPAPI int strToF (std::string s, float &val);
 	HELPAPI double strToD (std::string s);
