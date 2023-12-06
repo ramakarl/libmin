@@ -21,6 +21,12 @@ The functionality in Libmin includes:
 - Http connections (httlib.h)
 - Time library, with nanosecond accuracy over millenia (timex.h)
 
+## Example Usage
+
+To see some example uses of Libmin, check out the Just Math repository:<br>
+Just math - <a href="https://github.com/ramakarl/just_math">https://github.com/ramakarl/just_math</a><br>
+All samples there make use of Libmin.<br>
+
 ## Mains
 
 Libmin provides main wrappers for multiple platforms including Windows, Linux and Android.<br>
