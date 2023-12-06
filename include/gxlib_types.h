@@ -101,6 +101,7 @@
         float       proj[16];
         Vec3F       lightpos, lightclr;
         Vec3F       diffclr, ambclr, specclr;
+        Vec3F       cam_from, cam_to;
         float       specpow;
         int         envmap;
     };

@@ -40,7 +40,7 @@ bool glib::init2D ( const char* fontName )
 	gx.createShader3D();
 
 	// sin/cos tables 
-	for (int a=0; a < 36000; a++) {
+	for (int a=0; a <= 36000; a++) {
 		gx.cos_table[a] = cos ( (a/100.0f)*DEGtoRAD );
 		gx.sin_table[a] = sin ( (a/100.0f)*DEGtoRAD );
 	}
@@ -179,12 +179,12 @@ void glib::drawCircle ( Vec2F a, float r, Vec4F clr  )
 {
 	int ndx;
 	int du = 15;
-	gxVert* v = gx.allocGeom2D ( 2*(360/du), PRIM_LINES );	
+	gxVert* v = gx.allocGeom2D ( 2*(361/du), PRIM_LINES );	
 
 	// draw circle
 	Vec2F pl, p, c;
 	pl = a + Vec2F(1 * r, 0);
-	for (int u=du; u < 360; u += du ) {
+	for (int u=0; u <= 360; u += du ) {
 		c = Vec3F( gx.cos_table[u*100] * r, gx.sin_table[u*100] * r, 0 );
 		p = a + c;
 		v->x = pl.x; v->y = pl.y; vclr (v,clr); v++;
@@ -251,7 +251,7 @@ void glib::drawText ( Vec2F a, char* msg, Vec4F clr )
 			// repeat first point (jump), zero alpha
 			v->x = pX;		v->y = pY+pH;	v->z = 0;		vclr(v,clr, 0);		v->tx = gly.u; v->ty = gly.v;	v++;
 
-			// four corners of glyph, *NOTE*: Negative alpha indicates to shader we are drawing a font (not an image)			
+			// four corners of glyph
 			v->x = pX;		v->y = pY+pH;	v->z = 0; 		vclr(v,clr, 1);		v->tx = gly.u; v->ty = gly.v;	v++;
 			v->x = pX;		v->y = pY ;		v->z = 0;		vclr(v,clr, 1);		v->tx = gly.u; v->ty = gly.v + gly.dv;	v++;			
 			v->x = pX+pW;	v->y = pY+pH;	v->z = 0;		vclr(v,clr, 1);		v->tx = gly.u + gly.du; v->ty = gly.v;	v++;			
@@ -276,12 +276,14 @@ void glib::drawText ( Vec2F a, char* msg, Vec4F clr )
 
 void glib::start3D ( Camera3D* cam, bool bStatic )
 {
-    gx.m_curr_grp = (bStatic ? G_STAT3 : G_DYN3 );
-    gx.m_curr_prim = PRIM_NONE;	
-	gx.m_curr_num = 0;
+  gx.m_curr_grp = (bStatic ? G_STAT3 : G_DYN3 );
+  gx.m_curr_prim = PRIM_NONE;	
+	gx.m_curr_num = 0;	
 	setView3D ( cam );	
-	setEnvmap3D ( &gx.m_white_img );
 	
+	// default env map & material
+	setEnvmap3D ( &gx.m_white_img );
+	setMaterial ( Vec3F(0,0,0), Vec3F(1,1,1), Vec3F(.5,.5,.5), 20, 1.0 );
 }
 
 void glib::setEnvmap3D ( ImageX* img )
@@ -295,6 +297,8 @@ void glib::setView3D ( Camera3D* cam )
 	gxSet* s = gx.getSet ( gx.m_curr_grp );
 	Matrix4F ident; 
 	ident.Identity ();
+	s->cam_from = cam->getPos();
+	s->cam_to = cam->getToPos();
 	memcpy ( s->model, ident.GetDataF(), 16 * sizeof(float) );
 	memcpy ( s->view, cam->getViewMatrix().GetDataF(), 16 * sizeof(float) );
 	memcpy ( s->proj, cam->getProjMatrix().GetDataF(), 16 * sizeof(float) );
@@ -333,7 +337,9 @@ inline void vno ( gxVert3D* v )
 }
 inline void vnorm ( gxVert3D* v, Vec3F n, bool solid )
 {
-	v->nx = solid ? NO_NORM : n.x; v->ny = n.y; v->nz = n.z;
+	v->nx = solid ? NO_NORM : n.x; 
+	v->ny = n.y; 
+	v->nz = n.z;
 }
 
 void glib::drawLine3D ( Vec3F a, Vec3F b, Vec4F clr )
@@ -422,11 +428,20 @@ void glib::drawBoxDotted3D (Vec3F p, Vec3F q, Vec4F clr, int segs )
 	drawLineDotted3D( Vec3F(q.x, p.y, p.z), Vec3F(q.x, q.y, p.z), clr, segs );
 }
 
+void glib::drawCircle3D ( Vec3F p1, float r, Vec4F clr  )
+{
+	gxSet* s = gx.getSet ( gx.m_curr_grp );	
+	Vec3F n = p1 - s->cam_from; n.Normalize();
+
+	drawCircle3D ( p1, n, r, clr );
+}
+
+
 void glib::drawCircle3D ( Vec3F p1, Vec3F n, float r, Vec4F clr  )
 {
 	int ndx;
 	int du = 15;
-	gxVert3D* v = gx.allocGeom3D ( 2*(360/du), PRIM_LINES );	
+	gxVert3D* v = gx.allocGeom3D ( 2*((360/du)+1), PRIM_LINES );	
 
 	// create a basis space oriented toward p2 (usually the camera)
 	Vec3F up = (fabs(n.y)==1) ? Vec3F(0,0,1) : Vec3F(0,1,0);
@@ -437,7 +452,7 @@ void glib::drawCircle3D ( Vec3F p1, Vec3F n, float r, Vec4F clr  )
 	Vec3F pl, p, a;
 	a = Vec3F(1 * r, 0, 0); 	
 	pl = p1 + bu*a.x + bv*a.y;
-	for (int u=du; u < 360; u += du ) {
+	for (int u=0; u <= 360; u += du ) {
 		a = Vec3F( gx.cos_table[u*100] * r, gx.sin_table[u*100] * r, 0 );
 		p = p1 + bu*a.x + bv*a.y;
 		v->x = pl.x; v->y = pl.y; v->z = pl.z; vclr3d (v,clr); vno(v); v++;
@@ -506,6 +521,92 @@ void glib::drawFace3D( Vec3F a, Vec3F b, Vec3F c, Vec3F d, Vec3F n, Vec4F clr, b
 	// repeat last for jump
 	v->x = d.x; v->y = d.y; v->z = d.z; vclr3d(v,clr); vnorm(v,n,solid); v++;
 
+}
+
+void glib::drawCube3D (Vec3F p, Vec3F q, Vec4F clr )
+{
+	drawFace3D( Vec3F(p.x, q.y, p.z), Vec3F(q.x, q.y, p.z), Vec3F(q.x, q.y, q.z), Vec3F(p.x, q.y, q.z), Vec3F(0, 1, 0), clr );
+	drawFace3D( Vec3F(p.x, p.y, p.z), Vec3F(q.x, p.y, p.z), Vec3F(q.x, p.y, q.z), Vec3F(p.x, p.y, q.z), Vec3F(0, -1, 0), clr );
+
+	drawFace3D( Vec3F(p.x, p.y, q.z), Vec3F(q.x, p.y, q.z), Vec3F(q.x, q.y, q.z), Vec3F(p.x, q.y, q.z), Vec3F(0, 0,  1), clr );
+	drawFace3D( Vec3F(p.x, p.y, p.z), Vec3F(q.x, p.y, p.z), Vec3F(q.x, q.y, p.z), Vec3F(p.x, q.y, p.z), Vec3F(0, 0, -1), clr );
+
+	drawFace3D( Vec3F(q.x, p.y, p.z), Vec3F(q.x, q.y, p.z), Vec3F(q.x, q.y, q.z), Vec3F(q.x, p.y, q.z), Vec3F(1, 0, 0), clr );
+	drawFace3D( Vec3F(p.x, p.y, p.z), Vec3F(p.x, q.y, p.z), Vec3F(p.x, q.y, q.z), Vec3F(p.x, p.y, q.z), Vec3F(-1, 0, 0), clr );
+
+}
+
+void glib::drawText3D ( Vec3F a, float sz, char* msg, Vec4F clr )
+{
+	int len = (int) strlen ( msg );
+	if ( len == 0 ) 
+		return;
+
+	gxVert3D* v = gx.allocGeom3D ( len*6, PRIM_TRI, &gx.m_font_img );
+
+	// create a basis space oriented toward the camera 
+	gxSet* s = gx.getSet ( gx.m_curr_grp );	
+	Vec3F n = a - s->cam_from; n.Normalize();
+	Vec3F up = (fabs(n.y)==1) ? Vec3F(0,0,1) : Vec3F(0,1,0);
+	Vec3F bu = n.Cross (up);  bu.Normalize();
+	Vec3F bv = n.Cross (bu);  bv.Normalize();	
+	bu *= sz;
+	bv *= sz;
+
+	// get current font
+	gxFont& font = gx.getCurrFont ();	
+	int glyphHeight = font.ascent + font.descent + font.linegap;
+	float lX = 0;
+	float lY = 0;
+	float lLinePosX = 0;
+	float lLinePosY = 0;
+	const char* c = msg;
+	int cnt = 0;
+
+	Vec3F p;
+
+	// text_hgt = desired height of font in pixels
+	// text_kern = spacing between letters
+
+	float textSz = 1.0 / glyphHeight;	// glyph scale
+	float textStartPy = textSz;					// start location in pixels
+	
+	while (*c != '\0' && cnt < len ) {
+		if ( *c == '\n' ) {
+			lX = lLinePosX;
+			lLinePosY += gx.m_text_hgt;
+			lY = lLinePosY;
+		} else if ( *c >=0 && *c <= 128 ) {
+			gxGlyph& gly = font.glyphs[*c];
+			float pX = lX + gly.offX * textSz;
+			float pY = lY + gly.offY * textSz; 
+			float pW = gly.width * textSz;
+			float pH = gly.height * textSz;
+	
+			// GRP_TRITEX is a triangle strip!
+			// repeat first point (jump), zero alpha
+			p = a + bu * pX + bv * (pY+pH);				v->x = p.x;	v->y = p.y;	v->z = p.z;		vclr3d(v, clr, 0); vno(v);		v->tx = gly.u; v->ty = gly.v;	v++;
+
+			// four corners of glyph
+			p = a + bu * pX + bv * (pY+pH);				v->x = p.x;	v->y = p.y;	v->z = p.z;		vclr3d(v, clr, 1); vno(v);		v->tx = gly.u; v->ty = gly.v;	v++;
+			p = a + bu * pX + bv * pY;						v->x = p.x;	v->y = p.y;	v->z = p.z;		vclr3d(v, clr, 1); vno(v);		v->tx = gly.u; v->ty = gly.v + gly.dv;	v++;
+			p = a + bu * (pX+pW) + bv * (pY+pH);	v->x = p.x;	v->y = p.y;	v->z = p.z;		vclr3d(v, clr, 1); vno(v);		v->tx = gly.u + gly.du; v->ty = gly.v;	v++;
+			p = a + bu * (pX+pW) + bv * (pY);			v->x = p.x;	v->y = p.y;	v->z = p.z;		vclr3d(v, clr, 1); vno(v);		v->tx = gly.u + gly.du; v->ty = gly.v + gly.dv;v++;			
+
+			// repeat last point (jump), zero alpha
+			p = a + bu * (pX+pW) + bv * (pY);			v->x = p.x;	v->y = p.y;	v->z = p.z;		vclr3d(v, clr, 0); vno(v);	  v->tx = gly.u + gly.du; v->ty = gly.v + gly.dv;v++;					
+	
+			lX += (gly.advance + gx.m_text_kern) * textSz;
+			lY += 0;
+			cnt++;
+		}
+		c++;
+	}
+
+	// clear remainder of VBO entries
+	for (int n=cnt; n < len; n++ ) {
+		memset ( v, 0, 6*sizeof(gxVert3D) ); v += 6;				
+	}
 }
 
 
@@ -682,23 +783,13 @@ void gxLib::attachPrim ( gxSet* s, uchar typ, uchar prim )
 
 gxVert* gxLib::allocGeom2D ( int cnt, uchar prim )
 {
-    gxSet* s = gx.getCurrSet();	
-    expandSet ( s, 'x', prim, cnt * sizeof(gxVert) );    
+  gxSet* s = gx.getCurrSet();	
+  expandSet ( s, 'x', prim, cnt * sizeof(gxVert) );    
 	m_curr_num += cnt;
 	gxVert* start = (gxVert*) (s->geom + s->size);
 	s->size += cnt*sizeof(gxVert);	
-    return start;
+  return start;
 }
-gxVert3D* gxLib::allocGeom3D ( int cnt, uchar prim )
-{
-    gxSet* s = gx.getCurrSet();	
-    expandSet ( s, 'x', prim, cnt * sizeof(gxVert3D) );    
-	m_curr_num += cnt;
-	gxVert3D* start = (gxVert3D*) (s->geom + s->size);
-	s->size += cnt*sizeof(gxVert3D);	
-    return start;
-}
-
 gxVert* gxLib::allocImg2D (int cnt, uchar prim, ImageX* img )
 {
 	m_curr_img = (uint64_t) img;			// assign image to prims
@@ -709,6 +800,28 @@ gxVert* gxLib::allocImg2D (int cnt, uchar prim, ImageX* img )
 	s->size += cnt*sizeof(gxVert);
   return start;
 }
+
+gxVert3D* gxLib::allocGeom3D ( int cnt, uchar prim )
+{
+  gxSet* s = gx.getCurrSet();	
+  expandSet ( s, 'x', prim, cnt * sizeof(gxVert3D) );    
+	m_curr_num += cnt;
+	gxVert3D* start = (gxVert3D*) (s->geom + s->size);
+	s->size += cnt*sizeof(gxVert3D);	
+  return start;
+}
+gxVert3D* gxLib::allocGeom3D (int cnt, uchar prim, ImageX* img )
+{
+	m_curr_img = (uint64_t) img;			// assign image to prims
+  gxSet* s = gx.getCurrSet();	
+  expandSet ( s, 'i', prim, cnt * sizeof(gxVert3D) );    
+	m_curr_num += cnt;
+	gxVert3D* start = (gxVert3D*) (s->geom + s->size);
+	s->size += cnt*sizeof(gxVert3D);
+  return start;
+}
+
+
 
 void gxLib::createShader2D ()
 {
@@ -907,10 +1020,10 @@ void gxLib::createShader3D ()
 			"void main()\n"
 			"{\n"		
 			"	 vpos = (modelMatrix * vec4(inPosition, 1.f)).xyz;\n"
-			"    vcolor = CLRtoVEC ( inColor );\n"
-			"    vtexcoord = inTexCoord;\n"
+			"  vcolor = CLRtoVEC ( inColor );\n"
+			"  vtexcoord = inTexCoord;\n"
 			"	 vnorm = (inNorm.x < -1.f) ? inNorm : normalize ( (vec4(inNorm,1) * getInvTranspose(modelMatrix)).xyz );\n"
-			"    gl_Position = projMatrix * viewMatrix * modelMatrix * vec4(inPosition, 1.f);\n"
+			"  gl_Position = projMatrix * viewMatrix * modelMatrix * vec4(inPosition, 1.f);\n"
 			"}\n"
 		;
 
@@ -962,8 +1075,8 @@ void gxLib::createShader3D ()
 		"    } else {\n"
 		"       vec3 sclr = spec_clr * pow( max(0.0f, dot(R, V)), spec_power );\n"
 		"       vec3 dclr = diff_clr * max( 0.0f, dot ( vnorm, lgtdir )); \n"
-		"       outColor = vec4( eclr + lightclr * (amb_clr + dclr * imgclr.xyz + sclr), imgclr.w );\n"		
-		"    }\n"
+		"       outColor = vec4( eclr + lightclr * (amb_clr + dclr * imgclr.xyz + sclr), imgclr.w );\n"				
+		"    }\n"		
 		//"    outColor = vec4( eclr, imgclr.w );\n"
 		//"    outColor = vec4( lightclr * (amb_clr + dclr * imgclr.xyz + sclr), imgclr.w );\n"		
 		//"    outColor = vec4( diff_clr, imgclr.w );\n"		
@@ -1284,7 +1397,7 @@ void gxLib::drawSet ( int g )
 			checkGL ( "glVertAttrPtr clr 2d");
 			glVertexAttribPointer( slotUVs, 2, GL_FLOAT, GL_FALSE, sizeof(gxVert), (void*) (pos + 16) );
 			checkGL ( "glVertAttrPtr uv 2d");
-
+			
 			// bind image
 			imgGL = (p->typ=='x') ? m_white_img.getGLID() : (p->typ=='i') ? ((ImageX*) p->img_ptr)->getGLID() : 0;			
 			glBindTexture ( GL_TEXTURE_2D, imgGL );

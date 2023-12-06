@@ -165,7 +165,7 @@
 				
 		// Pixel Operations
 		inline Vec4F   GetPixel ( int x, int y )								{ Vec4F c;  (this->*m_getPixelFunc) (x,y, c); return c; }
-		inline Vec4F   GetPixelUV ( float u, float v )					{ Vec4F c;  (this->*m_getPixelFunc) ( int(u)*(mXres-1), int(v)*(mYres-1), c); return c; }			
+		inline Vec4F   GetPixelUV ( float u, float v )					{ Vec4F c;  (this->*m_getPixelFunc) ( int(u*(mXres-1)), int(v*(mYres-1)), c); return c; }			
 		Vec4F					 GetPixelFilteredUV (float x, float y);		
 		inline void		 SetPixel  ( int x, int y, Vec4F c )			{ (this->*m_setPixelFunc) (x,y, c); }
 		inline void		 SetPixelF ( int x, int y, float v )			{ *			(((float*) m_Pix.mCpu) + (y*mXres+x)) = v; }

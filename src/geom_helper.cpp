@@ -69,24 +69,6 @@ bool intersectLineBox (Vec3F p1, Vec3F p2, Vec3F bmin, Vec3F bmax, float& t)
 	return true;
 }
 
-/*bool intersectLineBox (Vec3F p1, Vec3F p2, Vec3F bmin, Vec3F bmax, float& t)
-{
-	// p1 = ray position, p2 = ray direction
-	register float ht[8];
-	ht[0] = (bmin.x - p1.x)/p2.x;
-	ht[1] = (bmax.x - p1.x)/p2.x;
-	ht[2] = (bmin.y - p1.y)/p2.y;
-	ht[3] = (bmax.y - p1.y)/p2.y;
-	ht[4] = (bmin.z - p1.z)/p2.z;
-	ht[5] = (bmax.z - p1.z)/p2.z;
-	ht[6] = fmax(fmax(fmin(ht[0], ht[1]), fmin(ht[2], ht[3])), fmin(ht[4], ht[5]));
-	ht[7] = fmin(fmin(fmax(ht[0], ht[1]), fmax(ht[2], ht[3])), fmax(ht[4], ht[5]));		
-	if (ht[7] < 0 || ht[6] > ht[7]) return false;
-	t = ht[6];
-	return true; 
-}
-*/
-
 Vec3F intersectLinePlane(Vec3F rpos, Vec3F rdir, Vec3F p0, Vec3F pnorm)
 {
 	float dval = pnorm.Dot( rdir );
@@ -199,8 +181,8 @@ bool checkHit3D(Camera3D* cam, int x, int y, Vec3F target, float radius)
 
 Vec3F moveHit3D(Camera3D* cam, int x, int y, Vec3F target, Vec3F plane_norm)
 {
-	Vec3F dir = cam->inverseRay(x, y, cam->mXres, cam->mYres);
-	Vec3F hit = intersectLinePlane(cam->getPos(), cam->getPos() + dir, target, plane_norm);
+	Vec3F dir = cam->inverseRay(x, y, cam->mXres, cam->mYres); dir.Normalize();
+	Vec3F hit = intersectLinePlane(cam->getPos(), dir, target, plane_norm);
 	return hit;	
 }
 

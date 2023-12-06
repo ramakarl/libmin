@@ -59,12 +59,15 @@
     GXAPI void end3D ();    
     GXAPI void drawLine3D ( Vec3F a, Vec3F b, Vec4F clr );
     GXAPI void drawLineDotted3D ( Vec3F a, Vec3F b, Vec4F clr, int segs=10 );
+    GXAPI void drawCircle3D ( Vec3F p1, float r, Vec4F clr  );
     GXAPI void drawCircle3D ( Vec3F p1, Vec3F p2, float r, Vec4F clr  );
     GXAPI void drawBox3D (Vec3F p, Vec3F q, Vec4F clr );
     GXAPI void drawBox3D (Vec3F p, Vec3F q, Vec4F clr, Matrix4F& xform );
     GXAPI void drawBoxDotted3D (Vec3F p, Vec3F q, Vec4F clr, int segs=10 );
     GXAPI void drawTri3D( Vec3F a, Vec3F b, Vec3F c, Vec3F n, Vec4F clr, bool solid=false);
     GXAPI void drawFace3D( Vec3F a, Vec3F b, Vec3F c, Vec3F d, Vec3F n, Vec4F clr, bool solid=false);
+    GXAPI void drawText3D ( Vec3F a, float sz, char* msg, Vec4F clr  );
+    GXAPI void drawCube3D (Vec3F a, Vec3F b, Vec4F clr );
     GXAPI void drawSphere3D (Vec3F p, float r, Vec4F clr, bool solid=true);    
     GXAPI void selfDraw3D ( Camera3D* cam );
     GXAPI void selfSetLight3D ( Vec3F pos, Vec4F clr );
@@ -95,6 +98,7 @@
         gxVert*     allocGeom2D (int vert_cnt, uchar prim );
         gxVert*     allocImg2D (int vert_cnt, uchar prim, ImageX* font_img );
         gxVert3D*   allocGeom3D (int vert_cnt, uchar prim );        
+        gxVert3D*   allocGeom3D (int cnt, uchar prim, ImageX* img );          // with image (texture)
         void        updateVBO ( gxSet* s );
 
         // fonts
@@ -128,8 +132,8 @@
         GLuint      mVAO;                       // VAO
 
         // sin/cos tables
-        float       cos_table[36000];
-        float       sin_table[36000];
+        float       cos_table[36001];
+        float       sin_table[36001];
 
     };
     

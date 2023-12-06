@@ -1203,7 +1203,7 @@ bool MeshX::LoadObj ( const char* fname, float scal )
 					if (curr_mtl >= 0 )
 						AddVertClr( palette[ curr_mtl % 8 ] );	// vertex color (optional)
 
-					if ( t[0] >= 0 ) 
+					if ( t[0] >= 0 && tlist.size()>0 ) 
 						AddVertTex ( tlist[t[j]] );				// vertex texcoord (optional)
 					
 					// store large mapping so we can find it later

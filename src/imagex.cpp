@@ -985,9 +985,9 @@ void ImageX::getPixelRGB8 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
 		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * mBitsPerPix >> 3);
-        c.x = *pix++;
-        c.y = *pix++;
-        c.z = *pix++;
+    c.x = *pix++;
+    c.y = *pix++;
+    c.z = *pix++;
 		c.w = 255;
 	}
 }
