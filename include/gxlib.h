@@ -127,9 +127,9 @@
         ImageX      m_font_img, m_white_img;
 
         // opengl
-        GLuint		mSH[S_MAX];					// shaders
-		GLuint		mPARAM[S_MAX][SP_MAX];      // shader params
-        GLuint      mVAO;                       // VAO
+        int		 mSH[S_MAX];					// shaders
+		    int		 mPARAM[S_MAX][SP_MAX];      // shader params
+        int    mVAO;                       // VAO
 
         // sin/cos tables
         float       cos_table[36001];

@@ -578,7 +578,7 @@ bool ImageX::LoadIncremental ( char *filename )
 #endif
 
 	// loading..
-	mpImageLoader = pJpgLoader;
+	mpImageLoader = 0x0;
 	return true;	
 }
 

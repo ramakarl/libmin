@@ -13,8 +13,9 @@ list (APPEND CMAKE_PREFIX_PATH "../libmin/cmake" )
 set( BASE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} CACHE STRING "")
 
 find_package ( Libmin CONFIG )
-include_directories(${LIBMIN_SRC})
-include_directories(${LIBMIN_SRC_INC})
+
+include_directories(${LIBMIN_ORIG_SRC})
+include_directories(${LIBMIN_ORIG_INC})
 
 #####################################################################################
 # Options
@@ -23,8 +24,6 @@ add_definitions ( -DLIBMIN_EXPORTS)		# we are building the libmin.dll. create ex
 
 add_definitions ( -DBUILD_PNG)			# always build PNG
 add_definitions ( -DBUILD_TIF)			# always build TIF
-
-_REQUIRE_JPG ()
 
 _REQUIRE_GL ()
 

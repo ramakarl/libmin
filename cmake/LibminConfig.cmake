@@ -7,15 +7,19 @@
 # typically in the /build/libmin/cmake *installed* cmake path.
 # Does not provide access to the cmake source path.
 #
-get_filename_component ( _libmin "${CMAKE_CURRENT_LIST_DIR}/.." REALPATH )
-set ( LIBMIN_PATH ${_libmin} )
-set ( BASE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} CACHE PATH "" )
-
-# Libmin *installed* includes, mains
-set ( LIBMIN_MAINS "${LIBMIN_PATH}/mains" CACHE PATH "Path to libhelp/mains")
+get_filename_component ( _libmin "${CMAKE_CURRENT_SOURCE_DIR}/../libmin" REALPATH )
+set ( LIBMIN_ORIG_PATH ${_libmin} CACHE PATH "Path to libmin")
+set ( LIBMIN_MAINS "${LIBMIN_ORIG_PATH}/mains" )
+set ( LIBMIN_ORIG_SRC "${_libmin}/src")
+set ( LIBMIN_ORIG_INC "${_libmin}/include")
 
 # Third-party Libraries
-set ( LIBEXT_PATH "d:/codes/libmin/libext" CACHE PATH "Default libmin third-party libs.")
+set ( LIBEXT_PATH "${LIBMIN_ORIG_PATH}/libext" CACHE PATH "Path to third-party libs. Defaults to libmin/libext.")
+
+# Confirm libext found 
+# (can be libmin/libext or stand alone libext)
+
+
 
 #set ( DEBUG_HEAP false CACHE BOOL "Enable heap checking (debug or release).")
 set ( DEBUG_HEAP true CACHE BOOL "Enable heap checking (debug or release).")
@@ -25,8 +29,9 @@ if ( ${DEBUG_HEAP} )
 endif()
 
 message ( "------ LibminConfig.cmake -------" )
-message ( STATUS "CURRENT DIRECTORY:     ${BASE_DIRECTORY}" )
-message ( STATUS "LIBMIN INSTALL PATH:   ${LIBMIN_PATH}" )
+message ( STATUS "CURRENT DIRECTORY:    ${CMAKE_CURRENT_SOURCE_DIR}" )
+message ( STATUS "LIBMIN ORIGINAL PATH: ${LIBMIN_ORIG_PATH}" )
+message ( STATUS "LIBEXT PATH:          ${LIBEXT_PATH}" )
 
 #-------------------------------------- COPY CUDA BINS
 # This macro copies all binaries for the CUDA library to the target executale location. 
@@ -99,6 +104,7 @@ function ( _REQUIRE_GL )
         message ( STATUS "  Searching for GL.." )
         find_package(OpenGL)
         if (OPENGL_FOUND)          
+          include_directories("${LIBEXT_PATH}/include")
           add_definitions(-DUSE_OPENGL)  		# Use OpenGL
           add_definitions(-DBUILD_OPENGL)  		
           IF (WIN32)
@@ -115,6 +121,7 @@ endfunction()
 function ( _REQUIRE_GLEW)    
     OPTION (BUILD_GLEW "Build with GLEW" ON)
     if (BUILD_GLEW)
+      include_directories("${LIBEXT_PATH}/include")
       if (WIN32)        
 	    LIST(APPEND LIBRARIES_OPTIMIZED "${LIBEXT_PATH}/win64/glew64.lib" )
 	    LIST(APPEND LIBRARIES_DEBUG "${LIBEXT_PATH}/win64/glew64d.lib" )
@@ -155,9 +162,10 @@ endfunction()
 ####################################################################################
 # Include CUDA
 #
-function ( _REQUIRE_CUDA use_cuda_default kernel_path)
-
+function ( _REQUIRE_CUDA use_cuda_default kernel_path) 
+    
     OPTION (BUILD_CUDA "Build with CUDA" ${use_cuda_default})
+
     if (BUILD_CUDA) 
         if (NOT CUDA_TOOLKIT_ROOT_DIR) 
 	        set ( CUDA_TOOLKIT_ROOT_DIR "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2" CACHE PATH "CUDA Toolkit path")
@@ -195,7 +203,7 @@ function ( _REQUIRE_CUDA use_cuda_default kernel_path)
                set( CUDA_ARCH ${CUDA_ARCH} PARENT_SCOPE)
                set( CUDA_CODE ${CUDA_CODE} PARENT_SCOPE)
             endif ()
-            get_filename_component (_cuda_kernels "${BASE_DIRECTORY}/${kernel_path}" REALPATH)
+            get_filename_component (_cuda_kernels "${CMAKE_CURRENT_SOURCE_DIR}/${kernel_path}" REALPATH)
             file(GLOB CUDA_FILES "${_cuda_kernels}/*.cu" "${_cuda_kernels}/*.cuh")              
             message ( STATUS "Searching for kernels.. ${_cuda_kernels}")
             message ( STATUS "Building CUDA kernels: ${CUDA_FILES}" )
@@ -209,9 +217,11 @@ function ( _REQUIRE_CUDA use_cuda_default kernel_path)
             set (CUDA_FILES ${CUDA_FILES} PARENT_SCOPE)
             set (CUDA_PTX ${CUDA_PTX} PARENT_SCOPE)
             set (CUDA_PTX_PATHS ${CUDA_PTX_PATHS} PARENT_SCOPE)
+        else()
+	        message ( FATAL_ERROR "  ---> Unable to find package CUDA")
         endif()
     else()
-	    message ( FATAL_ERROR "  ---> Unable to find package CUDA")
+        message ( "  NOTE: Set BUILD_CUDA to enable GPU. May need to set for libmin also.")
     endif()
     if (USE_NVTX)
         add_definitions(-DUSE_NVTX)
