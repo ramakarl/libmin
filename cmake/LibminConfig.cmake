@@ -10,16 +10,23 @@
 get_filename_component ( _libmin "${CMAKE_CURRENT_SOURCE_DIR}/../libmin" REALPATH )
 set ( LIBMIN_ORIG_PATH ${_libmin} CACHE PATH "Path to libmin")
 set ( LIBMIN_MAINS "${LIBMIN_ORIG_PATH}/mains" )
-set ( LIBMIN_ORIG_SRC "${_libmin}/src")
-set ( LIBMIN_ORIG_INC "${_libmin}/include")
+set ( LIBMIN_ORIG_SRC "${LIBMIN_ORIG_PATH}/src")
+set ( LIBMIN_ORIG_INC "${LIBMIN_ORIG_PATH}/include")
 
 # Third-party Libraries
 set ( LIBEXT_PATH "${LIBMIN_ORIG_PATH}/libext" CACHE PATH "Path to third-party libs. Defaults to libmin/libext.")
 
-# Confirm libext found 
-# (can be libmin/libext or stand alone libext)
+# Find libmin repository root
+#
+find_file (CHK "dataptr.cpp" PATHS ${LIBMIN_ORIG_SRC} )
+if (CHK STREQUAL "CHK-NOTFOUND")
+  message ( FATAL_ERROR "
+This project requires the original libmin source repostitory in addition to the installed libmin binaries. Please specify -DLIBMIN_ORIG_PATH=.. or modify LIBMIN_ORIG_PATH to indicate the repository root. 
 
-
+")
+else()
+  message ( STATUS "Found libmin SOURCE/REPOSITORY path: ${LIBMIN_ORIG_PATH}" )
+endif()
 
 #set ( DEBUG_HEAP false CACHE BOOL "Enable heap checking (debug or release).")
 set ( DEBUG_HEAP true CACHE BOOL "Enable heap checking (debug or release).")
@@ -48,10 +55,6 @@ endmacro()
 #  OpenSSL, Laszip, OptiX, PortAudio, CUFFT, PixarUSD, LibGDVB, LibOptiX
 #
 function (_REQUIRE_LIBEXT)
-    if ( NOT DEFINED LIBEXT_FOUND ) 
-      get_filename_component ( _libextpath "d:/codes/libext" REALPATH )
-      set ( LIBEXT_PATH "${_libextpath}" CACHE STRING "Location of libext third-party libs" FORCE)
-    endif()
     message (STATUS "  Searching for LIBEXT... ${LIBEXT_PATH}")
     if (EXISTS "${LIBEXT_PATH}" AND IS_DIRECTORY "${LIBEXT_PATH}")
         set( LIBEXT_FOUND TRUE )
@@ -177,6 +180,7 @@ function ( _REQUIRE_CUDA use_cuda_default kernel_path)
             # Link CUDA
             #
 	        message( STATUS "  ---> Using package CUDA (ver ${CUDA_VERSION})") 
+            add_definitions(-DBUILD_CUDA)    
 	        add_definitions(-DUSE_CUDA)    
 	        include_directories(${CUDA_TOOLKIT_INCLUDE})
 	        LIST(APPEND LIBRARIES_OPTIMIZED ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} )
