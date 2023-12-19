@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
+set (CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "")
 
 set(PROJNAME libmin)
 Project(${PROJNAME})
@@ -10,12 +11,8 @@ Message("PROJECT NAME: ${PROJNAME}")
 #
 list (APPEND CMAKE_PREFIX_PATH "cmake" )
 list (APPEND CMAKE_PREFIX_PATH "../libmin/cmake" )
-set( BASE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} CACHE STRING "")
-
 find_package ( Libmin CONFIG )
-
-include_directories(${LIBMIN_ORIG_SRC})
-include_directories(${LIBMIN_ORIG_INC})
+unset ( Libmin_DIR CACHE )
 
 #####################################################################################
 # Options
@@ -58,6 +55,7 @@ if (BUILD_CUDA)
 	endif()
 endif()
 
+#################################################################
 # Source files for this project
 #
 file(GLOB SOURCE_FILES src/*.cpp src/*.c)
@@ -67,27 +65,8 @@ file(GLOB INCLUDE_FILES include/*.hpp include/*.h)
 file(GLOB INSTALL_CMAKES cmake/*.*)
 file(GLOB INSTALL_MAINS mains/*.*)
 
-#####################################################################################
-# Library paths
-#
-# CMAKE_INSTALL_PREFIX -- path where library will be installed to
-
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-   if ( WIN32 )
-      get_filename_component ( _instpath "${CMAKE_CURRENT_BINARY_DIR}" REALPATH )
-   else()
-      get_filename_component ( _instpath "/usr/local/libmin" REALPATH )
-   endif()
-   set ( CMAKE_INSTALL_PREFIX ${_instpath} CACHE PATH "default install path" FORCE)   
-endif()
-
-get_filename_component( LIB_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR} REALPATH)
-get_filename_component( INSTALL_BIN_PATH ${CMAKE_INSTALL_PREFIX}/bin REALPATH)
-get_filename_component( INSTALL_INC_PATH ${CMAKE_INSTALL_PREFIX}/include REALPATH)
-get_filename_component( INSTALL_LIB_PATH ${CMAKE_INSTALL_PREFIX}/lib REALPATH)
-
-set ( EXECUTABLE_OUTPUT_PATH ${INSTALL_BIN_PATH} CACHE PATH "" FORCE )
-
+include_directories(${LIBMIN_REPO_SRC})
+include_directories(${LIBMIN_REPO_INC})
 
 #####################################################################################
 # Library output
@@ -127,10 +106,10 @@ add_library (${PROJNAME} ${LIB_TYPE} ${ALL_SOURCE_FILES} ${CUDA_FILES} ${PTX_FIL
 set ( CMAKE_DEBUG_POSTFIX "d" CACHE STRING "" )
 set_target_properties( ${PROJNAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
 
-set_target_properties( ${PROJNAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${LIB_OUTPUT_PATH} )
-set_target_properties( ${PROJNAME} PROPERTIES VS_INTERMEDIATE_DIRECTORY_DEBUG ${LIB_OUTPUT_PATH}/Debug )
-set_target_properties( ${PROJNAME} PROPERTIES VS_INTERMEDIATE_DIRECTORY_RELEASE ${LIB_OUTPUT_PATH}/Release )
-set_target_properties( ${PROJNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${LIB_OUTPUT_PATH} )
+set_target_properties( ${PROJNAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX} )
+set_target_properties( ${PROJNAME} PROPERTIES VS_INTERMEDIATE_DIRECTORY_DEBUG ${CMAKE_INSTALL_PREFIX}/Debug )
+set_target_properties( ${PROJNAME} PROPERTIES VS_INTERMEDIATE_DIRECTORY_RELEASE ${CMAKE_INSTALL_PREFIX}/Release )
+set_target_properties( ${PROJNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_INSTALL_PREFIX} )
 set_target_properties( ${PROJNAME} PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 #####################################################################################
@@ -153,33 +132,33 @@ endif()
 ################################################################
 # Install Binaries
 #
+set (_inc_path "${CMAKE_INSTALL_PREFIX}/include" )
+set (_bin_path "${CMAKE_INSTALL_PREFIX}/bin" )
+
 if (BUILD_OPENGL)
-	file (COPY "${LIBEXT_PATH}/include/GL" DESTINATION ${INSTALL_INC_PATH} )
-	file (COPY "${LIBEXT_PATH}/include/GL/glew.c" DESTINATION ${INSTALL_INC_PATH} )
+	file (COPY "${LIBEXT_PATH}/include/GL" DESTINATION ${_inc_path} )
+	file (COPY "${LIBEXT_PATH}/include/GL/glew.c" DESTINATION ${_inc_path} )
 endif()
 if (BUILD_CUDA)
-	install ( FILES ${CUDA_FILES} DESTINATION ${INSTALL_INC_PATH} )
+	install ( FILES ${CUDA_FILES} DESTINATION ${_inc_path} )
 endif()
 
-install ( FILES ${GLEW_FILES} DESTINATION ${INSTALL_BIN_PATH} )
-install ( FILES ${INCLUDE_FILES} DESTINATION ${INSTALL_INC_PATH} )
-install ( FILES ${INSTALL_CMAKES} DESTINATION "${LIB_OUTPUT_PATH}/cmake" )
-install ( FILES ${INSTALL_MAINS} DESTINATION "${LIB_OUTPUT_PATH}/mains" )
+install ( FILES ${GLEW_FILES} DESTINATION ${_bin_path} )
+install ( FILES ${INCLUDE_FILES} DESTINATION ${_inc_path} )
 
 if ( LINUX )
-  install ( FILES $<TARGET_PDB_FILE:${PROJNAME}> DESTINATION ${INSTALL_BIN_PATH} OPTIONAL )
+  install ( FILES $<TARGET_PDB_FILE:${PROJNAME}> DESTINATION ${_bin_path} OPTIONAL )
 endif()
-install ( FILES $<TARGET_LINKER_FILE:${PROJNAME}> DESTINATION ${INSTALL_BIN_PATH} )
-_INSTALL ( FILES ${PACKAGE_DLLS} DESTINATION ${INSTALL_BIN_PATH} )
-install ( TARGETS ${PROJNAME} DESTINATION ${INSTALL_BIN_PATH} )
+install ( FILES $<TARGET_LINKER_FILE:${PROJNAME}> DESTINATION ${_bin_path} )
+_INSTALL ( FILES ${PACKAGE_DLLS} DESTINATION ${_bin_path} )
+install ( TARGETS ${PROJNAME} DESTINATION ${_bin_path} )
 
 #################################
 # Done
 message ( STATUS "---------------------------------" )
-message ( STATUS "Output:   	 ${LIB_OUTPUT_PATH}" )
-message ( STATUS "Installed Bin: ${INSTALL_BIN_PATH}" )
-message ( STATUS "Installed Inc: ${INSTALL_INC_PATH}" )
-message ( "\nLIBMIN INSTALLED PATH: ${CMAKE_INSTALL_PREFIX}" )
+message ( STATUS "Installed Bin: ${_bin_path}" )
+message ( STATUS "Installed Inc: ${_inc_path}" )
+message ( "LIBMIN Installed Path: ${CMAKE_INSTALL_PREFIX}" )
 message ( STATUS "---------------------------------" )
 
 

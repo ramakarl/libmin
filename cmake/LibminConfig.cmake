@@ -1,32 +1,52 @@
 
 ####################################################################################
 # LIBMIN CONFIG
-
-# Cmake paths
-# NOTE: CMAKE_CURRENT_LIST_DIR is the location of this LibminConfig.cmake,
-# typically in the /build/libmin/cmake *installed* cmake path.
-# Does not provide access to the cmake source path.
 #
-get_filename_component ( _libmin "${CMAKE_CURRENT_SOURCE_DIR}/../libmin" REALPATH )
-set ( LIBMIN_ORIG_PATH ${_libmin} CACHE PATH "Path to libmin")
-set ( LIBMIN_MAINS "${LIBMIN_ORIG_PATH}/mains" )
-set ( LIBMIN_ORIG_SRC "${LIBMIN_ORIG_PATH}/src")
-set ( LIBMIN_ORIG_INC "${LIBMIN_ORIG_PATH}/include")
-
-# Third-party Libraries
-set ( LIBEXT_PATH "${LIBMIN_ORIG_PATH}/libext" CACHE PATH "Path to third-party libs. Defaults to libmin/libext.")
-
-# Find libmin repository root
+# Provide the libmin repository path, install path, and libext path
+# for access to mains, third-party libs and cmake helpers
+#  LIBMIN_REPO_PATH    = path to required source repository (eg. libmin/src)
+#  LIBMIN_INSTALL_PATH = path to installed libmin binaries (eg. libmin.lib, .dll, .so)
+#  LIBEXT_PATH         = path to third-party libs (eg. libjpg, libgvdb, liboptix)
 #
-find_file (CHK "dataptr.cpp" PATHS ${LIBMIN_ORIG_SRC} )
-if (CHK STREQUAL "CHK-NOTFOUND")
+function(_FIND_GLOBAL outvar targetPath startDir targetFile )
+  set ( _target "${targetPath}${targetFile}" FORCE )
+  set ( up1 "${startDir}/.." )
+  set ( up2 "${startDir}/../.." )
+  set ( up3 "${startDir}/../.." )    
+  unset ( result CACHE )
+  find_file ( result ${_target} PATHS ${startDir} ${up1} ${up2} ${up3} )
+  string (REPLACE ${targetFile} "" result ${result} )
+  if ( ${result} STREQUAL "result-NOTFOUND" )
+    set (${outvar} "NOTFOUND" CACHE PATH "" )
+  else()
+    set (${outvar} ${result} CACHE PATH "" )
+  endif()   
+  unset ( result CACHE )
+endfunction()
+
+_FIND_GLOBAL ( PATH_TO_LIBMIN_REPO "libmin" ${CMAKE_CURRENT_SOURCE_DIR} "/src/dataptr.cpp" )
+
+_FIND_GLOBAL ( PATH_TO_LIBMIN_INSTALL "libmin" ${CMAKE_CURRENT_BINARY_DIR} "/bin/libmind.lib" )
+
+_FIND_GLOBAL ( PATH_TO_LIBEXT "libext" ${CMAKE_CURRENT_SOURCE_DIR} "/win64/libjpg_2019x64.lib" )
+
+if (PATH_TO_LIBMIN_REPO STREQUAL "NOTFOUND")
   message ( FATAL_ERROR "
-This project requires the original libmin source repostitory in addition to the installed libmin binaries. Please specify -DLIBMIN_ORIG_PATH=.. or modify LIBMIN_ORIG_PATH to indicate the repository root. 
-
+This project requires the libmin source repository (not just the installed binaries). Please set PATH_TO_LIBMIN_REPO to indicate the libmin repository root.
 ")
-else()
-  message ( STATUS "Found libmin SOURCE/REPOSITORY path: ${LIBMIN_ORIG_PATH}" )
 endif()
+
+if (PATH_TO_LIBEXT STREQUAL "NOTFOUND")
+  message ( FATAL_ERROR "
+This project requires libext. Please set PATH_TO_LIBEXT. This can be the path /libmin/libext from the libmin repository, or it can be another libext with more extensive third-party libs.
+")
+endif()
+
+# Repository paths
+set ( LIBMIN_REPO_MAINS "${PATH_TO_LIBMIN_REPO}/mains" )
+set ( LIBMIN_REPO_SRC "${PATH_TO_LIBMIN_REPO}/src")
+set ( LIBMIN_REPO_INC "${PATH_TO_LIBMIN_REPO}/include")
+set ( LIBEXT_PATH ${PATH_TO_LIBEXT} )
 
 #set ( DEBUG_HEAP false CACHE BOOL "Enable heap checking (debug or release).")
 set ( DEBUG_HEAP true CACHE BOOL "Enable heap checking (debug or release).")
@@ -36,9 +56,10 @@ if ( ${DEBUG_HEAP} )
 endif()
 
 message ( "------ LibminConfig.cmake -------" )
-message ( STATUS "CURRENT DIRECTORY:    ${CMAKE_CURRENT_SOURCE_DIR}" )
-message ( STATUS "LIBMIN ORIGINAL PATH: ${LIBMIN_ORIG_PATH}" )
-message ( STATUS "LIBEXT PATH:          ${LIBEXT_PATH}" )
+message ( STATUS "CURRENT DIRECTORY: ${CMAKE_CURRENT_SOURCE_DIR}" )
+message ( STATUS "LIBMIN REPOSITORY: ${PATH_TO_LIBMIN_REPO}" )
+message ( STATUS "LIBMIN INSTALLED:  ${PATH_TO_LIBMIN_INSTALL}" )
+message ( STATUS "LIBEXT PATH:       ${PATH_TO_LIBEXT}" )
 
 #-------------------------------------- COPY CUDA BINS
 # This macro copies all binaries for the CUDA library to the target executale location. 
@@ -54,20 +75,19 @@ endmacro()
 # Provide Libext - extended 3rd party libraries: 
 #  OpenSSL, Laszip, OptiX, PortAudio, CUFFT, PixarUSD, LibGDVB, LibOptiX
 #
-function (_REQUIRE_LIBEXT)
+function (_REQUIRE_LIBEXT)    
     message (STATUS "  Searching for LIBEXT... ${LIBEXT_PATH}")
     if (EXISTS "${LIBEXT_PATH}" AND IS_DIRECTORY "${LIBEXT_PATH}")
         set( LIBEXT_FOUND TRUE )
         message (STATUS "  ---> Using LIBEXT: ${LIBEXT_PATH}")
         list( APPEND CMAKE_MODULE_PATH "${LIBEXT_PATH}/cmake" )
-        list( APPEND CMAKE_PREFIX_PATH "${LIBEXT_PATH}/cmake" )
-        set( LIBEXT_PATH ${LIBEXT_PATH} PARENT_SCOPE)
+        list( APPEND CMAKE_PREFIX_PATH "${LIBEXT_PATH}/cmake" )        
         set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} PARENT_SCOPE)
         set( CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
         set( LIBEXT_FOUND ${LIBEXT_FOUND} PARENT_SCOPE)
     else()
 message (FATAL_ERROR "  LIBEXT Not Found at: ${LIBEXT_PATH}. 
-Set LIBEXT_PATH to the location of libext.
+Set PATH_TO_LIBEXT to the location of libext.
 ")
     endif()
 endfunction()
@@ -82,18 +102,18 @@ function ( _REQUIRE_MAIN )
 
     add_definitions(-DUSE_MAIN)
     IF(BUILD_CONSOLE)
-    	LIST( APPEND SRC_FILES "${LIBMIN_MAINS}/main_console.cpp" )
+    	LIST( APPEND SRC_FILES "${LIBMIN_REPO_MAINS}/main_console.cpp" )
     ELSE()
 	    IF(WIN32)
-  		    LIST( APPEND SRC_FILES "${LIBMIN_MAINS}/main_win.cpp" )
+  		    LIST( APPEND SRC_FILES "${LIBMIN_REPO_MAINS}/main_win.cpp" )
 	    ELSEIF(ANDROID)
-		    LIST( APPEND SRC_FILES "${LIBMIN_MAINS}/main_android.cpp" )
+		    LIST( APPEND SRC_FILES "${LIBMIN_REPO_MAINS}/main_android.cpp" )
 	    ELSE()
-	  	    LIST( APPEND SRC_FILES "${LIBMIN_MAINS}/main_x11.cpp" )
+	  	    LIST( APPEND SRC_FILES "${LIBMIN_REPO_MAINS}/main_x11.cpp" )
 	    ENDIF()
     ENDIF()
-	LIST( APPEND SRC_FILES "${LIBMIN_MAINS}/main.h" )
-    include_directories( ${LIBMIN_MAINS} )
+	LIST( APPEND SRC_FILES "${LIBMIN_REPO_MAINS}/main.h" )
+    include_directories( ${LIBMIN_REPO_MAINS} )
 
     set ( PACKAGE_SOURCE_FILES ${SRC_FILES} PARENT_SCOPE )
 endfunction()
@@ -225,6 +245,8 @@ function ( _REQUIRE_CUDA use_cuda_default kernel_path)
 	        message ( FATAL_ERROR "  ---> Unable to find package CUDA")
         endif()
     else()
+        # check if cuda is at least installed
+        find_package(CUDA)
         message ( "  NOTE: Set BUILD_CUDA to enable GPU. May need to set for libmin also.")
     endif()
     if (USE_NVTX)

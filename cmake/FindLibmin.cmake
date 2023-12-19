@@ -5,36 +5,28 @@
 unset(LIBMIN_FOUND CACHE)
 unset(LIBMIN_INC_DIR CACHE)
 
-# LIBMIN_PATH -
-# should be set to installed directory of libmin
-#
-if ( NOT DEFINED LIBMIN_ROOT_DIR )
-  if (WIN32)
-    get_filename_component ( _basedir "${LIBMIN_PATH}" REALPATH )
-  else()
-    get_filename_component ( _basedir "/usr/local/libmin/" REALPATH )
-  endif()
-  set ( LIBMIN_ROOT_DIR ${_basedir} CACHE PATH "Location of libmin" FORCE)
-endif()
-
-set( LIBMIN_FOUND "YES" )
-
-# Provide functions from LibminConfig.cmake
-# We need the libmin config cmake before searching for files
+# Provide paths and functions from LibminConfig.cmake
+# We need the libmin config cmake first
 find_package(Libmin CONFIG )
 
 message ( "------ FindLibmin.cmake -------" )
 message ( STATUS "LIBMIN:")
-message ( STATUS "  Searching for libmin at.. ${LIBMIN_ROOT_DIR}")
+message ( STATUS "  Searching for libmin at.. ${PATH_TO_LIBMIN_INSTALL}")
 
 # Find Libmin
-if ( LIBMIN_ROOT_DIR )
+if ( PATH_TO_LIBMIN_INSTALL STREQUAL "NOTFOUND" )
+   message( FATAL_ERROR "
+      Please set PATH_TO_LIBMIN_INSTALL to the location
+      of installed binaries containing libmin.lib and .dll
+      Not found at: ${PATH_TO_LIBMIN_INSTALL}\n"
+   )
+else ()
 
     #-- Paths
-	set ( LIBMIN_INC_DIR "${LIBMIN_ROOT_DIR}/include" CACHE PATH "Path to include files" FORCE)
-    set ( LIBMIN_LIB_DIR "${LIBMIN_ROOT_DIR}/bin" CACHE PATH "Path to libraries" FORCE)
-	set ( LIBMIN_SRC_DIR "${LIBMIN_ROOT_DIR}/src" CACHE PATH "Path to libraries" FORCE)
-	set ( LIBMIN_GLEW_DIR "${LIBMIN_INC_DIR}/GL" CACHE PATH "Path to glew.c" FORCE)
+	set ( LIBMIN_INC_DIR "${PATH_TO_LIBMIN_INSTALL}/include" CACHE PATH "Path to include files" FORCE)
+    set ( LIBMIN_LIB_DIR "${PATH_TO_LIBMIN_INSTALL}/bin" CACHE PATH "Path to libraries" FORCE)
+	set ( LIBMIN_SRC_DIR "${PATH_TO_LIBMIN_INSTALL}/src" CACHE PATH "Path to libraries" FORCE)
+	set ( LIBMIN_GLEW_DIR "${PATH_TO_LIBMIN_INSTALL}/GL" CACHE PATH "Path to glew.c" FORCE)
 
 	#-------- Locate Header files
     set ( OK_H "0" )
@@ -73,30 +65,18 @@ if ( LIBMIN_ROOT_DIR )
 	endif()
 endif()
 
-if ( ${LIBMIN_FOUND} STREQUAL "NO" )
-   message( FATAL_ERROR "
-      Please set LIBMIN_ROOT_DIR to the root location
-      of installed Libhelp library containing LIBMIN_full.lib/dll
-      Not found at LIBMIN_ROOT_DIR: ${LIBMIN_ROOT_DIR}\n"
-   )
-endif()
-
-
-
 set ( LIBMIN_DLLS ${LIST_DLL} CACHE INTERNAL "" FORCE)
 set ( LIBMIN_DEBUG ${LIST_DEBUG} CACHE INTERNAL "" FORCE)
 set ( LIBMIN_REL ${LIST_REL} CACHE INTERNAL "" FORCE)
 
 #-- We do not want user to modified these vars, but helpful to show them
-message ( STATUS "  LIBMIN_ROOT_DIR: ${LIBMIN_ROOT_DIR}" )
 message ( STATUS "  LIBMIN_SRC_DIR:  ${LIBMIN_SRC_DIR}" )
 message ( STATUS "  LIBMIN_INC_DIR:  ${LIBMIN_INC_DIR}" )
 message ( STATUS "  LIBMIN_GLEW_DIR: ${LIBMIN_GLEW_DIR}" )
 message ( STATUS "  LIBMIN_LIB_DIR:  ${LIBMIN_LIB_DIR}" )
-message ( STATUS "  LIBMIN_DLL:      ${LIBMIN_DLLS}" )
+message ( STATUS "  LIBMIN_DLLS:     ${LIBMIN_DLLS}" )
 message ( STATUS "  LIBMIN_DEBUG:    ${LIBMIN_DEBUG}" )
 message ( STATUS "  LIBMIN_REL:      ${LIBMIN_REL}" )
 
-mark_as_advanced(LIBMIN_FOUND)
-
+set ( LIBMIN_FOUND TRUE CACHE BOOL "" FORCE)
 
