@@ -41,8 +41,10 @@ extern "C" {
    }
 }*/
 
-bool CImageFormatPng::LoadFmt (char *filename )
+bool CImageFormatPng::Load (char *filename, ImageX* img )
 {
+	StartFormat ( filename, img, ImageOp::Loading );
+
 	bool bGrey = false;
 
 	//-------------------------- Using PNG helpers
@@ -77,8 +79,10 @@ bool CImageFormatPng::LoadFmt (char *filename )
 	return true;
 }
 
-bool CImageFormatPng::SaveFmt (char *filename)
+bool CImageFormatPng::Save (char *filename, ImageX* img )
 {
+	StartFormat ( filename, img, ImageOp::Saving );
+
 	int ch = 3;
 
 	switch ( m_pImg->GetFormat() ) {

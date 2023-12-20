@@ -23,14 +23,21 @@
 
 #include "imagex.h"
 #include "imageformat.h"
-#include "imageformat_bmp.h"
-#include "imageformat_jpg.h"
 #include "imageformat_png.h"
 #include "imageformat_tiff.h"
 #include "imageformat_tga.h"
 
-CImageFormat* ImageX::mpImageLoader = 0x0;
+#ifdef BUILD_JPG	
+	#include "imageformat_jpg.h"
+#endif
+
+std::vector<CImageFormat*> gImageFormats;
 XBYTE ImageX::fillbuf[16384];
+
+void addImageFormat ( CImageFormat* fmt )
+{
+	gImageFormats.push_back ( fmt );
+}
 
 #define BUF_INFO		0
 #define BUF_PIX			1
@@ -204,7 +211,7 @@ void ImageX::FlipY ()
 	if (mAutocommit) Commit();
 }
 
-
+/* 
 bool ImageX::LoadPng ( char* fname, bool bGrey )
 {
 	char fpath[1024];
@@ -286,7 +293,7 @@ bool ImageX::LoadTga ( char* fname )
 
 	return true;
 }
-
+*/
 
 // Bits per pixel - value depends on format
 unsigned char ImageX::GetBitsPerPix (ImageOp::Format ef)
@@ -563,7 +570,7 @@ bool ImageX::LoadAlpha ( char *filename )
 bool ImageX::LoadIncremental ( char *filename )
 {
 
-#ifdef BUILD_JPG
+	/*
 	CImageFormatJpg*	pJpgLoader;
 
 	// create new jpg reader
@@ -575,15 +582,16 @@ bool ImageX::LoadIncremental ( char *filename )
 		delete ( pJpgLoader ); mpImageLoader = 0x0;
 		return false;
 	}
-#endif
+	*/
 
 	// loading..
-	mpImageLoader = 0x0;
+
 	return true;	
 }
 
 ImageOp::FormatStatus ImageX::LoadNextRow ()
 {
+	/*
 	if ( mpImageLoader == 0x0) return ImageOp::LoadNotReady;
 
 	// still loading..
@@ -593,8 +601,9 @@ ImageOp::FormatStatus ImageX::LoadNextRow ()
 		// delete image loader.
 		delete mpImageLoader;
 		mpImageLoader = 0x0;				
-	}
-	return eStatus;
+	} 
+	return eStatus; */
+	return ImageOp::LoadDone;
 }
 
 bool ImageX::Load (char* filename, char* alphaname )
@@ -643,105 +652,64 @@ bool ImageX::Load (char* filename, char* alphaname )
 
 bool ImageX::Load ( std::string filename, std::string& errmsg)
 {	
-	char msg[2048];
+	char fname[2048];
+	strncpy ( fname, filename.c_str(), 2048 );
 
-	// NOTES ABOUT CImageFormats:
-	// 1) Load functions return 'true' if the file was successfully loaded by
-	// that format. On success, pNewImg==0 indicates the loader was able to use
-	// the original m_Img structure for efficiency, otherwise pNewImg will hold 
-	// the new image object.
-	// 2) Failure of one image format loader does not mean another will fail.
-	// 3) Each image format loader will maintain its own error status if it fails.
+	// Add default formats
+	if ( gImageFormats.size()==0) {
+		addImageFormat ( new CImageFormatPng );
+		addImageFormat ( new CImageFormatTiff );
+		addImageFormat ( new CImageFormatTga );
+		#ifdef BUILD_JPG	
+			addImageFormat ( new CImageFormatJpg );
+		#endif
+	}
 	
-	// Get image type
-	strncpy ( msg, filename.c_str(), 2048 );
-	FILE* fp = fopen( msg, "rb" );  
+	// Read magic bytes (first 4 bytes)
+	// JPG: if ((magic[0] == 0xD8 && magic[1] == 0xFF) || (magic[1] == 0xD8 && magic[0] == 0xFF)) 
+	// TIF: if (magic[0] == 0x49 && magic[1] == 0x49 && magic[2] == 0x2A ) {
+	// BMP: if ((magic[0] == 0x4D && magic[1] == 0x42) || (magic[1] == 0x4D && magic[0] == 0x42)) 
+  // PNG: if (magic[0] == 0x89 && magic[1] == 0x50 && magic[2] == 0x4E && magic[3] == 0x47) 
+  // TGA: if( magic[1] == 0 && (magic[2] == 2 || magic[2] == 3) ) 
+	//
+	FILE* fp = fopen( fname, "rb" );  
 	if ( !fp ) {		
 		errmsg = std::string("ERROR: File not found: ") + filename;
 		return false;
 	}
-	unsigned char type[4];
-	fread ((void*) type, sizeof(char), 4, fp );
+	unsigned char magic[4];
+	fread ((void*) magic, sizeof(char), 4, fp );
 	fclose ( fp );
-	bool bTry = false;
-	
-	strcpy ( msg, filename.c_str() );
 
-	// Try loading as a JPG file
-	if ((type[0] == 0xD8 && type[1] == 0xFF) || (type[1] == 0xD8 && type[0] == 0xFF)) {		
-		#ifdef BUILD_JPG
-			CImageFormatJpg		jpg_format;
-			if ( jpg_format.Load ( msg, this ) ) {
-				errmsg = "";
-				return true;		
+	// Try to load with each loader 	
+	//
+	std::string msg;	
+	bool loaded = false;
+	for (int n=0; n < gImageFormats.size() && !loaded; n++) {
+		
+		if ( gImageFormats[n]->CanLoadType ( magic, fname ) ) {
+			if ( gImageFormats[n]->Load ( fname, this ) ) {
+				// success
+				loaded = true;				
+			} else {  
+				// loader was unable to load
+				errmsg = gImageFormats[n]->GetStatusMsg ();
+				return false;
 			}
-			jpg_format.GetStatusMsg ( msg );	
-			bTry = true;
-		#else
-			errmsg = "JPEG library not included";
-			return false;
-		#endif
-	}
-
-
-	// Try loading as a TIFF file 
-	if (type[0] == 0x49 && type[1] == 0x49 && type[2] == 0x2A ) {
-		CImageFormatTiff	tiff_format;
-		if ( tiff_format.Load ( msg, this  ) ) {
-			return true;
 		}
-		tiff_format.GetStatusMsg ( msg );	
-		bTry = true;
+	}
+	if ( !loaded ) {		// no loader found		
+		errmsg = "Unsupported image format.";
+		return false;
 	}
 
-
-#ifdef BUILD_BMP
-	// Try loading as a BMP file
-	if ((type[0] == 0x4D && type[1] == 0x42) || (type[1] == 0x4D && type[0] == 0x42)) {
-		CImageFormatBmp		bmp_format;
-		if ( bmp_format.Load ( msg, (Image*) this ) ) {
-			//bind_data ( this );		// must rebind to update m_Info struct
-			errmsg = "";
-			return true;		
-		}
-		bmp_format.GetStatusMsg ( msg );
-		bTry = true;
-	}
-#endif
-
-	// Try loading as a PNG file
-	if (type[0] == 0x89 && type[1] == 0x50 && type[2] == 0x4E && type[3] == 0x47) {
-		CImageFormatPng		png_format;
-		if ( png_format.Load ( msg, this ) ) {
-			errmsg = "";
-			return true;		
-		}
-		png_format.GetStatusMsg ( msg );
-		bTry = true;
-	}
-
-
-	// Try loading as TGA file
-	if( type[1] == 0 && (type[2] == 2 || type[2] == 3) ) {
-		CImageFormatTga		tga_format;
-		if ( tga_format.Load ( msg, this ) ) {
-			errmsg = "";
-			return true;
-		}
-		tga_format.GetStatusMsg ( msg );
-		bTry = true;
-	}
-
-	// Generate Load Error Message - Unable to load		
-	if ( !bTry ) { sprintf ( msg, "Unknown format.\n" ); }
-	errmsg = std::string(msg) + std::string(" file: ") + filename;
-	
 	// Default filtering
 	SetFilter( ImageOp::Filter::Linear );
 
 	if (mAutocommit) Commit();
 
-	return false;	
+	errmsg = "";
+	return true;
 }
 
 bool ImageX::Save (char *filename)
@@ -749,26 +717,19 @@ bool ImageX::Save (char *filename)
 	std::string fname = filename;
 	std::string fext = fname.substr ( fname.length()-3, 3 );
 
-	#ifdef BUILD_PNG
-		if ( fext.compare("png")==0 ) {
-			CImageFormatPng		png_format;
-			png_format.Save ( filename, this );
+	// Try to save with each format
+	bool saved = false;
+	for (int n=0; n < gImageFormats.size() && !saved; n++) {
+		if ( gImageFormats[n]->CanSaveType ( fext ) ) {
+			if ( gImageFormats[n]->Save ( filename, this ) ) {
+				saved = true;
+			} else {
+				saved = false;
+				// errmsg = gImageFormats[n]->GetStatusMsg ();
+			}
 		}
-	#endif
-	#ifdef BUILD_JPG
-		if ( fext.compare("jpg")==0 ) {
-			CImageFormatJpg		jpg_format;
-			jpg_format.Save ( filename, this );
-		}
-	#endif
-	#ifdef BUILD_TIF
-		if ( fext.compare("tif")==0 ) {
-			CImageFormatTiff	tiff_format;
-			tiff_format.Save ( filename, this );
-		}
-	#endif
-
-   	return false;
+	}
+	return saved;
 }
 
 

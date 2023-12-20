@@ -33,22 +33,18 @@
 		CImageFormat ();
 		~CImageFormat ();
 
-		// Interface functions (called by Image)
-		bool Load (char *filename, ImageX* pImg);
-		bool Save (char *filename, ImageX* pImg);
-		void SetQuality (int q)	{m_quality= q;}
-
-		// Format-specific load functions (virtual)
-		virtual bool LoadFmt ( char *filename )	{return false;}				
-		virtual bool SaveFmt ( char *filename )	{return false;}				
+		// Interface functions (called by Image)		
+		virtual bool Load (char *filename, ImageX* img) {return false;}
+		virtual bool Save (char *filename, ImageX* img) {return false;}
+		virtual bool CanLoadType ( unsigned char* magic, std::string ext ) { return false; }
+		virtual bool CanSaveType ( std::string ext )		{ return false; }
+		virtual void SetQuality (int q)									{m_quality= q;}
 		virtual ImageOp::FormatStatus LoadIncremental () {return ImageOp::LoadNotReady;}		
 
-		#if defined(BUILD_VC)
-				bool TransferBitmap ( HBITMAP hBmp );
-		#endif
-		// Helper functions				
+		// Helper functions 
+		void StartFormat ( char* filename, ImageX* img, ImageOp::FormatStatus status );		
+		std::string GetStatusMsg ();
 		ImageOp::FormatStatus GetStatus ()	{ return m_eStatus; }
-		void GetStatusMsg (char* buf);
 
 	public:
 		ImageX*				m_pImg;				// Image (ImageFormat does not own it)		

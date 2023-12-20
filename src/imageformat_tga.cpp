@@ -170,8 +170,10 @@ void CImageFormatTga::writeGray( FILE *s, const unsigned char *externalImage, in
 
 
 
-bool CImageFormatTga::LoadFmt ( char* filename )
+bool CImageFormatTga::Load (char *filename, ImageX* img )
 {
+	StartFormat ( filename, img, ImageOp::Loading );
+
 	// Loads up a targa file. Supported types are 8, 24 and 32 
     // uncompressed images.
     unsigned char type[4];

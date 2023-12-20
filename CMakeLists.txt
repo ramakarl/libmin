@@ -26,6 +26,11 @@ _REQUIRE_GL ()
 
 _REQUIRE_GLEW ()	       
 
+set( BUILD_JPG false CACHE BOOL "")
+if (BUILD_JPG)
+  _REQUIRE_JPG ()
+endif()
+
 set( USE_NVTX true CACHE BOOL "")		# performance markers available
 
 OPTION (BUILD_CUDA "Build with CUDA" OFF)

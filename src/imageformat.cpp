@@ -197,9 +197,12 @@ bool CImageFormat::TransferBitmap ( HBITMAP hBmp )
 
 #endif
 
-void CImageFormat::GetStatusMsg (char* msg)
+std::string CImageFormat::GetStatusMsg ()
 {
+	char msg[1000];
+
 #ifdef WIN32
+
 	switch ( m_eStatus) {
 	case ImageOp::Idle:					sprintf_s (msg, 1000, "Idle." ); break;
 	case ImageOp::Loading:				sprintf_s (msg, 1000, "Loading." ); break;
@@ -226,44 +229,18 @@ void CImageFormat::GetStatusMsg (char* msg)
 	case ImageOp::NotImplemented:		sprintf (msg, "Not Implemented." ); break;
 	}
 #endif
-
+	return msg;
 }
 
-
-//-- Load starting point 
-//
-bool CImageFormat::Load ( char* filename, ImageX* pImg )
+void CImageFormat::StartFormat ( char* filename, ImageX* img, ImageOp::FormatStatus status )
 {
-	// set current image
-	m_pImg = pImg;
-	m_eStatus = ImageOp::Loading;
+	// set ImageFormat targets
+	m_pImg = img;
+	m_eStatus = status;
 	#ifdef WIN32
 		strcpy_s ( m_Filename, FILE_NAMELEN, filename);
 	#else
 		strcpy ( m_Filename, filename);
 	#endif
-
-	// format-specific load function
-	bool result = LoadFmt ( filename );
-
-	return result;
 }
 
-//-- Save starting point 
-//
-bool CImageFormat::Save ( char* filename, ImageX* pImg )
-{
-	// set current image
-	m_pImg = pImg;
-	m_eStatus = ImageOp::Saving;	
-	#ifdef WIN32
-		strcpy_s ( m_Filename, FILE_NAMELEN, filename);
-	#else
-		strcpy ( m_Filename, filename);
-	#endif
-
-	// format-specific save function
-	bool result = SaveFmt ( filename );
-
-	return result;
-}

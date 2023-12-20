@@ -82,8 +82,10 @@ CImageFormatTiff::CImageFormatTiff () : CImageFormat()
 //		m_num_strips		Number of strips
 //		m_rps				Rows per strip
 //
-bool CImageFormatTiff::LoadFmt (char *filename)
+bool CImageFormatTiff::Load (char *filename, ImageX* img )
 {
+	StartFormat ( filename, img, ImageOp::Loading );
+
 	unsigned long pnt;
 
 	if ( m_DebugTif )	dbgprintf ("----- TIFF LOADING: %s\n", filename );
@@ -912,8 +914,10 @@ bool CImageFormatTiff::SaveTiffDirectory ()
 //   TIF: BPC Blue:  8
 //
 
-bool CImageFormatTiff::SaveFmt (char *filename)
+bool CImageFormatTiff::Save (char *filename, ImageX* img )
 {
+	StartFormat ( filename, img, ImageOp::Saving );
+
 	m_Tif = fopen ( filename, "wb" );
 	if ( m_Tif == 0x0 ) { 
 		dbgprintf ( "ERROR: Unable to create TIF file %s\n", filename );
@@ -943,6 +947,8 @@ bool CImageFormatTiff::SaveFmt (char *filename)
 	
 	// write buffer to file
 	fwrite ( m_Buf.getData (), 1, m_Buf.getDataLength(), m_Tif );
+
+	fflush ( m_Tif );
 
 	fclose ( m_Tif );
 	m_eTiffStatus = TifOk;

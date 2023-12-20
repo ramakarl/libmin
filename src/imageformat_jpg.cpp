@@ -66,8 +66,10 @@ CImageFormatJpg::CImageFormatJpg ()
 	m_quality = 95;
 }
 
-bool CImageFormatJpg::LoadFmt ( char *filename )
+bool CImageFormatJpg::Load ( char *filename, ImageX* img )
 {
+	StartFormat ( filename, img, ImageOp::Loading );
+
 	// Attempt to open file
 #ifdef WIN32
 	fopen_s ( &m_jpeg_file, filename, "rb");
@@ -203,8 +205,10 @@ bool CImageFormatJpg::LoadFmt ( char *filename )
 	return true;
 }
 
-bool CImageFormatJpg::SaveFmt ( char *filename )
+bool CImageFormatJpg::Save ( char *filename, ImageX* img )
 {
+	StartFormat ( filename, img, ImageOp::Saving );
+
 	struct jpeg_compress_struct		jpeg_info;
 	struct extended_error_mgr		jerr;
 	JSAMPROW						row_pointer[1];

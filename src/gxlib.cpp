@@ -1166,7 +1166,7 @@ bool gxLib::loadFont ( const char * fontName )
 	}
 	
 	// load TGA file
-	if (!m_font_img.LoadTga(fpath) ) {
+	if (!m_font_img.Load (fpath) ) {
 		dbgprintf( "ERROR: Must build with TGA support for fonts.\n" );
 		return false;	
 	}

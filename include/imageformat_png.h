@@ -26,8 +26,20 @@
 
 	class HELPAPI CImageFormatPng : public CImageFormat {
 	public:		
-		virtual bool LoadFmt (char *filename);
-		virtual bool SaveFmt (char *filename);	
+		virtual bool Load (char *filename, ImageX* img);
+		virtual bool Save (char *filename, ImageX* img);
+
+		virtual bool CanLoadType ( unsigned char* magic, std::string ext ) 
+		{
+			if (magic[0] == 0x89 && magic[1] == 0x50 && magic[2] == 0x4E && magic[3] == 0x47) return true;
+			if (ext.compare("png")==0) return true;
+			return false;
+		}
+		virtual bool CanSaveType ( std::string ext )
+		{
+			if (ext.compare("png")==0) return true;
+			return false;
+		}
 
 	private:
 	

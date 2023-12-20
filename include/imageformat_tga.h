@@ -22,8 +22,14 @@
 
 	class HELPAPI CImageFormatTga : public CImageFormat {
 	public:		
-		virtual bool LoadFmt (char *filename);
-		//virtual bool SaveFmt (char *filename);
+		virtual bool Load (char *filename, ImageX* img);	
+
+		virtual bool CanLoadType ( unsigned char* magic, std::string ext ) 
+		{
+			if (magic[1] == 0 && (magic[2] == 2 || magic[2] == 3) )  return true;
+			if (ext.compare("tga")==0) return true;
+			return false;
+		}		
 	
 	private:
 		unsigned char *getRGBA(FILE *s, unsigned char* rgba, int size);

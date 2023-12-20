@@ -37,8 +37,21 @@
 	public:		
 		CImageFormatJpg ();
 
-		virtual bool LoadFmt (char *filename);
-		virtual bool SaveFmt (char *filename);			
+		virtual bool Load (char *filename, ImageX* img);
+		virtual bool Save (char *filename, ImageX* img);		
+
+		virtual bool CanLoadType ( unsigned char* magic, std::string ext ) 
+		{
+			if ((magic[0] == 0xD8 && magic[1] == 0xFF) || (magic[1] == 0xD8 && magic[0] == 0xFF)) return true;
+			if (ext.compare("jpg")==0) return true;
+			return false;
+		}
+		virtual bool CanSaveType ( std::string ext )
+		{
+			if (ext.compare("jpg")==0) return true;
+			return false;
+		}
+
 		virtual ImageOp::FormatStatus LoadIncremental ();
 
 	private:

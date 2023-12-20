@@ -144,7 +144,7 @@ void Widgets::SetImage		( int i, std::string png_name )
 	mWidgets[i].img = new ImageX;
 	char fname[1024];
 	strcpy ( fname, png_name.c_str() );
-	mWidgets[i].img->LoadPng ( fname );	
+	mWidgets[i].img->Load ( fname );	
 }
 
 void Widgets::SetText		( int i, std::string txt )

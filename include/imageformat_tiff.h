@@ -105,8 +105,21 @@
 
 		CImageFormatTiff ();
 
-		virtual bool LoadFmt (char *filename);
-		virtual bool SaveFmt (char *filename);	
+	  virtual bool Load (char *filename, ImageX* img);
+		virtual bool Save (char *filename, ImageX* img);
+
+		virtual bool CanLoadType ( unsigned char* magic, std::string ext ) 
+		{
+			if (magic[0] == 0x49 && magic[1] == 0x49 && magic[2] == 0x2A ) return true;
+			if (ext.compare("tif")==0) return true;
+			return false;
+		}
+		virtual bool CanSaveType ( std::string ext )
+		{
+			if (ext.compare("tif")==0) return true;
+			return false;
+		}
+
 		void DebugTif ( bool v )	{ m_DebugTif = v; }
 		
 	private:		

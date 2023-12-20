@@ -25,6 +25,8 @@
 
 	class CImageFormat;
 
+	HELPAPI void addImageFormat ( CImageFormat* fmt );
+
 	class HELPAPI ImageOp {
 	public:
 		enum Format {			
@@ -121,14 +123,16 @@
 
 		// Image Loading & Saving
 		bool Load(char* filename, char* alphaname);
-		bool Load(std::string filename, std::string& errmsg);
-		bool LoadPng ( char* fname, bool bGrey=false );
-		bool LoadTga ( char* fname );
+		bool Load(std::string filename, std::string& errmsg);		
 		bool LoadAlpha(char* filename);
 		bool LoadIncremental(char* filename);
 		ImageOp::FormatStatus LoadNextRow();
 		bool Save(char* filename);								// Save Image
-		bool SavePng ( char* fname );
+
+		//--- format-specific load/save (not supported)
+		//bool LoadPng ( char* fname, bool bGrey=false );
+		//bool LoadTga ( char* fname );
+		//bool SavePng ( char* fname );
 
 		// Image Creation, Resizing & Reformatting				
 		void Create ();
@@ -265,9 +269,12 @@
 
 		uchar						m_UseFlags;
 
-		static CImageFormat*		mpImageLoader;		// For incremental image loading
-		static XBYTE fillbuf[];
+		int							m_CurrLoader;
+		static XBYTE		fillbuf[];
 	};
+	
+	// image format loaders
+	extern std::vector<CImageFormat*>  gImageFormats;
 
 #endif
 
