@@ -38,12 +38,14 @@ bool MeshX::Load (std::string fname, float scal )
 
 Vec4F MeshX::GetStats()
 {
-	// stats. x=memused(MB), y=elements, z=resolution
+	// stats. x=memused (bytes), y=elements, z=resolution
 	float mem=0;
 	for (int i=0; i < GetNumBuf(); i++)
-		mem += (GetNumElem(i)*GetBufStride(i)) / (1024.0f*1024.0f);
-	return Vec4F( mem, GetNumFace3(), 0, 0);
+		mem += (GetNumElem(i)*GetBufStride(i));
+
+	return Vec4F( mem, GetNumFace3(), GetNumVert(), 0);
 }
+
 
 void MeshX::SetFormatFunc ()
 {
@@ -322,14 +324,12 @@ void MeshX::AppendMesh ( MeshX* src, int maxf, int maxv )
 	if ( !isActive(BVERTTEX))   AddBuffer ( BVERTTEX, "tex", sizeof(Vec2F), 0 );
 	if ( !isActive(BVERTCLR))	AddBuffer ( BVERTCLR, "clr", sizeof(uint), 0 );
 
-	// expand buffers to hold src
-	if ( maxf == 0 ) maxf = dest_numf + src_numf;
-	if ( maxv == 0 ) maxv = dest_numv + src_numv;
+	// expand buffers to hold src	
 	ExpandBuffer ( BFACEV3,		maxf );	
 	ExpandBuffer ( BVERTPOS,	maxv );	
 	ExpandBuffer ( BVERTNORM,	maxv );
 	ExpandBuffer ( BVERTTEX,	maxv );
-	ExpandBuffer ( BVERTCLR,	maxv );	
+	ExpandBuffer ( BVERTCLR,	maxv );		
 	
 	// copy vertices
 	Vec3F* src_vpos =	src->GetElemVec3 ( BVERTPOS,	0 );
@@ -361,11 +361,11 @@ void MeshX::AppendMesh ( MeshX* src, int maxf, int maxv )
 	}
 
 	// set usage to max count
-	ReserveBuffer ( BFACEV3,	dest_numf + src_numf );
-	ReserveBuffer ( BVERTPOS,	dest_numv + src_numv );
+	ReserveBuffer ( BFACEV3,		dest_numf + src_numf );
+	ReserveBuffer ( BVERTPOS,		dest_numv + src_numv );
 	ReserveBuffer ( BVERTNORM,	dest_numv + src_numv );
-	ReserveBuffer ( BVERTTEX,	dest_numv + src_numv );
-	ReserveBuffer ( BVERTCLR,	dest_numv + src_numv );	
+	ReserveBuffer ( BVERTTEX,		dest_numv + src_numv );
+	ReserveBuffer ( BVERTCLR,		dest_numv + src_numv );	
 }
 
 

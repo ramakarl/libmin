@@ -227,7 +227,8 @@ char* DataX::ExpandBuffer ( int i, int max_cnt )
 {
 	int b=mRef[i]; if ( b==BUNDEF) return 0;
 
-	mBuf[b].Append ( mBuf[b].mStride, max_cnt - mBuf[b].mNum );
+	mBuf[b].Append ( mBuf[b].mStride, max_cnt - mBuf[b].mMax );
+
 
 	//---- old code for expand
 	/*int new_size = max_cnt*mBuf[b].mStride;
