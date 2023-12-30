@@ -113,6 +113,7 @@
 		void setDolly ( float d )						{ mDolly = d; }
 		void setDist ( float d )						{ mOrbitDist = d; }		
 		void setSize ( float w, float h )				{ mXres=w; mYres=h; }
+		Vec3F getSize ()									{ return Vec3F(mXres, mYres, 1); }
 		
 		void setModelMatrix ( float* mtx );
 		void setViewMatrix ( float* mtx );
