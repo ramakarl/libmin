@@ -79,6 +79,7 @@ bool CImageFormatPng::Load (char *filename, ImageX* img )
 	return true;
 }
 
+
 bool CImageFormatPng::Save (char *filename, ImageX* img )
 {
 	StartFormat ( filename, img, ImageOp::Saving );

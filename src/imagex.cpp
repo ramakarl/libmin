@@ -936,7 +936,7 @@ void ImageX::Fill (float r, float g, float b, float a)
 void ImageX::setPixelRGB8 (int x, int y, Vec4F c)
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * mBitsPerPix >> 3 );
+		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 3);
 		*pix++ = c.x;
 		*pix++ = c.y;
 		*pix++ = c.z;		
@@ -945,7 +945,7 @@ void ImageX::setPixelRGB8 (int x, int y, Vec4F c)
 void ImageX::getPixelRGB8 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * mBitsPerPix >> 3);
+		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 3);
     c.x = *pix++;
     c.y = *pix++;
     c.z = *pix++;
@@ -955,23 +955,25 @@ void ImageX::getPixelRGB8 (int x, int y, Vec4F& c )
 void ImageX::setPixelRGBA8 (int x, int y, Vec4F c)
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * mBitsPerPix >> 3 );
+		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 4);
 		*pix++ = c.x;
 		*pix++ = c.y;
 		*pix++ = c.z;		
 		*pix++ = c.w;
 	}	
 }
+
 void ImageX::getPixelRGBA8 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * mBitsPerPix >> 3);
+		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 4);
         c.x = *pix++;
         c.y = *pix++;
         c.z = *pix++;
 		c.w = *pix++;
 	}
 }
+
 void ImageX::setPixelRGBA32F (int x, int y, Vec4F c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
@@ -995,7 +997,7 @@ void ImageX::getPixelRGBA32F (int x, int y, Vec4F& c )
 void ImageX::setPixelBGR8 (int x, int y, Vec4F c)
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * mBitsPerPix >> 3 );
+		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 3 );
 		*pix++ = c.z;
 		*pix++ = c.y;
 		*pix++ = c.x;		
@@ -1004,7 +1006,7 @@ void ImageX::setPixelBGR8 (int x, int y, Vec4F c)
 void ImageX::getPixelBGR8 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * mBitsPerPix >> 3);
+		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 3);
         c.z = *pix++;
         c.y = *pix++;
         c.z = *pix++;
