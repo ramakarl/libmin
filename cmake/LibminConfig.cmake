@@ -8,45 +8,56 @@
 #  LIBMIN_INSTALL_PATH = path to installed libmin binaries (eg. libmin.lib, .dll, .so)
 #  LIBEXT_PATH         = path to third-party libs (eg. libjpg, libgvdb, liboptix)
 #
-function(_FIND_GLOBAL outvar targetPath startDir targetFile )
-  set ( _target "${targetPath}${targetFile}" FORCE )
-  set ( up1 "${startDir}/.." )
-  set ( up2 "${startDir}/../.." )
-  set ( up3 "${startDir}/../.." )    
-  unset ( result CACHE )
-  find_file ( result ${_target} PATHS ${startDir} ${up1} ${up2} ${up3} )
-  string (REPLACE ${targetFile} "" result ${result} )
+function(_CONFIRM_PATH outvar targetPath targetFile varName )
+  set(oneValueArgs outVar targetPath targetFile varName )  
+  unset ( result CACHE )  
+  find_file ( result ${targetFile} PATHS ${targetPath} )  
   if ( ${result} STREQUAL "result-NOTFOUND" )
     set (${outvar} "NOTFOUND" CACHE PATH "" )
+    set (found "NOTFOUND")
   else()
     set (${outvar} ${result} CACHE PATH "" )
+    set (found "OK")
   endif()   
+  message ( STATUS "  Confirming: ${targetFile} in ${targetPath} -> ${found}")
+  if ( ${found} STREQUAL "NOTFOUND" )
+    message ( FATAL_ERROR "\n  Cannot find ${varName} at ${targetPath}.
+       Please set ${varName} to the correct path, which should contain
+       files such as ${targetFile}.\n"   
+    )
+  endif()
   unset ( result CACHE )
 endfunction()
 
-_FIND_GLOBAL ( PATH_TO_LIBMIN_REPO "libmin" ${CMAKE_CURRENT_SOURCE_DIR} "/src/dataptr.cpp" )
-
-_FIND_GLOBAL ( PATH_TO_LIBMIN_INSTALL "libmin" ${CMAKE_CURRENT_BINARY_DIR} "/bin/libmind.lib" )
-
-_FIND_GLOBAL ( PATH_TO_LIBEXT "libext" ${CMAKE_CURRENT_SOURCE_DIR} "/win64/libjpg_2019x64.lib" )
-
-if (PATH_TO_LIBMIN_REPO STREQUAL "NOTFOUND")
-  message ( FATAL_ERROR "
-This project requires the libmin source repository (not just the installed binaries). Please set PATH_TO_LIBMIN_REPO to indicate the libmin repository root.
-")
+# LIBMIN_ROOT - should be set by caller during bootstrap
+#
+message ( STATUS "  LIBMIN_ROOT: ${LIBMIN_ROOT}")
+if ( NOT DEFINED LIBEXT_REPO )
+  set ( LIBMIN_REPO "${LIBMIN_ROOT}" CACHE PATH "Path to /libmin source" )
 endif()
+_CONFIRM_PATH ( LIBMIN_REPO "${LIBMIN_REPO}" "/src/dataptr.cpp" "LIBMIN_ROOT" )
 
-if (PATH_TO_LIBEXT STREQUAL "NOTFOUND")
-  message ( FATAL_ERROR "
-This project requires libext. Please set PATH_TO_LIBEXT. This can be the path /libmin/libext from the libmin repository, or it can be another libext with more extensive third-party libs.
-")
+# LIBEXT_ROOT - by default use the minimal /libext that comes with libmin
+#
+if ( NOT DEFINED LIBEXT_REPO )
+  get_filename_component ( LIBEXT_REPO "${LIBMIN_ROOT}/libext" REALPATH)
+  set ( LIBEXT_REPO ${LIBEXT_REPO} CACHE PATH "Path to /libext source" )
 endif()
+_CONFIRM_PATH ( LIBEXT_REPO "${LIBEXT_REPO}" "/win64/libjpg_2019x64.lib" "LIBEXT_REPO")
+
+# LIBMIN_INSTALL - by default assume its in /build/libmin 
+#
+if ( NOT DEFINED LIBMIN_INSTALL )
+  get_filename_component ( LIBMIN_INSTALL "${LIBMIN_ROOT}/../build/libmin" REALPATH)
+  set ( LIBMIN_INSTALL ${LIBMIN_INSTALL} CACHE PATH "Path to /libmin installed binaries" )
+endif()
+_CONFIRM_PATH ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" "/bin/libmind.lib" "LIBMIN_INSTALL")
 
 # Repository paths
-set ( LIBMIN_REPO_MAINS "${PATH_TO_LIBMIN_REPO}/mains" )
-set ( LIBMIN_REPO_SRC "${PATH_TO_LIBMIN_REPO}/src")
-set ( LIBMIN_REPO_INC "${PATH_TO_LIBMIN_REPO}/include")
-set ( LIBEXT_PATH ${PATH_TO_LIBEXT} )
+set ( LIBMIN_REPO_MAINS "${LIBMIN_REPO}/mains" )
+set ( LIBMIN_REPO_SRC "${LIBMIN_REPO}/src")
+set ( LIBMIN_REPO_INC "${LIBMIN_REPO}/include")
+set ( LIBEXT_REPO ${LIBEXT_REPO} )
 
 #set ( DEBUG_HEAP false CACHE BOOL "Enable heap checking (debug or release).")
 set ( DEBUG_HEAP true CACHE BOOL "Enable heap checking (debug or release).")
@@ -55,11 +66,11 @@ if ( ${DEBUG_HEAP} )
    add_definitions( -D_CRTDBG_MAP_ALLOC)
 endif()
 
-message ( "------ LibminConfig.cmake -------" )
-message ( STATUS "CURRENT DIRECTORY: ${CMAKE_CURRENT_SOURCE_DIR}" )
-message ( STATUS "LIBMIN REPOSITORY: ${PATH_TO_LIBMIN_REPO}" )
-message ( STATUS "LIBMIN INSTALLED:  ${PATH_TO_LIBMIN_INSTALL}" )
-message ( STATUS "LIBEXT PATH:       ${PATH_TO_LIBEXT}" )
+message ( STATUS "----- Running LibminConfig.cmake" )
+message ( STATUS "  CURRENT DIRECTORY: ${CMAKE_CURRENT_SOURCE_DIR}" )
+message ( STATUS "  LIBMIN REPOSITORY: ${LIBMIN_REPO}" )
+message ( STATUS "  LIBEXT REPOSITORY: ${LIBEXT_REPO}" )
+message ( STATUS "  LIBMIN INSTALLED:  ${LIBMIN_INSTALL}" )
 
 #-------------------------------------- COPY CUDA BINS
 # This macro copies all binaries for the CUDA library to the target executale location. 
@@ -76,18 +87,18 @@ endmacro()
 #  OpenSSL, Laszip, OptiX, PortAudio, CUFFT, PixarUSD, LibGDVB, LibOptiX
 #
 function (_REQUIRE_LIBEXT)    
-    message (STATUS "  Searching for LIBEXT... ${LIBEXT_PATH}")
-    if (EXISTS "${LIBEXT_PATH}" AND IS_DIRECTORY "${LIBEXT_PATH}")
+    message (STATUS "  Searching for LIBEXT... ${LIBEXT_REPO}")
+    if (EXISTS "${LIBEXT_REPO}" AND IS_DIRECTORY "${LIBEXT_REPO}")
         set( LIBEXT_FOUND TRUE )
-        message (STATUS "  ---> Using LIBEXT: ${LIBEXT_PATH}")
-        list( APPEND CMAKE_MODULE_PATH "${LIBEXT_PATH}/cmake" )
-        list( APPEND CMAKE_PREFIX_PATH "${LIBEXT_PATH}/cmake" )        
+        message (STATUS "  ---> Using LIBEXT: ${LIBEXT_REPO}")
+        list( APPEND CMAKE_MODULE_PATH "${LIBEXT_REPO}/cmake" )
+        list( APPEND CMAKE_PREFIX_PATH "${LIBEXT_REPO}/cmake" )        
         set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} PARENT_SCOPE)
         set( CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
         set( LIBEXT_FOUND ${LIBEXT_FOUND} PARENT_SCOPE)
     else()
-message (FATAL_ERROR "  LIBEXT Not Found at: ${LIBEXT_PATH}. 
-Set PATH_TO_LIBEXT to the location of libext.
+message (FATAL_ERROR "  LIBEXT Not Found at: ${LIBEXT_REPO}. 
+Set LIBEXT_REPO to the location of libext.
 ")
     endif()
 endfunction()
@@ -505,7 +516,7 @@ macro(_FIND_FILE targetVar searchDir nameWin64 nameLnx cnt)
   unset ( targetVar )  
   if ( WIN32 ) 
      SET ( nameFind ${nameWin64} )
-  else()
+  else()     
      SET ( nameFind ${nameLnx} )
   endif()  
   if ( "${nameFind}" STREQUAL ""  )

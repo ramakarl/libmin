@@ -318,6 +318,9 @@ void MeshX::AppendMesh ( MeshX* src, int maxf, int maxv )
 	int dest_numv = GetNumElem ( BVERTNORM );
 	int dest_numf = GetNumElem ( BFACEV3 );
 
+	if ( maxv==0 ) maxv = dest_numv + src_numv;
+	if ( maxf==0 ) maxf = dest_numf + src_numf;
+
 	// confirm same active buffers
 	//  (note: we could check src->isActive, but generate these regardless because of lack of flexible array binding in RenderGL)
 	if ( !isActive(BVERTNORM))	AddBuffer ( BVERTNORM, "norm", sizeof(Vec3F), 0 );

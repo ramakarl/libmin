@@ -9,8 +9,8 @@ Message("PROJECT NAME: ${PROJNAME}")
 #####################################################################################
 # Bootstrap
 #
-list (APPEND CMAKE_PREFIX_PATH "cmake" )
-list (APPEND CMAKE_PREFIX_PATH "../libmin/cmake" )
+set ( LIBMIN_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" )
+list (APPEND CMAKE_PREFIX_PATH "${LIBMIN_ROOT}/cmake" )
 find_package ( Libmin CONFIG )
 unset ( Libmin_DIR CACHE )
 
@@ -141,8 +141,8 @@ set (_inc_path "${CMAKE_INSTALL_PREFIX}/include" )
 set (_bin_path "${CMAKE_INSTALL_PREFIX}/bin" )
 
 if (BUILD_OPENGL)
-	file (COPY "${LIBEXT_PATH}/include/GL" DESTINATION ${_inc_path} )
-	file (COPY "${LIBEXT_PATH}/include/GL/glew.c" DESTINATION ${_inc_path} )
+	file (COPY "${LIBEXT_REPO}/include/GL" DESTINATION ${_inc_path} )
+	file (COPY "${LIBEXT_REPO}/include/GL/glew.c" DESTINATION ${_inc_path} )
 endif()
 if (BUILD_CUDA)
 	install ( FILES ${CUDA_FILES} DESTINATION ${_inc_path} )

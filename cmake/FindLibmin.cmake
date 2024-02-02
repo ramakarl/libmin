@@ -2,31 +2,43 @@
 #
 # Find Libmin
 #
+message ( "\n--- LOADING LIBMIN" )
+message ( STATUS "--- Running FindLibmin.cmake" )
+
 unset(LIBMIN_FOUND CACHE)
 unset(LIBMIN_INC_DIR CACHE)
 
+message ( STATUS "----- Searching for LibminConfig.cmake" )
+
 # Provide paths and functions from LibminConfig.cmake
 # We need the libmin config cmake first
+# The Libmin_DIR should be set during bootstrap prior to calling this.
+#
 find_package(Libmin CONFIG )
+if ( NOT DEFINED Libmin_FOUND ) 
+  message( FATAL_ERROR "
+      Unable to find or load LibminConfig.cmake\n"
+  )
+endif()
 
-message ( "------ FindLibmin.cmake -------" )
-message ( STATUS "LIBMIN:")
-message ( STATUS "  Searching for libmin at.. ${PATH_TO_LIBMIN_INSTALL}")
+message ( STATUS "----- Searching for Libmin installed binaries " )
+message ( STATUS "LIBMIN Library:")
+message ( STATUS "  Searching for libmin at.. ${LIBMIN_INSTALL}")
 
 # Find Libmin
-if ( PATH_TO_LIBMIN_INSTALL STREQUAL "NOTFOUND" )
+if ( LIBMIN_INSTALL STREQUAL "NOTFOUND" )
    message( FATAL_ERROR "
-      Please set PATH_TO_LIBMIN_INSTALL to the location
+      Please set LIBMIN_INSTALL to the location
       of installed binaries containing libmin.lib and .dll
-      Not found at: ${PATH_TO_LIBMIN_INSTALL}\n"
+      Not found at: ${LIBMIN_INSTALL}\n"
    )
 else ()
 
     #-- Paths
-	set ( LIBMIN_INC_DIR "${PATH_TO_LIBMIN_INSTALL}/include" CACHE PATH "Path to include files" FORCE)
-    set ( LIBMIN_LIB_DIR "${PATH_TO_LIBMIN_INSTALL}/bin" CACHE PATH "Path to libraries" FORCE)
-	set ( LIBMIN_SRC_DIR "${PATH_TO_LIBMIN_INSTALL}/src" CACHE PATH "Path to libraries" FORCE)
-	set ( LIBMIN_GLEW_DIR "${PATH_TO_LIBMIN_INSTALL}/GL" CACHE PATH "Path to glew.c" FORCE)
+	set ( LIBMIN_INC_DIR "${LIBMIN_INSTALL}/include" CACHE PATH "Path to include files" FORCE)
+    set ( LIBMIN_LIB_DIR "${LIBMIN_INSTALL}/bin" CACHE PATH "Path to libraries" FORCE)
+	set ( LIBMIN_SRC_DIR "${LIBMIN_INSTALL}/src" CACHE PATH "Path to libraries" FORCE)
+	set ( LIBMIN_GLEW_DIR "${LIBMIN_INSTALL}/GL" CACHE PATH "Path to glew.c" FORCE)
 
 	#-------- Locate Header files
     set ( OK_H "0" )
@@ -55,10 +67,10 @@ else ()
 		_FIND_FILE ( LIST_DLL LIBMIN_LIB_DIR "libmin.dll" "libmin.so" OK_DLL )
 
 		if ( (${OK_DLL} GREATER_EQUAL 1) AND (${OK_LIB} GREATER_EQUAL 1) )
-		   message ( STATUS "  Found. Libhelp dynamic libs. ${LIBMIN_LIB_DIR}" )
+		   message ( STATUS "  Found. Libmin so/dlls in ${LIBMIN_LIB_DIR}" )
 		else()
 		   set ( LIBMIN_FOUND "NO" )
-		   message ( "  NOT FOUND. Libhelp dynamic libs. (so/dll or lib missing)" )
+		   message ( "  NOT FOUND. Libmin so/dlls in ${LIBMIN_LIB_DIR}" )
 		endif()
 	else()
 	    message ( STATUS "  Building libmin static. ")
@@ -70,6 +82,7 @@ set ( LIBMIN_DEBUG ${LIST_DEBUG} CACHE INTERNAL "" FORCE)
 set ( LIBMIN_REL ${LIST_REL} CACHE INTERNAL "" FORCE)
 
 #-- We do not want user to modified these vars, but helpful to show them
+message ( STATUS "LIBMIN STATUS" )
 message ( STATUS "  LIBMIN_SRC_DIR:  ${LIBMIN_SRC_DIR}" )
 message ( STATUS "  LIBMIN_INC_DIR:  ${LIBMIN_INC_DIR}" )
 message ( STATUS "  LIBMIN_GLEW_DIR: ${LIBMIN_GLEW_DIR}" )
@@ -77,6 +90,8 @@ message ( STATUS "  LIBMIN_LIB_DIR:  ${LIBMIN_LIB_DIR}" )
 message ( STATUS "  LIBMIN_DLLS:     ${LIBMIN_DLLS}" )
 message ( STATUS "  LIBMIN_DEBUG:    ${LIBMIN_DEBUG}" )
 message ( STATUS "  LIBMIN_REL:      ${LIBMIN_REL}" )
+
+message ( "--- LIBMIN LOAD COMPLETE\n" )
 
 set ( LIBMIN_FOUND TRUE CACHE BOOL "" FORCE)
 

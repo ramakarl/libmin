@@ -35,12 +35,14 @@
 
 */
 
+
 #ifndef QUATERNION_H
 	#define QUATERNION_H
 
 	#include "common_defs.h"
 	#include "vec.h"
 	//#include "matrix.h"
+
 
 	#define Q_EPS		0.00001
 
@@ -57,8 +59,8 @@
 			inline Quaternion( Vec4F v )					{ set(v.x, v.y, v.z, v.w); }	// copy from vec4
 
 			//! Constructor which converts euler angles (radians) to a Quaternion
-			inline Quaternion(f32 x, f32 y, f32 z)				{ set(x, y, z); }
-			inline void fromEuler (Vec3F angs)				{ set(angs.x, angs.y, angs.z); }
+			inline Quaternion(f32 x, f32 y, f32 z)				{ set(x, y, z); }		
+			inline void fromEuler (Vec3F angs)				    { set( angs ); }		// DEGtoRAD included
 
 			//! Constructor which converts euler angles (radians) to a Quaternion
 			inline Quaternion(const Vec3F& angs)			{ set(angs.x, angs.y, angs.z); }
