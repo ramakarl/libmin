@@ -229,18 +229,18 @@ bool CImageFormatTga::Load (char *filename, ImageX* img )
 	case 8:		getGray( tga, buf, size );	break;
 	};
 
-    // Flip Y
-    int stride = size / m_yres;
-    unsigned char* tmp = (unsigned char*) malloc(stride);
-    for (int y = 0; y < m_yres / 2; y++) {
-        memcpy(tmp, buf + (y * stride), stride);
-        memcpy(buf + (y * stride), buf + ((m_yres - y - 1) * stride), stride);
-        memcpy(buf + ((m_yres - y - 1) * stride), tmp, stride);
-    }
+  // Flip Y
+  int stride = size / m_yres;
+  unsigned char* tmp = (unsigned char*) malloc(stride);
+  for (int y = 0; y < m_yres / 2; y++) {
+      memcpy(tmp, buf + (y * stride), stride);
+      memcpy(buf + (y * stride), buf + ((m_yres - y - 1) * stride), stride);
+      memcpy(buf + ((m_yres - y - 1) * stride), tmp, stride);
+  }
 
-    fclose( tga );
+  fclose( tga );
 
-    return true;
+  return true;
 }	 
 
 

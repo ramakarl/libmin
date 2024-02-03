@@ -25,7 +25,8 @@
 		#include <conio.h>
 		#include <timeapi.h>
 	#elif __ANDROID__
-		#include <fcntl.h>	
+		#include <fcntl.h>
+        #include <android/log.h>
 	#elif __linux__
 			#include <fcntl.h>
 			#include <stdarg.h>    // for va_start, va_args
@@ -65,7 +66,7 @@
 				va_list  vlist;
 			va_start(vlist, format);    
 			#if defined(__ANDROID__)
-				__android_log_vprint(ANDROID_LOG_DEBUG, "NAPP", fmt, vlist );
+				__android_log_vprint(ANDROID_LOG_DEBUG, "NAPP", format, vlist );
 			#elif defined(__linux__)
 				vprintf(format, vlist);
 			#elif defined(_WIN32)
@@ -239,7 +240,7 @@
 	sjtime			m_BaseTime;
 	sjtime			m_BaseTicks;
 
-	void start_timing ( sjtime base )
+	void start_basetime ( sjtime base )
 	{	
 		m_BaseTime = base;
 
@@ -251,7 +252,7 @@
 			struct timeval tv;
 			gettimeofday(&tv, NULL);
 			m_BaseTicks = ((sjtime) tv.tv_sec * 1000000LL) + (sjtime) tv.tv_usec;		
-		#endif
+        #endif
 	}
 
 	sjtime TimeX::GetSystemMSec ()
@@ -269,11 +270,16 @@
 	sjtime TimeX::GetSystemNSec ()
 	{
 		#ifdef _MSC_VER
+            // nanosec accuracy
 			LARGE_INTEGER currCount;
 			QueryPerformanceCounter ( &currCount );
 			return m_BaseTime + sjtime( (double(currCount.QuadPart-m_BaseCount.QuadPart) / m_BaseFreq.QuadPart) * SEC_SCALAR);
-		#else
-			printf ( "ERROR: GetSystemNSec not implemented. QueryPerformanceCounter not available.\n" );
+        #else
+            // millisec accuracy
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+            sjtime t = ((sjtime) tv.tv_sec * 1000000LL) + (sjtime) tv.tv_usec;
+            return m_BaseTime + ( t - m_BaseTicks) * 1000LL;			// 1000LL - converts microseconds to milliseconds
 		#endif	
 	}
 
@@ -286,9 +292,10 @@
 	TimeX::TimeX ()
 	{	
 		if ( !m_Started ) {
-			m_Started = true;			
-			SetSystemTime ();				// Get base time from wall clock
-			start_timing ( m_CurrTime );	// Start timing from base time
+			m_Started = true;
+            m_BaseTime = 0;
+            SetSystemTime ();				        // Set m_CurrTime to the wall clock
+			start_basetime ( m_CurrTime );	// Start base timer at wall clock
 		}
 		m_CurrTime = 0;
 	}

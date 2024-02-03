@@ -51,6 +51,8 @@ void NetworkSystem::netStartServer ( netPort srv_port )
 	netSocketBind ( srv_sock );
 
 	netSocketListen ( srv_sock );
+
+	dbgprintf ( "Host IP: %s\n", getIPStr ( getHostIP() ).c_str() );
 }
 
 void NetworkSystem::netServerListen ( int sock )

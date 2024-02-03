@@ -10,7 +10,7 @@
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
 
-#include "nv_gui.h"
+#include "gxlib.h"
 
 #include "main.h"
 
@@ -234,9 +234,6 @@ bool Application::appStartWindow ( void* awin, void* jvm, void* jobj, void* jcls
 
     //-- Additional OpenGL initialization
     appInitGL();
-
-    // GUI framework
-    enable_nvgui();
 
     if ( m_startup ) {                      // Call user init() only ONCE per application
         dbgprintf("init()");

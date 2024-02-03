@@ -28,11 +28,13 @@ bool glib::init2D ( const char* fontName )
 	basetime.SetTimeNSec ();
 
 	// confirm GL context to start
-	HGLRC ctx = wglGetCurrentContext ();
-	if (ctx==0x0) {
-		dbgprintf ( "ERROR: need valid context before calling gxLib::init2D.\n");
-		exit(-1);
-	}
+    #if defined(_WIN32)
+        HGLRC ctx = wglGetCurrentContext ();
+        if (ctx==0x0) { dbgprintf ( "ERROR: need valid context before calling gxLib::init2D.\n"); exit(-1); }
+    #elif defined(__ANDROID__)
+        EGLContext ctx = eglGetCurrentContext();
+        if (ctx==0x0) { dbgprintf ( "ERROR: need valid context before calling gxLib::init2D.\n"); exit(-1); }
+    #endif
 
 	// create shaders 
 	// (must have GL context at this point)
@@ -1211,9 +1213,10 @@ bool gxLib::loadFont ( const char * fontName )
 		m_font.glyphs[c].offX = glyphInfos.glyphs[c].pix.offX;
 		m_font.glyphs[c].offY = glyphInfos.glyphs[c].pix.offY;
 		m_font.glyphs[c].u = glyphInfos.glyphs[c].norm.u;
-		m_font.glyphs[c].v = glyphInfos.glyphs[c].norm.v;
 		m_font.glyphs[c].du = glyphInfos.glyphs[c].norm.width;
-		m_font.glyphs[c].dv = glyphInfos.glyphs[c].norm.height;
+
+		m_font.glyphs[c].v = 1 - glyphInfos.glyphs[c].norm.v;			// NOTE: Fonts are rendered from bottom up in .tga by bakeFonts.exe		
+		m_font.glyphs[c].dv = - glyphInfos.glyphs[c].norm.height;
 	}
 
 	return true;

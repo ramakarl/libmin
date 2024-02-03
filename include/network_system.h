@@ -110,13 +110,13 @@
 		bool netIsQueueEmpty() { return (mEventQueue.size()==0); }
 
 		// Accessors
-		TimeX		getSysTime()	{ return TimeX::GetSystemNSec(); }
-		std::string	getHostName ()		{ return mHostName; }
-		netIP		getHostIP ()		{ return mHostIP; }
-		std::string getIPStr ( netIP ip );
-		netIP		getStrToIP ( std::string name );
-		int			getMaxPacketLen ()	{ return mMaxPacketLen; }
-		EventPool*  getPool()			{ return mEventPool; }
+		TimeX				getSysTime()		{ return TimeX::GetSystemNSec(); }
+		std::string	getHostName ()	{ return mHostName; }
+		netIP				getHostIP ()		{ return mHostIP; }
+		std::string getIPStr ( netIP ip );									// return IP as a string
+		netIP				getStrToIP ( std::string name );
+		int					getMaxPacketLen ()	{ return mMaxPacketLen; }
+		EventPool*  getPool()						{ return mEventPool; }
 
 	public:
 

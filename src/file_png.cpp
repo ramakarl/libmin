@@ -30,14 +30,14 @@ Rename this file to lodepng.cpp to use it for C++, or to lodepng.c to use it for
 */
 #include "file_png.h"
 
-#ifdef DEBUG_HEAP
-	#define _CRTDBG_MAP_ALLOC  
-	#include <stdlib.h>  
-	#include <crtdbg.h> 
-#else
-	#include <stdlib.h>  
+#ifdef _WIN32
+    #ifdef DEBUG_HEAP
+    	#define _CRTDBG_MAP_ALLOC
+    	#include <crtdbg.h>
+    #endif
 #endif
 
+#include <stdlib.h>
 #include <stdio.h>
 
 #ifdef LODEPNG_COMPILE_CPP

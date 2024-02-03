@@ -25,14 +25,12 @@
 
 #include "file_tga.h"
 
-#ifdef DEBUG_HEAP
-	#define _CRTDBG_MAP_ALLOC  
-	#include <stdlib.h>  
-	#include <crtdbg.h> 
-#else
-	#include <stdlib.h>  
+#ifdef _WIN32
+    #ifdef DEBUG_HEAP
+        #define _CRTDBG_MAP_ALLOC
+        #include <crtdbg.h>
+    #endif
 #endif
-
 
 TGA::~TGA( void )
 {

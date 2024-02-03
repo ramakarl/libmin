@@ -26,13 +26,16 @@
 #include <algorithm>
 
 #if defined(__ANDROID__)
-    #include <android/log.h>               // for Android printf logs  
+    #include <android/log.h>               // for Android printf logs
+    #include <sys/stat.h>
 #elif defined(_WIN32)
     #ifndef BUILD_CMDLINE
       #include <windows.h>
       #include <processthreadsapi.h>      // Process memory usage on Win32
       #include <psapi.h>  
     #endif
+#else
+    #include <sys/stat.h>
 #endif
 
 static std::vector<std::string> gPaths;
@@ -229,10 +232,12 @@ void checkMem(xlong& total, xlong& used, xlong& app)
         case GL_INVALID_ENUM:       return "GL_INVALID_ENUM";
         case GL_INVALID_VALUE:      return "GL_INVALID_VALUE";
         case GL_INVALID_OPERATION:  return "GL_INVALID_OPERATION";
-        case GL_STACK_OVERFLOW:     return "GL_STACK_OVERFLOW";
-        case GL_STACK_UNDERFLOW:    return "GL_STACK_UNDERFLOW";
         case GL_OUT_OF_MEMORY:      return "GL_OUT_OF_MEMORY";
-        case GL_TABLE_TOO_LARGE:    return "GL_TABLE_TOO_LARGE";        
+        #ifndef __ANDROID__
+          case GL_STACK_OVERFLOW:     return "GL_STACK_OVERFLOW";
+          case GL_STACK_UNDERFLOW:    return "GL_STACK_UNDERFLOW";
+          case GL_TABLE_TOO_LARGE:    return "GL_TABLE_TOO_LARGE";
+        #endif
         case GL_INVALID_FRAMEBUFFER_OPERATION: return "GL_INVALID_FRAMEBUFFER_OPERATION";      // opengl 3 errors (1)        
         default:                    return "UNKNOWN"; 
         }

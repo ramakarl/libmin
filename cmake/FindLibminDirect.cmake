@@ -1,13 +1,13 @@
 
 ####################################################################################
-# LIBMIN CONFIG
+# LIBMIN DIRECT
 #
-# Provide the libmin repository path, install path, and libext path
-# for access to mains, third-party libs and cmake helpers
-#  LIBMIN_REPO_PATH    = path to required source repository (eg. libmin/src)
-#  LIBMIN_INSTALL_PATH = path to installed libmin binaries (eg. libmin.lib, .dll, .so)
-#  LIBEXT_PATH         = path to third-party libs (eg. libjpg, libgvdb, liboptix)
+# This cmake provides Libmin directly as compiled files.
+# Does not search for libmin binaries or libext.
+# Application cmake can use this as:
+#      find_package ( LibminDirect )
 #
+
 function(_CONFIRM_PATH outvar targetPath targetFile varName )
   set(oneValueArgs outVar targetPath targetFile varName )  
   unset ( result CACHE )  
@@ -37,22 +37,6 @@ if ( NOT DEFINED LIBEXT_REPO )
 endif()
 _CONFIRM_PATH ( LIBMIN_REPO "${LIBMIN_REPO}" "/src/dataptr.cpp" "LIBMIN_ROOT" )
 
-# LIBEXT_ROOT - by default use the minimal /libext that comes with libmin
-#
-if ( NOT DEFINED LIBEXT_REPO )
-  get_filename_component ( LIBEXT_REPO "${LIBMIN_ROOT}/libext" REALPATH)
-  set ( LIBEXT_REPO ${LIBEXT_REPO} CACHE PATH "Path to /libext source" )
-endif()
-_CONFIRM_PATH ( LIBEXT_REPO "${LIBEXT_REPO}" "/win64/libjpg_2019x64.lib" "LIBEXT_REPO")
-
-# LIBMIN_INSTALL - by default assume its in /build/libmin 
-#
-if ( NOT DEFINED LIBMIN_INSTALL )
-  get_filename_component ( LIBMIN_INSTALL "${LIBMIN_ROOT}/../build/libmin" REALPATH)
-  set ( LIBMIN_INSTALL ${LIBMIN_INSTALL} CACHE PATH "Path to /libmin installed binaries" )
-endif()
-_CONFIRM_PATH ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" "/bin/libmind.lib" "LIBMIN_INSTALL")
-
 # Repository paths
 set ( LIBMIN_REPO_MAINS "${LIBMIN_REPO}/mains" )
 set ( LIBMIN_REPO_SRC "${LIBMIN_REPO}/src")
@@ -66,42 +50,9 @@ if ( ${DEBUG_HEAP} )
    add_definitions( -D_CRTDBG_MAP_ALLOC)
 endif()
 
-message ( STATUS "----- Running LibminConfig.cmake" )
-message ( STATUS "  CURRENT DIRECTORY: ${CMAKE_CURRENT_SOURCE_DIR}" )
-message ( STATUS "  LIBMIN REPOSITORY: ${LIBMIN_REPO}" )
-message ( STATUS "  LIBEXT REPOSITORY: ${LIBEXT_REPO}" )
-message ( STATUS "  LIBMIN INSTALLED:  ${LIBMIN_INSTALL}" )
-
-#-------------------------------------- COPY CUDA BINS
-# This macro copies all binaries for the CUDA library to the target executale location. 
-#
-macro(_copy_cuda_bins projname )	
-	add_custom_command(
-		TARGET ${projname} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy ${CUDA_DLL} $<TARGET_FILE_DIR:${PROJNAME}>   
-	)
-endmacro()
-
-####################################################################################
-# Provide Libext - extended 3rd party libraries: 
-#  OpenSSL, Laszip, OptiX, PortAudio, CUFFT, PixarUSD, LibGDVB, LibOptiX
-#
-function (_REQUIRE_LIBEXT)    
-    message (STATUS "  Searching for LIBEXT... ${LIBEXT_REPO}")
-    if (EXISTS "${LIBEXT_REPO}" AND IS_DIRECTORY "${LIBEXT_REPO}")
-        set( LIBEXT_FOUND TRUE )
-        message (STATUS "  ---> Using LIBEXT: ${LIBEXT_REPO}")
-        list( APPEND CMAKE_MODULE_PATH "${LIBEXT_REPO}/cmake" )
-        list( APPEND CMAKE_PREFIX_PATH "${LIBEXT_REPO}/cmake" )        
-        set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} PARENT_SCOPE)
-        set( CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
-        set( LIBEXT_FOUND ${LIBEXT_FOUND} PARENT_SCOPE)
-    else()
-message (FATAL_ERROR "  LIBEXT Not Found at: ${LIBEXT_REPO}. 
-Set LIBEXT_REPO to the location of libext.
-")
-    endif()
-endfunction()
+message ( STATUS "----- Running LibminDirect.cmake" )
+message ( STATUS "  CURRENT DIRECTORY:  ${CMAKE_CURRENT_SOURCE_DIR}" )
+message ( STATUS "  LIBMIN SOURCE CODE: ${LIBMIN_REPO}" )
 
 ###################################################################################
 # Provide a cross-platform main
@@ -130,7 +81,7 @@ function ( _REQUIRE_MAIN )
 endfunction()
 
 ###################################################################################
-# Include OpenGL 
+# Include OpenGL
 #
 function ( _REQUIRE_GL )
     OPTION (BUILD_OPENGL "Build with OpenGL" ON)
@@ -152,20 +103,35 @@ function ( _REQUIRE_GL )
     endif()
 endfunction()
 
+###################################################################################
+# Include GLEW
+#
 function ( _REQUIRE_GLEW)    
     OPTION (BUILD_GLEW "Build with GLEW" ON)
     if (BUILD_GLEW)
-      include_directories("${LIBEXT_REPO}/include")
+      include_directories("${LIBEXT_PATH}/include")
       if (WIN32)        
-	    LIST(APPEND LIBRARIES_OPTIMIZED "${LIBEXT_REPO}/win64/glew64.lib" )
-	    LIST(APPEND LIBRARIES_DEBUG "${LIBEXT_REPO}/win64/glew64d.lib" )
+	    LIST(APPEND LIBRARIES_OPTIMIZED "${LIBEXT_PATH}/win64/glew64.lib" )
+	    LIST(APPEND LIBRARIES_DEBUG "${LIBEXT_PATH}/win64/glew64d.lib" )
         set(LIBRARIES_OPTIMIZED ${LIBRARIES_OPTIMIZED} PARENT_SCOPE)
         set(LIBRARIES_DEBUG ${LIBRARIES_DEBUG} PARENT_SCOPE)
-        LIST(APPEND GLEW_FILES "${LIBEXT_REPO}/win64/glew64.dll" )
-        LIST(APPEND GLEW_FILES "${LIBEXT_REPO}/win64/glew64d.dll" )
+        LIST(APPEND GLEW_FILES "${LIBEXT_PATH}/win64/glew64.dll" )
+        LIST(APPEND GLEW_FILES "${LIBEXT_PATH}/win64/glew64d.dll" )
         set(GLEW_FILES ${GLEW_FILES} PARENT_SCOPE)
       endif()
       message ( STATUS "  ---> Using GLEW (dll)" )        
+    endif()
+endfunction()
+
+###################################################################################
+# Include OpenGL ES 3.0
+#
+function ( _REQUIRE_GLES )
+    OPTION (BUILD_OPENGL "Build with OpenGL ES" ON)    
+    if (BUILD_OPENGL)                
+        message ( STATUS "  Linking with GLESv3.." )
+        add_definitions (-DUSE_OPENGL)
+        set(GLES_VER "GLESv3" PARENT_SCOPE)    
     endif()
 endfunction()
 

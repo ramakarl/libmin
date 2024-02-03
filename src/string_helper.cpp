@@ -72,9 +72,11 @@ int strToI (std::string s, int &x) {
 
 xlong strToI64 (std::string s) 
 {
-	#ifdef _WIN32	
+	#if defined(_WIN32)
 		return _strtoui64( s.c_str(), NULL, 0 );
-	#else
+    #elif defined(__ANDROID__)
+        return std::strtoull( s.c_str(), NULL, 0 );
+    #else
 		return strtoull( s.c_str(), NULL< 0 );
 	#endif
 }

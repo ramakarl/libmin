@@ -21,7 +21,9 @@
 #include "dataptr.h"
 
 #ifdef USE_OPENGL
-  #include <GL/glew.h>
+  #ifdef _WIN32
+    #include <GL/glew.h>
+  #endif
 #endif
 #ifdef USE_CUDA
 	#include "common_cuda.h"
@@ -175,12 +177,12 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
       switch (mUseType) {
       case DT_UCHAR:    glTexImage2D ( GL_TEXTURE_2D, 0, GL_R8,    mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_BYTE, src );  break;
       case DT_UCHAR3:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB8,  mUseRX, mUseRY, 0, GL_RGB,  GL_UNSIGNED_BYTE, src );  break; // <-- NOTE: GL_RGBA8 (4 chan) as GL_RGB8 (3 chan) not supported by CUDA interop
- 	    case DT_USHORT3:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB16,  mUseRX, mUseRY, 0, GL_RGB,	GL_UNSIGNED_SHORT,src );  break;
-      case DT_UCHAR4:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGBA,  GL_UNSIGNED_BYTE, src );  break;
-      case DT_USHORT:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_SHORT,src );  break;
-      case DT_INT:      glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_INT,  src );  break;
+      case DT_USHORT3:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB16I,mUseRX, mUseRY, 0, GL_RGB,	GL_UNSIGNED_SHORT,src );  break;
+      case DT_UCHAR4:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8, mUseRX, mUseRY, 0, GL_RGBA,  GL_UNSIGNED_BYTE, src );  break;
+      case DT_USHORT:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,  mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_SHORT,src );  break;
+      case DT_INT:      glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,  mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_INT,  src );  break;
       case DT_FLOAT:    glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,  mUseRX, mUseRY, 0, GL_RED,  GL_FLOAT, src);        break;
-      case DT_FLOAT4:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA32F, mUseRX, mUseRY, 0, GL_RGBA,  GL_FLOAT, src);        break;
+      case DT_FLOAT4:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA32F,mUseRX, mUseRY, 0, GL_RGBA,  GL_FLOAT, src);        break;
       };
       checkGL ( "glTexImage2D (DataPtr::Append)" );
 
@@ -271,7 +273,7 @@ void DataPtr::Commit ()
       case DT_USHORT: glTexImage2D ( GL_TEXTURE_2D, 0, GL_R16F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_SHORT,mCpu );  break;
       case DT_INT:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_INT,  mCpu );  break;
       case DT_UCHAR3:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGB,  GL_UNSIGNED_BYTE, mCpu );  break;
-	case DT_USHORT3:glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB16,	mUseRX, mUseRY, 0, GL_RGB,	GL_UNSIGNED_SHORT, mCpu );	break;
+	case DT_USHORT3:glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB16I,	mUseRX, mUseRY, 0, GL_RGB,	GL_UNSIGNED_SHORT, mCpu );	break;
       case DT_UCHAR4:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGBA,  GL_UNSIGNED_BYTE, mCpu );  break;
       case DT_FLOAT:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,  mUseRX, mUseRY, 0, GL_RED,  GL_FLOAT, mCpu);      break;
       case DT_FLOAT4:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA32F, mUseRX, mUseRY, 0, GL_RGBA,  GL_FLOAT, mCpu);    break;
@@ -313,8 +315,14 @@ void DataPtr::Retrieve ()
 
       int w, h;
       glBindTexture(GL_TEXTURE_2D, mGLID );
-      glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w );
-      glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h );
+
+      #ifdef __ANDROID__
+        w = mUseRX;
+        h = mUseRY;
+      #else
+        glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w );
+        glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h );
+      #endif
 
       if (mFBO==-1) glGenFramebuffers (1, (GLuint*) &mFBO);
       glBindFramebuffer ( GL_FRAMEBUFFER, mFBO);
