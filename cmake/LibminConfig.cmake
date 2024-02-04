@@ -32,17 +32,18 @@ endfunction()
 # LIBMIN_ROOT - libmin src, should be set by caller during bootstrap
 #
 message ( STATUS "  LIBMIN_ROOT: ${LIBMIN_ROOT}")
-if ( NOT DEFINED LIBEXT_REPO )
-  set ( LIBMIN_REPO "${LIBMIN_ROOT}" CACHE PATH "Path to /libmin source" )
-endif()
+get_filename_component ( LIBMIN_REPO "${LIBMIN_ROOT}" REALPATH)
+set ( LIBMIN_REPO "${LIBMIN_REPO}" CACHE PATH "Path to /libmin source" )
 _CONFIRM_PATH ( LIBMIN_REPO "${LIBMIN_REPO}" "/src/dataptr.cpp" "LIBMIN_ROOT" )
 
 # LIBEXT_ROOT - libext src, by default use the minimal /libext that comes with libmin
 #
 if ( NOT DEFINED LIBEXT_REPO )
   get_filename_component ( LIBEXT_REPO "${LIBMIN_ROOT}/libext" REALPATH)
-  set ( LIBEXT_REPO ${LIBEXT_REPO} CACHE PATH "Path to /libext source" )
+else()
+  get_filename_component ( LIBEXT_REPO "${LIBEXT_REPO}" REALPATH)
 endif()
+set ( LIBEXT_REPO ${LIBEXT_REPO} CACHE PATH "Path to /libext source" )
 _CONFIRM_PATH ( LIBEXT_REPO "${LIBEXT_REPO}" "/win64/libjpg_2019x64.lib" "LIBEXT_REPO")
 
 # LIBMIN_INSTALL - libmin binaries, by default assume its in /build/libmin 
@@ -51,8 +52,10 @@ _CONFIRM_PATH ( LIBEXT_REPO "${LIBEXT_REPO}" "/win64/libjpg_2019x64.lib" "LIBEXT
 if ( NOT LIBMIN_INSTALL STREQUAL "SELF" )
   if ( NOT DEFINED LIBMIN_INSTALL )
     get_filename_component ( LIBMIN_INSTALL "${LIBMIN_ROOT}/../build/libmin" REALPATH)
-    set ( LIBMIN_INSTALL ${LIBMIN_INSTALL} CACHE PATH "Path to /libmin installed binaries" )
+  else()
+    get_filename_component ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" REALPATH)
   endif()
+  set ( LIBMIN_INSTALL ${LIBMIN_INSTALL} CACHE PATH "Path to /libmin installed binaries" )
   _CONFIRM_PATH ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" "/bin/libmind.lib" "LIBMIN_INSTALL")
 endif()
 
