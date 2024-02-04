@@ -11,6 +11,7 @@ Message("PROJECT NAME: ${PROJNAME}")
 #
 set ( LIBMIN_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" )
 list (APPEND CMAKE_PREFIX_PATH "${LIBMIN_ROOT}/cmake" )
+set ( LIBMIN_INSTALL "SELF" CACHE PATH "Libmin binaries" )
 find_package ( Libmin CONFIG )
 unset ( Libmin_DIR CACHE )
 
