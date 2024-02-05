@@ -453,8 +453,8 @@ LRESULT CALLBACK WinProc (HWND m_hWnd,
     case WM_SIZE: {
         int sw = LOWORD(lParam), sh = HIWORD(lParam);
         if (sw > 0 && sh > 0) {
-            pApp->setWinSz (sw, sh);
             pApp->reshape (sw, sh);
+            pApp->setWinSz (sw, sh);            
         }
     } break;
     case WM_SYSCOMMAND:
