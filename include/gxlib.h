@@ -89,9 +89,11 @@
         void        createShader3D ();
 
         // building geometry
-        gxSet*      getCurrSet ()         {return &m_set[m_curr_grp];}   
-        gxSet*      getSet (int grp)      {return &m_set[grp];}
-        void        clearSet (int grp);
+        gxSet*      addSet ( char st, bool bStatic );
+        gxSet*      getCurrSet ()         {return &m_sets[m_curr_set];}   
+        gxSet*      getSet (int set)      {return &m_sets[set];}
+        void        clearSet (int set);
+        void        clearSets ();
         void        expandSet ( gxSet* s, uchar typ, uchar prim, int64_t add_bytes );
         void        attachPrim ( gxSet* s, uchar typ, uchar prim );
         void        finishPrim ( gxSet* s );
@@ -107,29 +109,31 @@
 
         // rendering 
         void        drawSet ( int g );
+        void        drawSets ();
         
         // member vars
         int         m_Xres, m_Yres;
-        Vec4F   m_view2D;
+        Vec4F       m_view2D;
         bool        m_debug;
 
         // primitive sets
-        gxSet       m_set[GRP_MAX];
-        int         m_curr_grp;                 // group: S_STAT2, S_DYN2, S_STAT3, S_DYN3
+        std::vector<gxSet>    m_sets;
+        
+        int         m_curr_set;                 // current set
         uchar       m_curr_type;                // types: 'I' (Image), 'i' (gxImg/font), 'x' (none)        
         uchar       m_curr_prim;                // prims: PRIM_POINTS, PRIM_LINES, PRIM_TRI, PRIM_IMGS
         uint64_t    m_curr_img;                 
         int         m_curr_num;
 
         // text drawing
-        float		m_text_hgt, m_text_kern;
+        float		    m_text_hgt, m_text_kern;
         gxFont      m_font;
         ImageX      m_font_img, m_white_img;
 
         // opengl
-        int		 mSH[S_MAX];					// shaders
-		    int		 mPARAM[S_MAX][SP_MAX];      // shader params
-        int    mVAO;                       // VAO
+        int		      mSH[S_MAX];					// shaders
+		    int		      mPARAM[S_MAX][SP_MAX];      // shader params
+        int         mVAO;                       // VAO
 
         // sin/cos tables
         float       cos_table[36001];

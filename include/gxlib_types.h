@@ -13,14 +13,6 @@
     #include "vec.h"
     #include "common_defs.h"
     
-    // Group types
-    #define G_NONE          0
-    #define G_STAT2         1
-    #define G_DYN2          2
-    #define G_STAT3         3
-    #define G_DYN3          4
-    #define GRP_MAX         5
-
     // Primitive types
     #define PRIM_NONE       0
     #define PRIM_POINTS     1
@@ -29,11 +21,11 @@
     #define PRIM_IMGS       4
 
     // Shader IDs
-	#define S2D 	        2		// Color shader (2D)
+	  #define S2D 	        2		// Color shader (2D)
     #define S3D 	        3		// 3D shader (Phong)
-	#define SINST	        4		// Instance shader
-	#define SPNT	        5		// Point shader (for compact point VBOs)
-	#define S_MAX	        6
+	  #define SINST	        4		// Instance shader
+	  #define SPNT	        5		// Point shader (for compact point VBOs)
+	  #define S_MAX	        6
 
     // Shader Params
     #define SP_MODEL    0
@@ -52,15 +44,15 @@
 
     // GLSL slots
     #define slotPos 	0
-	#define	slotClr	    1 
+	  #define	slotClr	    1 
     #define slotUVs		2
-	#define slotNorm	3
+	  #define slotNorm	3
 
     // GX img types
     #define IMG_NULL	    0xFFFFFFFF
-	#define IMG_RGB			0
-	#define IMG_RGBA		1
-	#define IMG_GREY16		2	
+	  #define IMG_RGB			0
+	  #define IMG_RGBA		1
+	  #define IMG_GREY16		2	
 
     #define NO_NORM		-111
 
@@ -87,7 +79,9 @@
         uint64_t    img_ptr;    // 8 bytes
     };
 
-    struct gxSet {        
+    struct gxSet {
+        char        stype;          // set type, '2'=2D, '3'=3D
+        bool        sstatic;        // is set static
         int64_t     lastpos;        // marker pos
         int64_t     size, max;      // buffer size        
         char*       geom;           // CPU buffer

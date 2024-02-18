@@ -18,11 +18,11 @@ TimeX basetime;
 // 2D Interface
 bool glib::init2D ( const char* fontName )
 {
-	gx.m_curr_grp = G_DYN2;
+	gx.m_curr_set = 0;
 	gx.m_curr_type = 'x';
 	gx.m_text_hgt = 24;
-    gx.m_Xres = -1;
-    gx.m_Yres = -1;
+  gx.m_Xres = -1;
+  gx.m_Yres = -1;
 	gx.m_debug = false;
 
 	basetime.SetTimeNSec ();
@@ -72,23 +72,29 @@ void glib::setTextSz ( float hgt, float kern )
 	gx.m_text_kern = kern;
 }
 
-void glib::clear2D ()
-{
-	gx.clearSet ( G_STAT2 );
+void glib::clear2D () {
+
+	gx.clearSet ( gx.m_curr_set );
 }
 
 void glib::start2D ( int w, int h, bool bStatic )
 {
-  gx.m_curr_grp = (bStatic ? G_STAT2 : G_DYN2 );
-  gx.m_curr_prim = PRIM_NONE;	
-	gx.m_curr_num = 0;	
-	setview2D ( w,  h);
+	gxSet s;
+	gx.m_curr_prim = PRIM_NONE;
+	gx.m_curr_num = 0;
+	
+	gxSet* set = gx.addSet ( '2', bStatic );	
+
+	setview2D ( w, h );
 }
 
 void glib::end2D ()
 {
 	// finish any remaining prims
-	gx.finishPrim ( gx.getCurrSet() );    
+	gx.finishPrim ( gx.getCurrSet() );	
+
+	// start next set
+	gx.m_curr_set++;	
 }
 
 // set view matrices for full screen 2D window
@@ -104,19 +110,19 @@ void glib::setview2D (int w, int h)
   model.Identity();
   proj.Identity();
 
-	setMatrices2D ( gx.m_curr_grp, gx.m_Xres, gx.m_Yres, model, view, proj );   
+	setMatrices2D ( gx.m_curr_set, gx.m_Xres, gx.m_Yres, model, view, proj );   
 }
 
 // set view matrices explicitly
 void glib::setview2D ( Matrix4F& model, Matrix4F& view, Matrix4F& proj )
 {
-	setMatrices2D( gx.m_curr_grp, gx.m_Xres, gx.m_Yres, model, view, proj );
+	setMatrices2D( gx.m_curr_set, gx.m_Xres, gx.m_Yres, model, view, proj );
 }
 
-void glib::setMatrices2D ( int grp, int xr, int yr, Matrix4F& model, Matrix4F& view, Matrix4F& proj )
+void glib::setMatrices2D ( int s, int xr, int yr, Matrix4F& model, Matrix4F& view, Matrix4F& proj )
 {	
 	// assign 2D view matrices to a cmd set
-  gxSet* set = gx.getSet(grp);
+  gxSet* set = gx.getSet(s);
 
   memcpy ( set->model, model.GetDataF(), 16 * sizeof(float) );
 	memcpy ( set->view,  view.GetDataF(), 16 * sizeof(float) );
@@ -278,9 +284,11 @@ void glib::drawText ( Vec2F a, char* msg, Vec4F clr )
 
 void glib::start3D ( Camera3D* cam, bool bStatic )
 {
-  gx.m_curr_grp = (bStatic ? G_STAT3 : G_DYN3 );
   gx.m_curr_prim = PRIM_NONE;	
 	gx.m_curr_num = 0;	
+
+	gxSet* set = gx.addSet ( '3', bStatic );
+
 	setView3D ( cam );	
 	
 	// default env map & material
@@ -290,13 +298,13 @@ void glib::start3D ( Camera3D* cam, bool bStatic )
 
 void glib::setEnvmap3D ( ImageX* img )
 {
-	gxSet* set = gx.getSet(gx.m_curr_grp);
+	gxSet* set = gx.getCurrSet();
 	set->envmap = img->getGLID();
 }
 
 void glib::setView3D ( Camera3D* cam )
 {
-	gxSet* s = gx.getSet ( gx.m_curr_grp );
+	gxSet* s = gx.getCurrSet ();
 	Matrix4F ident; 
 	ident.Identity ();
 	s->cam_from = cam->getPos();
@@ -308,7 +316,7 @@ void glib::setView3D ( Camera3D* cam )
 
 void glib::setMaterial ( Vec3F Ka, Vec3F Kd, Vec3F Ks, float Ns, float Tf)
 {
-	gxSet* s = gx.getSet ( gx.m_curr_grp );
+	gxSet* s = gx.getCurrSet ();
 	s->ambclr = Ka;
 	s->diffclr = Kd;
 	s->specclr = Ks;
@@ -317,7 +325,7 @@ void glib::setMaterial ( Vec3F Ka, Vec3F Kd, Vec3F Ks, float Ns, float Tf)
 
 void glib::setLight3D ( Vec3F pos, Vec4F clr )
 {
-	gxSet* s = gx.getSet ( gx.m_curr_grp );
+	gxSet* s = gx.getCurrSet ();
 	s->lightpos = pos;
 	s->lightclr = clr;
 }
@@ -326,6 +334,9 @@ void glib::end3D ()
 {
 	// finish any remaining prims
 	gx.finishPrim ( gx.getCurrSet() );
+	
+	// start next set
+	gx.m_curr_set++;
 }
 
 inline void vclr3d ( gxVert3D* v, Vec4F clr, float a=1)
@@ -432,7 +443,7 @@ void glib::drawBoxDotted3D (Vec3F p, Vec3F q, Vec4F clr, int segs )
 
 void glib::drawCircle3D ( Vec3F p1, float r, Vec4F clr  )
 {
-	gxSet* s = gx.getSet ( gx.m_curr_grp );	
+	gxSet* s = gx.getCurrSet ();	
 	Vec3F n = p1 - s->cam_from; n.Normalize();
 
 	drawCircle3D ( p1, n, r, clr );
@@ -547,7 +558,7 @@ void glib::drawText3D ( Vec3F a, float sz, char* msg, Vec4F clr )
 	gxVert3D* v = gx.allocGeom3D ( len*6, PRIM_TRI, &gx.m_font_img );
 
 	// create a basis space oriented toward the camera 
-	gxSet* s = gx.getSet ( gx.m_curr_grp );	
+	gxSet* s = gx.getCurrSet ();	
 	Vec3F n = a - s->cam_from; n.Normalize();
 	Vec3F up = (fabs(n.y)==1) ? Vec3F(0,0,1) : Vec3F(0,1,0);
 	Vec3F bu = n.Cross (up);  bu.Normalize();
@@ -691,18 +702,13 @@ void glib::drawAll ()
 {
 	checkGL ( "drawAll start");
 	
-	// draw each group
-	gx.drawSet ( G_STAT2 );
-	gx.drawSet ( G_STAT3 );
-	gx.drawSet ( G_DYN3 );	
-	gx.drawSet ( G_DYN2 );
-
-	// clear dynamic buffers
-	gx.clearSet ( G_DYN2 );
-	gx.clearSet ( G_DYN3 );
+	// draw each set
+	gx.drawSets();
 
 	checkGL ( "drawAll end");
 
+	// restart sets
+	gx.m_curr_set = 0;
 }
 
 	
@@ -712,22 +718,51 @@ gxLib::gxLib ()
 {
     int start_sz = 256;
 
-    // clear groups
-    for (int n=0; n < GRP_MAX; n++) {
-        m_set[n].size = 0;
-		m_set[n].bufsize = 0;
-        m_set[n].max = start_sz;
-        m_set[n].geom = (char*) malloc ( start_sz  );
-		m_set[n].lastpos = -1;
-        m_set[n].vbo = 0;
-    }
+    // clear sets
+		m_sets.clear();    
 }
 
-void gxLib::clearSet ( int g )
+gxSet* gxLib::addSet ( char st, bool bStatic )
+{	
+	int n = m_sets.size();	
+	if ( m_curr_set >= n ) {
+		// allocate new set
+		gxSet newset;
+		newset.geom = 0;
+		newset.size = 0;
+		newset.bufsize = 0;
+		newset.max = 256;		
+		newset.geom = (char*) malloc ( 256 );
+		newset.lastpos = -1;
+		newset.vbo = 0;
+		m_sets.push_back ( newset );
+		m_curr_set = n;
+	} 
+	// get set
+  gxSet* s = getSet( m_curr_set );
+	s->stype = st;
+	s->sstatic = bStatic;
+	if ( !bStatic ) {		
+		// reset dynamic sets
+		s->size = 0;		
+		s->lastpos = -1;		
+	}
+	return s;
+}
+
+void gxLib::clearSet ( int s )
 {
-	gxSet* s = getSet ( g );
-	s->size = 0;
-	s->lastpos = -1;
+	gxSet* set = getSet ( s );
+	set->size = 0;
+	set->lastpos = -1;
+}
+void gxLib::clearSets ()
+{
+	for (int n=0; n < m_sets.size(); n++) {
+		if (!m_sets[n].sstatic) {
+			gx.clearSet (n);
+		}
+	}
 }
 
 void gxLib::finishPrim ( gxSet* s )
@@ -1222,6 +1257,12 @@ bool gxLib::loadFont ( const char * fontName )
 	return true;
 }
 
+void gxLib::drawSets ()
+{
+	for (int n=0; n < m_sets.size(); n++)
+		drawSet ( n );
+}
+
 void gxLib::drawSet ( int g )
 {
 	gxSet* s = gx.getSet( g );
@@ -1239,7 +1280,7 @@ void gxLib::drawSet ( int g )
 		t1 = clock();
 	#endif	
 	// select shader
-	int sh = (g==G_STAT3 || g==G_DYN3) ? S3D : S2D;
+	int sh = (s->stype=='3') ? S3D : S2D;
 
 	// bind shader	
 	glUseProgram ( mSH[ sh ] );	
@@ -1439,8 +1480,9 @@ void gxLib::drawSet ( int g )
 	#endif	
 
 	if ( m_debug ) {
-		dbgprintf ( "gx: %s, vtx %d, draw calls %d (%4.2fmb), %3.3f msec\n",  
-			(g==G_STAT2) ? "ST2" : ((g==G_STAT3) ? "ST3" : (g==G_DYN2) ? "DYN2" : "DYN3"),
+		dbgprintf ( "gx: %s %s, vtx %d, draw calls %d (%4.2fmb), %3.3f msec\n",  
+			(s->stype=='2') ? "2D" : "3D",
+			(s->sstatic==true) ? "static" : "dyn",
 			s->primcnt,
 			s->calls, 
 			s->mem, 
