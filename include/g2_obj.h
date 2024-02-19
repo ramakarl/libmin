@@ -43,12 +43,12 @@
 
     class GXAPI g2Obj {
     public:   
-        g2Obj::g2Obj();
+        g2Obj();
 
         virtual uchar getType()     { return 'o'; }              
         virtual void UpdateLayout ( Vec4F p )  {};
         virtual void SetProperty ( std::string key, std::string val );
-        virtual void drawBackgrd ()         {};
+        virtual void drawBackgrd (bool dbg) {};
         virtual void drawBorder (bool dbg)  {};
         virtual void drawForegrd (bool dbg) {};      
         

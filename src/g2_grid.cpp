@@ -84,9 +84,15 @@ void g2Grid::UpdateLayout ( Vec4F p )
         case '%': sz = major_res * spec.amt/100.0f; break;
         case 'x': sz = spec.amt;     break;
         case '*': sz = star_sz;      break;
-        };              
-        getDimensions ( L, sz, pos, adv );   
-        if (obj != 0x0) obj->UpdateLayout( pos );
+        };       
+
+        getDimensions ( L, sz, pos, adv );
+
+        // recursive call
+        if (obj != 0x0) {
+          obj->UpdateLayout( pos );
+        }
+
         pos += adv;
     }
 }
@@ -104,7 +110,7 @@ void g2Grid::drawChildren ( uchar what, bool dbg )
           // draw children backgrounds
           for (int n=0; n < m_layout[L].sections.size(); n++) {
             obj = m_layout[L].sections[n];
-            if (obj !=0x0 ) obj->drawBackgrd();
+            if (obj !=0x0 ) obj->drawBackgrd( dbg );
           }
           break;
         case 'r':
@@ -126,8 +132,11 @@ void g2Grid::drawChildren ( uchar what, bool dbg )
     }    
 }
 
-void g2Grid::drawBackgrd ()
+void g2Grid::drawBackgrd (bool dbg)
 {
+    if (dbg) {
+      drawFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(0.1,0,0,1) );      
+    }
     if ( m_backclr.w > 0 ) {
       drawFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr );      
     }

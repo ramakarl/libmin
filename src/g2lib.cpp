@@ -244,6 +244,7 @@ bool g2Lib::BuildLayout ( g2Obj* obj, uchar ly )
     if (grid==0x0) {
         printf ("ERROR: This is not a grid.\n");
         exit(-2);
+        return false;
     }
 
     // get layout on object
@@ -275,11 +276,14 @@ bool g2Lib::BuildLayout ( g2Obj* obj, uchar ly )
         if ( sz.find('%') != std::string::npos ) {
             // percent found
             size.typ = '%';
-            size.amt = strToF ( sz );
+            size.amt = strToF ( strSplitLeft( sz, "%") );
         } else if ( sz.find('p') != std::string::npos ) {
             // pixels found
             size.typ = 'x';
-            size.amt = strToF ( sz );
+            size.amt = strToF ( strSplitLeft( sz, "px" ) );
+            if ( size.amt==0 ) {
+                dbgprintf ( "WARNING: %s has size 0 for %s.\n", obj->getName().c_str(), sz.c_str() );
+            }
         } else if ( sz.find('.') != std::string::npos ) {
             // repeat found
             size.typ = '.';
@@ -292,6 +296,8 @@ bool g2Lib::BuildLayout ( g2Obj* obj, uchar ly )
         }
         layout->sizes.push_back ( size );
     }
+
+    return true;
 }
 
 
@@ -341,23 +347,34 @@ void g2Lib::BuildSections ( g2Obj* obj, uchar ly )
 
 void g2Lib::LayoutAll (float xres, float yres)
 {
-    if ( m_objlist.size() == 0) return; 
+    if ( m_objlist.size() == 0) { 
+      dbgprintf ( "WARNING: g2 Layout has 0 objects.\n" );
+      return; 
+    }
 
     g2Obj* curr = m_objlist[ m_root ];
     
     curr->UpdateLayout ( Vec4F(0, 0, xres, yres) );
+
+    //-- debugging
+    for (int n=0; n < m_objlist.size(); n++) {
+      curr = m_objlist[n];
+      dbgprintf ( "%s: %f,%f,%f,%f\n", curr->m_name.c_str(), curr->m_pos.x, curr->m_pos.y, curr->m_pos.z, curr->m_pos.w );
+    }
 }
 
 
 void g2Lib::Render (int w, int h)
 {
-    start2D( w, h );
+    // dbgprintf ( "RENDER g2lib, %d %d\n", w, h);
+
+    start2D ( w, h );
     
     g2Obj* curr = m_objlist[ m_root ];
 
-    setview2D ( curr->m_pos.z, curr->m_pos.w ); 
+    // setview2D ( curr->m_pos.z, curr->m_pos.w );
 
-    curr->drawBackgrd ();     
+    curr->drawBackgrd ( curr->m_debug );     
     curr->drawForegrd ( curr->m_debug ); 
     curr->drawBorder  ( curr->m_debug ); 
 

@@ -37,7 +37,7 @@ void g2TextBox::SetProperty ( std::string key, std::string val )
   }
 }
 
-void g2TextBox::drawBackgrd ()
+void g2TextBox::drawBackgrd (bool dbg)
 {  
   drawFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr );
 }

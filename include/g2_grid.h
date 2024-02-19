@@ -25,7 +25,7 @@
 
         virtual uchar getType()     { return 'g'; }
         virtual void UpdateLayout( Vec4F p );        
-        virtual void drawBackgrd ();
+        virtual void drawBackgrd (bool dbg);
         virtual void drawBorder (bool dbg);
         virtual void drawForegrd (bool dbg);
         virtual void drawChildren ( uchar what, bool dbg=false );
