@@ -91,8 +91,8 @@
 
         // building geometry
         gxSet*      addSet ( char st, bool bStatic=false );        
-        gxSet*      getCurrSet ()         {return &m_sets[m_curr_set];}   
-        gxSet*      getSet (int set)      {return &m_sets[set];}
+        gxSet*      getCurrSet ()         {return getSet(m_curr_set);}   
+        gxSet*      getSet (int set)      {return (set < m_sets.size()) ? &m_sets[set] : 0x0;}
         void        clearSet (int set);
         void        clearSets ();
         void        expandSet ( gxSet* s, uchar typ, uchar prim, int64_t add_bytes );

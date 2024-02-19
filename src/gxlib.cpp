@@ -110,6 +110,7 @@ void glib::end2D ()
 	gx.m_curr_set++;	
 }
 
+
 // set view matrices for full screen 2D window
 void glib::setview2D (int w, int h)
 {
@@ -136,6 +137,7 @@ void glib::setMatrices2D ( int s, int xr, int yr, Matrix4F& model, Matrix4F& vie
 {	
 	// assign 2D view matrices to a cmd set
   gxSet* set = gx.getSet(s);
+	if (set==0x0) return;
 
   memcpy ( set->model, model.GetDataF(), 16 * sizeof(float) );
 	memcpy ( set->view,  view.GetDataF(), 16 * sizeof(float) );
