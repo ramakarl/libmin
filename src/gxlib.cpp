@@ -84,6 +84,19 @@ void glib::start2D ( int w, int h, bool bStatic )
 	gx.m_curr_num = 0;
 	
 	gxSet* set = gx.addSet ( '2', bStatic );	
+	set->clip_region.Set ( 0, 0, w, h );
+
+	setview2D ( w, h );
+}
+
+void glib::start2D ( int w, int h, Vec4F region, bool bStatic )
+{
+	gxSet s;
+	gx.m_curr_prim = PRIM_NONE;
+	gx.m_curr_num = 0;
+	
+	gxSet* set = gx.addSet ( '2', bStatic );	
+	set->clip_region = region;
 
 	setview2D ( w, h );
 }
@@ -288,6 +301,7 @@ void glib::start3D ( Camera3D* cam, bool bStatic )
 	gx.m_curr_num = 0;	
 
 	gxSet* set = gx.addSet ( '3', bStatic );
+	//set->clip_region.Set ( 0, 0, w, h );
 
 	setView3D ( cam );	
 	
@@ -735,6 +749,7 @@ gxSet* gxLib::addSet ( char st, bool bStatic )
 		newset.geom = (char*) malloc ( 256 );
 		newset.lastpos = -1;
 		newset.vbo = 0;
+		newset.clip_region.Set ( 0, 0, 0, 0 );
 		m_sets.push_back ( newset );
 		m_curr_set = n;
 	} 
@@ -1281,6 +1296,11 @@ void gxLib::drawSet ( int g )
 	#endif	
 	// select shader
 	int sh = (s->stype=='3') ? S3D : S2D;
+
+	// viewport clipping
+	if ( s->clip_region.z != 0 ) {	
+		glViewport ( s->clip_region.x, s->clip_region.y, s->clip_region.z, s->clip_region.w );
+  }
 
 	// bind shader	
 	glUseProgram ( mSH[ sh ] );	

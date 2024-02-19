@@ -37,6 +37,7 @@
     GXAPI void debug2D ( bool tf );    
     GXAPI void clear2D ();
     GXAPI void start2D ( int w, int h, bool bStatic = false );
+    GXAPI void start2D ( int w, int h, Vec4F region, bool bStatic = false );
     GXAPI void setview2D ( int w, int h );
     GXAPI void setview2D ( Matrix4F& model, Matrix4F& view, Matrix4F& proj );      
     GXAPI void setMatrices2D ( int grp, int xr, int yr, Matrix4F& model, Matrix4F& view, Matrix4F& proj );    
@@ -89,7 +90,7 @@
         void        createShader3D ();
 
         // building geometry
-        gxSet*      addSet ( char st, bool bStatic );
+        gxSet*      addSet ( char st, bool bStatic=false );        
         gxSet*      getCurrSet ()         {return &m_sets[m_curr_set];}   
         gxSet*      getSet (int set)      {return &m_sets[set];}
         void        clearSet (int set);

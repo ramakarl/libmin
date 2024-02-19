@@ -129,7 +129,7 @@ g2Def* g2Lib::FindDef ( std::string name )
 uchar g2Lib::FindType ( std::string isa )
 {
     if ( isa.compare("grid")==0) return 'g';
-    if ( isa.compare("textbox")==0) return 't';
+    if ( isa.compare("item")==0) return 't';
     return '?';
 }
 
@@ -164,6 +164,7 @@ g2Obj* g2Lib::AddObj ( std::string name, uchar typ )
     return obj;
 }
 
+
 void g2Lib::BuildAll ()
 {
     std::string name, isa;
@@ -185,9 +186,7 @@ void g2Lib::BuildAll ()
             exit(-2);
         }        
         // add object        
-        obj = AddObj ( name, typ );
-
-        printf ( "%d %p\n", n, obj );
+        obj = AddObj ( name, typ );        
     }
 
     // Pass 2 - build layouts, sections and obj references
@@ -204,16 +203,33 @@ void g2Lib::BuildAll ()
         }
 
         // apply layouts & sections for grids
-        if ( obj->getType()=='g') {
-           
-            if ( BuildLayout ( obj, G_LX ) ) L = G_LX;
-            if ( BuildLayout ( obj, G_LY ) ) L = G_LY;     
+        if ( obj->getType()=='g') {   
+
+            if ( BuildLayout ( obj, G_LX ) ) { L = G_LX; }
+            if ( BuildLayout ( obj, G_LY ) ) { L = G_LY; }
 
             BuildSections ( obj, L );            
+        }        
+    }
+    
+    // Pass 3 - apply item styling 
+    for (int n=0; n < m_objlist.size(); n++) {
+    
+      // apply item styling
+      obj = m_objlist[n];
+      
+      // find defintion      
+      // - each definition provides a name, 'isa', and 'has' lists (multiple keys & vals) 
+
+      g2Def* def = FindDef ( obj->getName() );   
+      if ( def != 0x0 ) {
+        for (int j=0; j < def->keys.size(); j++) {
+          obj->SetProperty ( def->keys[j], def->vals[j] );    // O | has | K | V
         }
-        
+      }
     }
 }
+
 
 bool g2Lib::BuildLayout ( g2Obj* obj, uchar ly )
 {
@@ -312,8 +328,7 @@ void g2Lib::BuildSections ( g2Obj* obj, uchar ly )
                 // so lets create a placeholder for kindness
                 obj_ref = AddObj ( obj_name, 't' );
                 obj_ref->m_backclr = Vec4F(0.2,0.2,0.2,1);
-            }          
-            
+            }           
             //printf ("%s (%p) ref by %s (%p)\n", obj_name.c_str(), obj_ref, obj->m_name.c_str(), obj );
 
             layout->sections.push_back ( obj_ref );
@@ -324,6 +339,8 @@ void g2Lib::BuildSections ( g2Obj* obj, uchar ly )
 
 void g2Lib::LayoutAll (float xres, float yres)
 {
+    if ( m_objlist.size() == 0) return; 
+
     g2Obj* curr = m_objlist[ m_root ];
     
     curr->UpdateLayout ( Vec4F(0, 0, xres, yres) );
@@ -338,9 +355,9 @@ void g2Lib::Render (int w, int h)
 
     setview2D ( curr->m_pos.z, curr->m_pos.w ); 
 
-    curr->Render ( 'b' ); 
-    curr->Render ( 'r' ); 
-    curr->Render ( 'f' ); 
+    curr->drawBackgrd (); 
+    curr->drawBorder  (); 
+    curr->drawForegrd (); 
 
     end2D();
 }

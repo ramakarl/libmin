@@ -24,11 +24,11 @@
         g2Grid ();
 
         virtual uchar getType()     { return 'g'; }
-        virtual void UpdateLayout( Vec4F p );
-        virtual void Render ( uchar what );
+        virtual void UpdateLayout( Vec4F p );        
         virtual void drawBackgrd ();
         virtual void drawBorder ();
         virtual void drawForegrd ();
+        virtual void drawChildren ( uchar what );
 
         g2Layout* getLayout(uchar ly)   {return &m_layout[ly];}
         void getDimensions ( uchar L, float sz, Vec4F& pos, Vec4F& adv );

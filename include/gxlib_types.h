@@ -82,6 +82,7 @@
     struct gxSet {
         char        stype;          // set type, '2'=2D, '3'=3D
         bool        sstatic;        // is set static
+        Vec4F       clip_region;    // window region (clipping)
         int64_t     lastpos;        // marker pos
         int64_t     size, max;      // buffer size        
         char*       geom;           // CPU buffer

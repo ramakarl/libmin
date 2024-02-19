@@ -43,18 +43,18 @@
     public:   
         virtual uchar getType()     { return 'o'; }              
         virtual void UpdateLayout ( Vec4F p )  {};
-        virtual void Render ( uchar what ) {};
+        virtual void SetProperty ( std::string key, std::string val );
         virtual void drawBackgrd () {};
-        virtual void drawBorder () {};
+        virtual void drawBorder ()  {};
         virtual void drawForegrd () {};        
 
         std::string getName()       { return m_name;}
         
     public:
         std::string     m_name;
-        Vec4F       m_pos;
-        Vec4F       m_backclr;
-        Vec4F       m_borderclr;
+        Vec4F           m_pos;
+        Vec4F           m_backclr;
+        Vec4F           m_borderclr;
     };
 
     }

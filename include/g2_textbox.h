@@ -16,16 +16,19 @@
     namespace glib {
 
     class GXAPI g2TextBox : public g2Obj {
-    public:
+    public:      
         virtual uchar getType()     { return 't'; }
-        virtual void UpdateLayout ( Vec4F p );
-        virtual void Render ( uchar what );
+        virtual void UpdateLayout ( Vec4F p ); 
+        virtual void SetProperty ( std::string key, std::string val );
         virtual void drawBackgrd ();
         virtual void drawBorder ();
         virtual void drawForegrd ();
 
         g2TextBox () {};
-    
+
+        std::string   m_text;
+        Vec4F         m_textclr;
+
     };
 
 
