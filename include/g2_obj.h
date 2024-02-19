@@ -13,6 +13,8 @@
     
     #include <string>
     #include "gxlib_types.h"
+
+    class ImageX;
   
     namespace glib {
 
@@ -41,17 +43,23 @@
 
     class GXAPI g2Obj {
     public:   
+        g2Obj::g2Obj();
+
         virtual uchar getType()     { return 'o'; }              
         virtual void UpdateLayout ( Vec4F p )  {};
         virtual void SetProperty ( std::string key, std::string val );
-        virtual void drawBackgrd () {};
-        virtual void drawBorder ()  {};
-        virtual void drawForegrd () {};        
+        virtual void drawBackgrd ()         {};
+        virtual void drawBorder (bool dbg)  {};
+        virtual void drawForegrd (bool dbg) {};      
+        
+        void LoadImg ( ImageX*& img, std::string fname );
 
         std::string getName()       { return m_name;}
         
     public:
         std::string     m_name;
+        bool            m_debug;
+
         Vec4F           m_pos;
         Vec4F           m_backclr;
         Vec4F           m_borderclr;

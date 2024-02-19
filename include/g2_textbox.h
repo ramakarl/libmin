@@ -12,22 +12,26 @@
     #define DEF_GI_TEXTBOX
     
     #include "g2_obj.h"
+    #include "imagex.h"
   
     namespace glib {
 
     class GXAPI g2TextBox : public g2Obj {
-    public:      
+    public:   
+        g2TextBox ();
+
         virtual uchar getType()     { return 't'; }
         virtual void UpdateLayout ( Vec4F p ); 
         virtual void SetProperty ( std::string key, std::string val );
         virtual void drawBackgrd ();
-        virtual void drawBorder ();
-        virtual void drawForegrd ();
-
-        g2TextBox () {};
+        virtual void drawBorder (bool dbg);
+        virtual void drawForegrd (bool dbg);
 
         std::string   m_text;
         Vec4F         m_textclr;
+        float         m_textsz;
+
+        ImageX*       m_icon;
 
     };
 

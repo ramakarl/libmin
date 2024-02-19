@@ -15,7 +15,6 @@ using namespace glib;
 // Global singleton
 glib::g2Lib  glib::g2;
 
-
 void g2Lib::LoadSpec ( std::string fname )
 {
     std::string fpath;
@@ -40,6 +39,9 @@ void g2Lib::LoadSpec ( std::string fname )
         
         lin = strTrim(buf) + "|";       // strip '\n' and add |
 
+        if ( lin.at(0)=='#' )           // skip comments
+          continue;
+
         // parse words into basic sentence
         words.clear ();
         for (int n=0; lin.length() > 0; n++) {
@@ -54,6 +56,7 @@ void g2Lib::LoadSpec ( std::string fname )
             // ensure there are 4
             while (words.size()<4)
                 words.push_back ("X");
+
             // ensure vals have terminal |
             words[3] = words[3] + "|";
 
@@ -153,10 +156,8 @@ g2Obj* g2Lib::AddObj ( std::string name, uchar typ )
     case 't': obj = new g2TextBox; break;
     default:
         return 0x0;
-    };
-    obj->m_name = name;        
-    obj->m_backclr = Vec4F(0, 0, 0, 0);
-    obj->m_borderclr = Vec4F(.8,.8,.8,1);
+    };   
+    obj->m_name = name;
 
     // add to master list
     m_objlist.push_back ( obj );
@@ -213,6 +214,7 @@ void g2Lib::BuildAll ()
     }
     
     // Pass 3 - apply item styling 
+    std::string val ;
     for (int n=0; n < m_objlist.size(); n++) {
     
       // apply item styling
@@ -224,7 +226,8 @@ void g2Lib::BuildAll ()
       g2Def* def = FindDef ( obj->getName() );   
       if ( def != 0x0 ) {
         for (int j=0; j < def->keys.size(); j++) {
-          obj->SetProperty ( def->keys[j], def->vals[j] );    // O | has | K | V
+          val = strSplitLeft ( def->vals[j], "|" );
+          obj->SetProperty ( def->keys[j], val );    // O | has | K | V
         }
       }
     }
@@ -326,8 +329,7 @@ void g2Lib::BuildSections ( g2Obj* obj, uchar ly )
             if (obj_ref==0x0 && obj_name.compare(".") != 0) {
                 // object not found, and is not a wildcard '.',
                 // so lets create a placeholder for kindness
-                obj_ref = AddObj ( obj_name, 't' );
-                obj_ref->m_backclr = Vec4F(0.2,0.2,0.2,1);
+                obj_ref = AddObj ( obj_name, 't' );                
             }           
             //printf ("%s (%p) ref by %s (%p)\n", obj_name.c_str(), obj_ref, obj->m_name.c_str(), obj );
 
@@ -355,9 +357,9 @@ void g2Lib::Render (int w, int h)
 
     setview2D ( curr->m_pos.z, curr->m_pos.w ); 
 
-    curr->drawBackgrd (); 
-    curr->drawBorder  (); 
-    curr->drawForegrd (); 
+    curr->drawBackgrd ();     
+    curr->drawForegrd ( curr->m_debug ); 
+    curr->drawBorder  ( curr->m_debug ); 
 
     end2D();
 }

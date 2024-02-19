@@ -47,6 +47,8 @@ void g2Grid::UpdateLayout ( Vec4F p )
 
     // Pre-layout to define '*' (expand to fill)
     major_used = 0;
+    int star_cnt = 0;
+    float star_sz = 0;
     for (n=0; n < m_layout[L].sections.size(); n++ ) {
                 
         obj = m_layout[L].sections[n];
@@ -56,14 +58,17 @@ void g2Grid::UpdateLayout ( Vec4F p )
             spec = m_layout[L].sizes[n];
     
         // evaluate by size type
+        sz = 0;
         switch (spec.typ) {
         case '%': sz = major_res * spec.amt/100.0f; break;
         case 'x': sz = spec.amt; break;
-        case '*': sz = 0; break;        
+        case '*': sz = 0; star_cnt++; break;        
         };
         major_used += sz;  
-    }
-
+    }    
+    // divide any remaining space equally among the '*'
+    star_sz = (star_cnt==0) ? 0 : (major_res - major_used) / star_cnt;    
+    
     // Layout each section
     for (n=0; n < m_layout[L].sections.size(); n++ ) {
 
@@ -77,8 +82,8 @@ void g2Grid::UpdateLayout ( Vec4F p )
         // evaluate by size type
         switch (spec.typ) {
         case '%': sz = major_res * spec.amt/100.0f; break;
-        case 'x': sz = spec.amt;                    break;
-        case '*': sz = major_res - major_used;      break;
+        case 'x': sz = spec.amt;     break;
+        case '*': sz = star_sz;      break;
         };              
         getDimensions ( L, sz, pos, adv );   
         if (obj != 0x0) obj->UpdateLayout( pos );
@@ -87,7 +92,8 @@ void g2Grid::UpdateLayout ( Vec4F p )
 }
 
 
-void g2Grid::drawChildren ( uchar what )
+
+void g2Grid::drawChildren ( uchar what, bool dbg )
 {
     g2Obj* obj;
     // L = horizontal & vertical = {G_LX, G_LY}    
@@ -105,14 +111,14 @@ void g2Grid::drawChildren ( uchar what )
           // draw children borders
           for (int n=0; n < m_layout[L].sections.size(); n++) {
             obj = m_layout[L].sections[n];
-            if (obj !=0x0 ) obj->drawBorder();
+            if (obj !=0x0 ) obj->drawBorder( dbg );
           }
           break;
         case 'f':
           // draw children foregrounds
           for (int n=0; n < m_layout[L].sections.size(); n++) {
             obj = m_layout[L].sections[n];
-            if (obj !=0x0 ) obj->drawForegrd();
+            if (obj !=0x0 ) obj->drawForegrd( dbg );
           }
           break;
         };
@@ -122,18 +128,27 @@ void g2Grid::drawChildren ( uchar what )
 
 void g2Grid::drawBackgrd ()
 {
-    drawFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr );
+    if ( m_backclr.w > 0 ) {
+      drawFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr );      
+    }
     drawChildren ( 'b' );    
 }
-void g2Grid::drawBorder ()
+void g2Grid::drawBorder (bool dbg)
 {
-    drawRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_borderclr );
-    drawChildren ( 'r' );
+    if (dbg) {
+      drawRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(1,1,0,1) );
+    } else {
+      drawRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_borderclr );
+    }
+    drawChildren ( 'r', dbg );
 }
-void g2Grid::drawForegrd ()
+void g2Grid::drawForegrd (bool dbg)
 {
-    char msg[256];
-    //strncpy (msg, m_name.c_str(), 256);
-    //drawText ( Vec2F(m_pos.x, m_pos.y), msg, Vec4F(1,1,1,1));
-    drawChildren ( 'f' );
+    if ( dbg ) {
+      char msg[256];
+      strncpy (msg, m_name.c_str(), 256);
+      drawText ( Vec2F(m_pos.x, m_pos.y), msg, Vec4F(1,1,1,1));
+    }
+
+    drawChildren ( 'f', dbg );
 }

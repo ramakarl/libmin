@@ -793,8 +793,14 @@ void gxLib::finishPrim ( gxSet* s )
 
 void gxLib::expandSet ( gxSet* s, uchar typ, uchar prim, int64_t add_bytes )
 {
-	bool need_marker = (typ != m_curr_type || prim != m_curr_prim);
-    add_bytes += (need_marker ? sizeof(gxPrim) : 0);
+	// add marker group (draw call) when:
+	// - current type has changed (eg. x -> i)
+	// - current prim has changed (eg. PRIM_TRI, PRIM_LINES)
+	// - always on image, assumed image is different (NOTE: should use img GLID)
+	//
+	bool need_marker = (typ != m_curr_type || prim != m_curr_prim || typ == 'i');
+
+  add_bytes += (need_marker ? sizeof(gxPrim) : 0);
 
 	assert ( s->size <= s->max );
 

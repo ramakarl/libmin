@@ -327,7 +327,10 @@ bool strSplitLeft ( std::string str, std::string sep, std::string& key, std::str
 {
   size_t f1;
   f1 = str.find_first_of ( sep );
-  if ( f1 == std::string::npos) return false;
+  if ( f1 == std::string::npos) {
+    key = str; val = "";
+    return false;
+  }
   key = str.substr ( 0, f1 );
   val = str.substr( f1+1 );
   return true;
