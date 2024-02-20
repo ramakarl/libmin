@@ -27,11 +27,16 @@
         virtual void drawBorder (bool dbg);
         virtual void drawForegrd (bool dbg);
 
+        void LayoutIcon ();
+
         std::string   m_text;
         Vec4F         m_textclr;
         float         m_textsz;
 
-        ImageX*       m_icon;
+        ImageX*       m_icon;        
+        uchar         m_icon_scalex, m_icon_scaley;   // 0-100 => %
+        uchar         m_icon_placex, m_icon_placey;
+        Vec4F         m_icon_pos; 
 
     };
 

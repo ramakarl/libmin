@@ -50,7 +50,7 @@ void g2Lib::LoadSpec ( std::string fname )
                 if ( n <= 3 )
                     words.push_back ( word );            
                 else
-                    words[3] = words[3] + "|"+word;
+                    words[3] = words[3] + "|" + word;
         }
         if (words.size() > 0 ) {
             // ensure there are 4
@@ -226,7 +226,7 @@ void g2Lib::BuildAll ()
       g2Def* def = FindDef ( obj->getName() );   
       if ( def != 0x0 ) {
         for (int j=0; j < def->keys.size(); j++) {
-          val = strSplitLeft ( def->vals[j], "|" );
+          val = strTrim ( def->vals[j], "|" );        // do not split here (trim outer |)
           obj->SetProperty ( def->keys[j], val );    // O | has | K | V
         }
       }
@@ -276,11 +276,13 @@ bool g2Lib::BuildLayout ( g2Obj* obj, uchar ly )
         if ( sz.find('%') != std::string::npos ) {
             // percent found
             size.typ = '%';
-            size.amt = strToF ( strSplitLeft( sz, "%") );
+            sz = strSplitLeft ( sz, "%" );
+            size.amt = strToF ( sz );
         } else if ( sz.find('p') != std::string::npos ) {
             // pixels found
             size.typ = 'x';
-            size.amt = strToF ( strSplitLeft( sz, "px" ) );
+            sz = strSplitLeft( sz, "px" );
+            size.amt = strToF ( sz );
             if ( size.amt==0 ) {
                 dbgprintf ( "WARNING: %s has size 0 for %s.\n", obj->getName().c_str(), sz.c_str() );
             }
@@ -357,9 +359,12 @@ void g2Lib::LayoutAll (float xres, float yres)
     curr->UpdateLayout ( Vec4F(0, 0, xres, yres) );
 
     //-- debugging
+    int ow, oh;
+    ow = curr->m_pos.z - curr->m_pos.x;
+    oh = curr->m_pos.w - curr->m_pos.y;
     for (int n=0; n < m_objlist.size(); n++) {
       curr = m_objlist[n];
-      dbgprintf ( "%s: %f,%f,%f,%f\n", curr->m_name.c_str(), curr->m_pos.x, curr->m_pos.y, curr->m_pos.z, curr->m_pos.w );
+      dbgprintf ( "%s: %d x %d (%4.0f,%4.0f,%4.0f,%4.0f\n", curr->m_name.c_str(), ow, oh, curr->m_pos.x, curr->m_pos.y, curr->m_pos.z, curr->m_pos.w );
     }
 }
 
