@@ -733,7 +733,7 @@ void NetworkSystem::netStartSocketAPI ()
 	if ((status = WSAStartup(MAKEWORD(1,1), &WSAData)) == 0) {
 		if (mbVerbose) dbgprintf ( "  Started Winsock.\n");
 	} else {
-		if (mbVerbose) dbgprintf ( "  ERROR: Unable to started Winsock.\n");
+		if (mbVerbose) dbgprintf ( "  ERROR: Unable to start Winsock.\n");
 	}
 
 #else   // ANDROID and linux

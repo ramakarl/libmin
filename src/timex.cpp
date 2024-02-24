@@ -428,48 +428,11 @@
 		return true;
 	}
 
-	bool TimeX::SetTime (int hr, int min, int m, int d, int y)
+	bool TimeX::SetDateTime (int yr, int mo, int day, int hr, int min, int sec, int msec, int nsec )
 	{
-		int s, ms, ns;
-		GetTime ( s, ms, ns );
-		m_CurrTime = GetScaledJulianTime ( hr, min, m, d, y, s, ms, ns );
+		m_CurrTime = GetScaledJulianTime ( hr, min, mo, day, yr, sec, msec, nsec );
 		if (m_CurrTime == -1.0) return false;
 		return true;
-	}
-
-	bool TimeX::SetTime (int hr, int min, int m, int d, int y, int s, int ms, int ns)
-	{
-		m_CurrTime = GetScaledJulianTime ( hr, min, m, d, y, s, ms, ns );
-		if (m_CurrTime == -1.0) return false;
-		return true;
-	}
-
-	bool TimeX::SetTime ( std::string line )
-	{
-		int hr, min, m, d, y;
-		std::string dat;
-		if ( line.substr ( 0, 1 ) == " " ) 
-			dat = line.substr ( 1, line.length()-1 ).c_str();
-		else 
-			dat = line;
-
-		hr = atoi ( dat.substr ( 0, 2).c_str() );
-		min = atoi ( dat.substr ( 3, 2).c_str() );
-		m = atoi ( dat.substr ( 6, 2).c_str () );
-		d = atoi ( dat.substr ( 9, 2).c_str () );
-		y = atoi ( dat.substr ( 12, 4).c_str () );
-		return SetTime ( hr, min, m, d, y);
-	}
-
-	bool TimeX::SetDate ( std::string line, int yp, int yc, int mp, int mc, int dp, int dc )
-	{
-		int hr, min, m, d, y;
-		hr = 0;
-		min = 0;
-		m = atoi ( line.substr ( mp, mc).c_str () );
-		d = atoi ( line.substr ( dp, dc).c_str () );
-		y = atoi ( line.substr ( yp, yc).c_str () );
-		return SetTime ( hr, min, m, d, y);
 	}
 
 	// Convert the given float storage (f) back to month/day/year
@@ -551,27 +514,32 @@
 		return int((mjd_curr - mjd_start + dow -1 ) / 7 );
 	}
 
+	float TimeX::GetElapsedSec ( TimeX& base )
+	{
+		return float( sjtime(m_CurrTime - base.GetSJT() ) ) / sjtime( SEC_SCALAR );
+	}
+
 	float TimeX::GetElapsedMSec ( TimeX& base )
 	{
 		return float( sjtime(m_CurrTime - base.GetSJT() ) ) / sjtime( MSEC_SCALAR );
 	}
 	
-	int TimeX::GetElapsedDays ( TimeX& base )
+	float TimeX::GetElapsedDays ( TimeX& base )
 	{
-		return int( sjtime(m_CurrTime - base.GetSJT() ) / sjtime( DAY_SCALAR ) );
+		return float( sjtime(m_CurrTime - base.GetSJT() ) ) / sjtime( DAY_SCALAR );
 	}
 
-	int TimeX::GetElapsedWeeks ( TimeX& base )
+	float TimeX::GetElapsedWeeks ( TimeX& base )
 	{
-		return GetElapsedDays(base) / 7;
+		return GetElapsedDays(base) / 7.0f;
 	}
 
-	int TimeX::GetElapsedMonths ( TimeX& base)
+	float TimeX::GetElapsedMonths ( TimeX& base)
 	{
 		return int ( double(GetElapsedDays(base)) / 30.416 );
 	}
 
-	int TimeX::GetElapsedYears ( TimeX& base )
+	float TimeX::GetElapsedYears ( TimeX& base )
 	{
 		// It is much easier to compute this in m/d/y format rather
 		// than using julian dates.
@@ -608,7 +576,7 @@
 	long TimeX::GetFracWeek ( TimeX& base )
 	{
 		// Resolution = 1 hr
-		long day = GetElapsedDays(base) % 7;		// day in week
+		long day = int(GetElapsedDays(base)) % 7;		// day in week
 		long hrs = long( sjtime(m_CurrTime - base.GetSJT() ) % sjtime(DAY_SCALAR) ) / (HR_SCALAR);
 		return day * 24 + hrs;
 	}
@@ -655,8 +623,49 @@
 	}
 
 
+	bool TimeX::SetTime ( std::string line )
+	{
+		int hr, min, m, d, y;
+		std::string dat;
+		if ( line.substr ( 0, 1 ) == " " ) 
+			dat = line.substr ( 1, line.length()-1 ).c_str();
+		else 
+			dat = line;
 
-	std::string TimeX::GetReadableDate ()
+		hr = atoi ( dat.substr ( 0, 2).c_str() );
+		min = atoi ( dat.substr ( 3, 2).c_str() );
+		m = atoi ( dat.substr ( 6, 2).c_str () );
+		d = atoi ( dat.substr ( 9, 2).c_str () );
+		y = atoi ( dat.substr ( 12, 4).c_str () );
+		return SetDateTime ( y, m, d, hr, min, 0 );
+	}
+	
+	// trim - avoiding depend on string_helper
+	std::string trim (std::string str)
+	{
+		size_t lft = str.find_first_not_of ( " \t\r\n" );
+		size_t rgt = str.find_last_not_of ( " \t\r\n" );
+		if ( lft == std::string::npos || rgt == std::string::npos ) return "";
+		return str.substr ( lft, rgt-lft+1 );
+	}
+
+	// Read formatted: YYYY-MM-DD HH:MM:SS
+	bool TimeX::ReadDateTime ( std::string line )
+	{
+		int hr, min, sec, mo, day, yr;
+		line = trim ( line );
+		line = trim ( line );
+		yr = atoi ( line.substr ( 0, 4).c_str () );
+		mo = atoi ( line.substr ( 5, 2).c_str () );
+		day = atoi ( line.substr ( 8, 2).c_str () );
+		hr = atoi ( line.substr ( 11, 2).c_str() );
+		min = atoi ( line.substr ( 14, 2).c_str() );
+		sec = atoi ( line.substr ( 17, 2).c_str() );		
+		return SetDateTime ( yr, mo, day, hr, min, sec);
+	}
+
+	// Write formatted: YYYY-MM-DD HH:MM:SS
+	std::string TimeX::WriteDateTime ()
 	{
 		char buf[200];
 		std::string line;
@@ -736,7 +745,7 @@
 		if ( y > 30) y += 1900;
 		else y += 2000;
 	
-		SetTime ( hr, mn, m, d, y, sec, 0, 0);
+		SetDateTime ( y, m, d, hr, mn, sec );
 	}
    
 
@@ -759,32 +768,32 @@
 		m_CurrTime += t.GetSJT ();
 	}
 
-	void TimeX::AdvanceMinutes ( int n)
+	void TimeX::AdvanceMinutes ( float n)
 	{
 		m_CurrTime += (sjtime) MIN_SCALAR * n;
 	}
 
-	void TimeX::AdvanceHours ( int n )
+	void TimeX::AdvanceHours ( float n )
 	{
 		m_CurrTime += (sjtime) HR_SCALAR * n;	
 	}
 
-	void TimeX::AdvanceDays ( int n )
+	void TimeX::AdvanceDays ( float n )
 	{
 		m_CurrTime += (sjtime) DAY_SCALAR * n;	
 	}
 
-	void TimeX::AdvanceSec ( int n )
+	void TimeX::AdvanceSec ( float n )
 	{
 		m_CurrTime += (sjtime) SEC_SCALAR * n;	
 	}
 
-	void TimeX::AdvanceMins ( int n)
+	void TimeX::AdvanceMins ( float n)
 	{
 		m_CurrTime += (sjtime) MIN_SCALAR * n;
 	}	
 
-	void TimeX::AdvanceMSec ( int n )
+	void TimeX::AdvanceMSec ( float n )
 	{
 		m_CurrTime += (sjtime) MSEC_SCALAR * n;	
 	}
@@ -833,7 +842,7 @@
 				for (d=1; d <= 31; d++) {
 					for (hr=0; hr<=23; hr++) {
 						for (min=0; min<=59; min++) {
-							if ( SetTime ( hr, min, m, d, y, 0, 0, 0 ) ) {
+							if ( SetDateTime ( y, m, d, hr, min ) ) {
 								GetTime ( chr, cmin, cm, cd, cy );
 								if ( hr!=chr || min!=cmin || m!=cm || d!=cd || y!=cy) {
 	//								printf ( 'luna', INFO, "Error: %d, %d, %d, %d, %d = %I64d\n", hr, min, m, d, y, GetSJT());

@@ -175,12 +175,10 @@
 		
 			// Set time or date
 			bool SetTime ( int sec );									// Set seconds
-			bool SetTime ( int sec, int msec );							// Set seconds, msecs	
-			bool SetTime ( int hr, int min, int m, int d, int y);		// Set hr/min, month, day, year	
-			bool SetTime ( int hr, int min, int m, int d, int y, int s, int ms, int ns);	// Set hr/min, month, day, year, sec, ms, ns
+			bool SetTime ( int sec, int msec );							// Set seconds, msecs				
 			bool SetTime ( TimeX& t )	{ m_CurrTime = t.GetSJT(); return true;} // Set to another Time object				
 			bool SetTime ( std::string line );							// Set time from string (hr,min,sec)
-			bool SetDate ( std::string line, int yp, int yc, int mp, int mc, int dp, int dc );	// Set date from string (mo,day,yr)		
+
 			void SetSystemTime ();										// Set date/time to system clock		
 			void SetTimeNSec ();			
 
@@ -201,7 +199,13 @@
 			void GetTime (int& hr, int& min, int& m, int& d, int& y, int& s, int& ms, int& ns);
 			double GetSec ();
 			double GetMSec ();
-			std::string GetReadableDate ();
+			
+			// Read & Write Date/Time: YYYY-MM-DD HH:MM:SS
+			bool SetDateTime (int yr, int mo, int day, int hr=0, int min=0, int sec=0, int msec=0, int nsec=0 );
+			bool ReadDateTime ( std::string line );
+			std::string WriteDateTime ();
+			
+			
 			std::string GetReadableTime ();		
 			std::string GetReadableTime ( int fmt );
 			std::string GetReadableSJT ();
@@ -210,12 +214,12 @@
 
 			// Advance Time
 			void Advance ( TimeX& t );
-			void AdvanceMinutes ( int n);
-			void AdvanceHours ( int n );
-			void AdvanceDays ( int n );
-			void AdvanceSec ( int n );
-			void AdvanceMins ( int n);
-			void AdvanceMSec ( int n );
+			void AdvanceMinutes ( float n);
+			void AdvanceHours ( float n );
+			void AdvanceDays ( float n );
+			void AdvanceSec ( float n );
+			void AdvanceMins ( float n);
+			void AdvanceMSec ( float n );
 		
 			// Utility functions 
 			// (these do the actual work, but should not be private as they may be useful to user)
@@ -247,11 +251,12 @@
 			TimeX operator+ ( TimeX& op );
 
 			// Elapsed Times
+			float GetElapsedSec ( TimeX& base );
 			float GetElapsedMSec ( TimeX& base );
-			int GetElapsedDays ( TimeX& base );		
-			int GetElapsedWeeks ( TimeX& base );
-			int GetElapsedMonths ( TimeX& base );
-			int GetElapsedYears ( TimeX& base );
+			float GetElapsedDays ( TimeX& base );		
+			float GetElapsedWeeks ( TimeX& base );
+			float GetElapsedMonths ( TimeX& base );
+			float GetElapsedYears ( TimeX& base );
 			long GetFracDay ( TimeX& base );			// Return Unit = 5 mins
 			long GetFracWeek ( TimeX& base );			// Return Unit = 1 hr
 			long GetFracMonth ( TimeX& base );		// Return Unit = 4 hrs
