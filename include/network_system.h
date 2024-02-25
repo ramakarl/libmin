@@ -92,7 +92,8 @@
 		int netFindSocket ( int side, int mode, NetAddr dest );
 		int netFindOutgoingSocket ( bool bTcp );
 		int netTerminateSocket ( int sock );
-		NetSock& getSock (int n )	{ return mSockets[n]; }
+		NetSock& getSock (int sock)					{ return mSockets[sock]; }
+		std::string getSocketIP(int sock)		{ return getIPStr( mSockets[sock].dest.ipL ); }
 
 		// Sockets - socket-specific low-level functions
 		void netStartSocketAPI ();

@@ -50,9 +50,7 @@ void NetworkSystem::netStartServer ( netPort srv_port )
 
 	netSocketBind ( srv_sock );
 
-	netSocketListen ( srv_sock );
-
-	dbgprintf ( "Host IP: %s\n", getIPStr ( getHostIP() ).c_str() );
+	netSocketListen ( srv_sock );	
 }
 
 void NetworkSystem::netServerListen ( int sock )
@@ -91,13 +89,20 @@ void NetworkSystem::netServerListen ( int sock )
 
 	// Send TCP connected event to client
 	Event e;
-	e = netMakeEvent ( 'cOkT', 0 );
+	e = netMakeEvent ( 'sOkT', 0 );
 	e.attachInt64 ( cli_ip );			// client IP
 	e.attachInt64 ( cli_port );			// client port assigned by server!
 	e.attachInt64 ( srv_ip );			// server IP
 	e.attachInt64 ( srv_port );			// server port
 	e.attachInt ( srv_sock_tcp );		// connection ID (goes back to the client)
 	netSend ( e, NET_CONNECT, srv_sock_tcp );
+
+	// Inform the user-app (server) of the event
+	Event ue = new_event ( 120, 'app ', 'sOkT', 0, mEventPool );	
+	ue.attachInt ( srv_sock_tcp );
+	ue.attachInt ( -1 );										// cli_sock not known
+	ue.startRead ();
+	(*mUserEventCallback) ( ue, this );		// send to application
 
 	if (mbVerbose) {
 		dbgprintf("  %s %s: Accepted ip %s, port %i on port %d\n", (s.side == NET_CLI) ? "Client" : "Server", getIPStr(srv_ip).c_str(), getIPStr(s.dest.ipL).c_str(), s.dest.port, s.src.port);
@@ -119,7 +124,6 @@ void NetworkSystem::netStartClient ( netPort cli_port )
 	netAddSocket ( NET_CLI, NET_TCP, NET_OFF, false, 
 					NetAddr(NET_ANY, mHostName, mHostIP, cli_port), NetAddr() );
 }
-
 int NetworkSystem::netClientConnectToServer(std::string srv_name, netPort srv_port, bool blocking )
 {
 	NetSock cs;
@@ -246,7 +250,8 @@ int NetworkSystem::netCloseConnection ( int sock )
 void NetworkSystem::netProcessEvents ( Event& e )
 {
 	switch ( e.getName() ) {
-	case 'cOkT': {				// client recv, OK TCP from server. cOkT
+	case 'sOkT': {				// received OK from server. connection complete.
+
 		// Client received accept from server
 		int cli_sock = e.getSrcSock();
 
@@ -277,16 +282,17 @@ void NetworkSystem::netProcessEvents ( Event& e )
 		}
 		*/
 
+		// Inform the user-app (client) of the event
+		Event e = new_event ( 120, 'app ', 'sOkT', 0, mEventPool );
+		e.attachInt ( srv_sock );
+		e.attachInt ( cli_sock );		
+		e.startRead ();
+		(*mUserEventCallback) ( e, this );		// send to application
+
 		if (mbVerbose) {
 			dbgprintf("  Client:   Linked TCP. %s:%d, sock: %d --> Server: %s:%d, sock: %d\n", getIPStr(cli_ip).c_str(), cli_port, cli_sock, getIPStr(srv_ip).c_str(), srv_port, srv_sock);
 			netPrint();
 		}
-
-		// this is a special event we also want the user-app to know about
-		Event e = new_event ( 120, 'app ', 'cOkT', 0, mEventPool );
-		e.attachInt ( cli_sock );
-		e.startRead ();
-		(*mUserEventCallback) ( e, this );		// send to application
 
 		} break;
 
