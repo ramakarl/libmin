@@ -84,6 +84,7 @@
 		int  netEventCallback ( Event& e);				// Processes network events (dispatch)
 		void netSetUserCallback (funcEventHandler userfunc )	{ mUserEventCallback = userfunc; }
 		bool netIsConnected (int sock);					// confirm connected
+		bool netCheckError ( int result, int sock );
 		int netError ( std::string msg );
 
 		// Sockets - abtract functions

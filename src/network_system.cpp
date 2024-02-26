@@ -197,8 +197,8 @@ int NetworkSystem::netClientConnectToServer(std::string srv_name, netPort srv_po
 	if ( setsockopt( mSockets[cli_sock_tcp].socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0)
 		if (mbVerbose) dbgprintf ( "Error: Setting server socket as SO_REUSEADDR.\n" );
 
-	// try to connect
-	if ( !netIsConnected ( cli_sock_tcp ) ) {
+	// try to connect	
+	if ( mSockets[cli_sock_tcp].status != NET_CONNECTED ) {
 		int result = netSocketConnect ( cli_sock_tcp );
 		if (result !=0 ) netReportError ( result );
 	}
@@ -487,7 +487,7 @@ int NetworkSystem::netRecieveData ()
 	// Select all sockets that have changed
 	result = select ( maxfd, &sock_set, NULL, NULL, &mSockets[0].timeout );
 
-	if (result <0 ) {
+	if (result < 0 ) {
 		// Select failed. Report net error
 		netReportError ( result );
 		return 0;
@@ -666,14 +666,31 @@ int NetworkSystem::netFindOutgoingSocket ( bool bTcp )
 	}
 	return -1;
 }
-// Returnt true if any complete connection is valid
+// Return true if any complete connection is valid
 bool NetworkSystem::netIsConnected (int sock)
 {
+	int result;
+
 	if (sock < 0 || sock >= mSockets.size()) return false;
-	if ( mSockets[sock].status == NET_CONNECTED )
-		return true;
-	return false;
+
+	NetSock& s = mSockets[sock];
+
+	// check connection was already made
+	if ( s.status != NET_CONNECTED ) 
+		return false;
+
+	// confirm still connected - not sure how..
+	/* char buf = 'k';
+	if ( s.mode==NET_TCP ) {
+		result = send ( s.socket, &buf, 1, 0 );		// TCP/IP
+	} else {
+		int addr_size = sizeof( s.dest.addr );
+		result = sendto ( s.socket, &buf, 1, 0, (sockaddr*) &s.dest.addr, addr_size);		// UDP
+	}*/
+	
+	return true;
 }
+
 
 std::string NetworkSystem::netPrintAddr ( NetAddr adr )
 {
@@ -831,13 +848,23 @@ bool NetworkSystem::netSendLiteral ( std::string str, int sock )
 	}
 	free(buf);
 
+	return netCheckError ( result, sock );		
+}
+
+
+bool NetworkSystem::netCheckError ( int result, int sock )
+{
 	// error checking
 	#ifdef _MSC_VER
-		if (result == SOCKET_ERROR) netError("Net Send Literal error");
+	if ( result == SOCKET_ERROR ) {
 	#else
-		if (result < 0) netError("Net Send error");
+	if ( result < 0 ) {
 	#endif
-
+			// peer has shutdown (unexpected shutdown)
+			netTerminateSocket ( sock );
+			netError ( "Unexpected shutdown");		
+			return false;
+	}
 	return true;
 }
 
@@ -869,14 +896,8 @@ bool NetworkSystem::netSend ( Event& e, int mode, int sock )
 		int addr_size = sizeof( mSockets[sock].dest.addr );
 		result = sendto ( s.socket, buf, len, 0, (sockaddr*) &s.dest.addr, addr_size);		// UDP
 	}
-	// error checking
-	#ifdef _MSC_VER
-		if ( result == SOCKET_ERROR ) netError ( "Net Send error");
-	#else
-		if ( result < 0 ) netError ( "Net Send error" );
-	#endif
-
-	return true;
+	// check connection
+	return netCheckError (result, sock );
 }
 
 // update socket. handles all platform-specific address translation
@@ -1065,18 +1086,14 @@ int NetworkSystem::netSocketRecv ( int sock, char* buf, int buflen, int& recvlen
 		result = recvfrom ( s.socket, buf, buflen, 0, (sockaddr*) &s.src.addr, &addr_size );	// UDP
 	}
 	if (result==0) {
-		// peer has shutdown (orderly shutdown)
+		// peer has shutdown (unexpected shutdown)
 		netTerminateSocket ( sock );
-		netError ( "Orderly shutdown");
+		netError ( "Unexpected shutdown");
 		return ECONNREFUSED;
-	}
-	#ifdef _WIN32
-		if ( result == SOCKET_ERROR ) 
-			return netError ( "Recv error" );
-	#else
-		if ( result < 0 )
-			return netError ( "Recv error" );
-    #endif
+	}	
+	// check connection
+	netCheckError ( result, sock );
+
 	recvlen = result;
 	return 0;
 }
