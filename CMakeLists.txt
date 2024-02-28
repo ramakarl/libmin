@@ -146,6 +146,7 @@ if (BUILD_OPENGL)
 	file (COPY "${LIBEXT_REPO}/include/GL/glew.c" DESTINATION ${_inc_path} )
 endif()
 if (BUILD_CUDA)
+    message ( STATUS "CUDA Files: ${CUDA_FILES}")
 	install ( FILES ${CUDA_FILES} DESTINATION ${_inc_path} )
 endif()
 

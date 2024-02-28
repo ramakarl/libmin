@@ -182,7 +182,7 @@ inline Vec2I &Vec2I::Normalize (void) {
 	return *this;
 }
 
-inline double Vec2I::Length (void) { double n; n = (double) x*x + (double) y*y; if (n != 0.0) return sqrt(n); return 0.0; }
+inline double Vec2I::Length (void) { double n; n = (double) x*x + (double) y*y; if (n > 0.0) return sqrt(n); return 0.0; }
 inline VTYPE *Vec2I::Data (void)			{return &x;}
 
 #undef VTYPE
@@ -477,7 +477,11 @@ float Vec3F::LengthFast()
 	return 1.0/fast_inv_squareroot(n);
 }
 
-double Vec3F::Length (void) { double n; n = (double) x*x + (double) y*y + (double) z*z; if (n != 0.0) return sqrt(n); return 0.0; }
+double Vec3F::Length (void) { 
+	double n; n = (double) x*x + (double) y*y + (double) z*z; 
+	if (n > 0.0) return sqrt(n); 
+	return 0.0; 
+}
 
 // transform vector by a matrix
 Vec3F Vec3F::operator* (const Matrix4F &op)

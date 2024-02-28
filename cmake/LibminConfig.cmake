@@ -248,7 +248,7 @@ function ( _REQUIRE_CUDA use_cuda_default kernel_path)
             file(GLOB CUDA_FILES "${_cuda_kernels}/*.cu" "${_cuda_kernels}/*.cuh")              
             message ( STATUS "Searching for kernels.. ${_cuda_kernels}")
             message ( STATUS "Building CUDA kernels: ${CUDA_FILES}" )
-            message ( STATUS "Requested CUDA arch: ${CUDA_ARCH}, code: ${CUDA_CODE}") 
+            message ( STATUS "Requested CUDA arch: ${CUDA_ARCH}, code: ${CUDA_CODE}")             
             # parent cmake can specify: ADDITIONAL_CUDA_INCLUDES, CUDA_ARCH and CUDA_CODE
             if ( USE_DEBUG_PTX )
 	            _COMPILEPTX ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${CMAKE_CURRENT_SOURCE_DIR},${LIBMIN_INC_DIR},${ADDITIONAL_CUDA_INCLUDES}" OPTIONS --ptx -arch=${CUDA_ARCH} -code=${CUDA_CODE} -dc -Xptxas -v -G -g --use_fast_math --maxrregcount=32 )

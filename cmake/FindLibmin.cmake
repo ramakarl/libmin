@@ -39,6 +39,7 @@ else ()
     set ( LIBMIN_LIB_DIR "${LIBMIN_INSTALL}/bin" CACHE PATH "Path to libraries" FORCE)
 	set ( LIBMIN_SRC_DIR "${LIBMIN_INSTALL}/src" CACHE PATH "Path to libraries" FORCE)
 	set ( LIBMIN_GLEW_DIR "${LIBMIN_INSTALL}/GL" CACHE PATH "Path to glew.c" FORCE)
+	
 
 	#-------- Locate Header files
     set ( OK_H "0" )
