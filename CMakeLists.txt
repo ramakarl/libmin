@@ -32,7 +32,15 @@ if (BUILD_JPG)
   _REQUIRE_JPG ()
 endif()
 
-set( USE_NVTX true CACHE BOOL "")		# performance markers available
+set( USE_NVTX false CACHE BOOL "")		# performance markers available
+if ( USE_NVTX )
+  add_definitions ( -DUSE_NVTX )
+endif()
+
+set( USE_PROFILE_NET false CACHE BOOL "")	# profile network system
+if ( USE_PROFILE_NET )
+  add_definitions ( -DPROFILE_NET )
+endif()
 
 OPTION (BUILD_CUDA "Build with CUDA" OFF)
 if (BUILD_CUDA) 

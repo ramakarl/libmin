@@ -16,9 +16,8 @@
   #include <netinet/in.h>
 #endif
 
+
 NetworkSystem* net;
-
-
 
 NetworkSystem::NetworkSystem ()
 {
@@ -46,7 +45,7 @@ void NetworkSystem::netStartServer ( netPort srv_port )
 
 	const char reuse = 1;
 	if ( setsockopt( mSockets[srv_sock].socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0)		
-		if (mbVerbose) dbgprintf ( "Error: Setting server socket as SO_REUSEADDR.\n" );
+		if (mbVerbose) dbgprintf ( "netSys Error: Setting server socket as SO_REUSEADDR.\n" );
 
 	netSocketBind ( srv_sock );
 
@@ -149,9 +148,8 @@ int NetworkSystem::netClientConnectToServer(std::string srv_name, netPort srv_po
 		char portname[64];
 		sprintf(portname, "%d", srv_port);
 		int result = getaddrinfo ( srv_name.c_str(), portname, 0, &pAddrInfo );
-		if (result != 0) {
-			if (mbVerbose) dbgprintf("ERROR: Unable to resolve server name %s.\n", srv_name.c_str() );
-			return NET_ERR;
+		if (result != 0) {			
+			return netError ( "Unable to resolve server name: " + srv_name, result );
 		}	
 		// translate addrinfo to IP string
 		char ipstr[INET_ADDRSTRLEN];
@@ -187,15 +185,15 @@ int NetworkSystem::netClientConnectToServer(std::string srv_name, netPort srv_po
 		cli_sock_tcp = netAddSocket ( NET_CLI, NET_TCP, NET_ENABLE, blocking, 
 							NetAddr( NET_CONNECT, cli_name, cli_ip, cli_port), NetAddr(NET_CONNECT, srv_name, srv_ip, srv_port) );
 
-		if (cli_sock_tcp == NET_ERR ) {
-			if (mbVerbose) dbgprintf ( "ERROR: Unable to add socket.\n");
-			return NET_ERR;
+		if (cli_sock_tcp == NET_ERR ) {			
+			return netError ( "Unable to add socket." );
 		}
 	}
 	// reuse address
 	const char reuse = 1;
-	if ( setsockopt( mSockets[cli_sock_tcp].socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0)
-		if (mbVerbose) dbgprintf ( "Error: Setting server socket as SO_REUSEADDR.\n" );
+	if ( setsockopt( mSockets[cli_sock_tcp].socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0) {
+		if (mbVerbose) dbgprintf ( "netSys: Setting server socket as SO_REUSEADDR.\n" );
+	}
 
 	// try to connect	
 	if ( mSockets[cli_sock_tcp].status != NET_CONNECTED ) {
@@ -405,10 +403,19 @@ int NetworkSystem::netTerminateSocket ( int sock )
 	}
 	
 	// inform the app
-	Event e = new_event(120, 'app ', 'cFIN', 0, mEventPool);
-	e.attachInt(sock);
-	e.startRead();
-	(*mUserEventCallback) (e, this);		// send to application
+	if ( mHostType == 'srv ' ) {
+		// server noticed - client terminated a socket
+		Event e = new_event(120, 'app ', 'cFIN', 0, mEventPool);
+		e.attachInt(sock);
+		e.startRead();
+		(*mUserEventCallback) (e, this);		// send to application
+	} else {
+		// client noticed - server terminated a socket
+		Event e = new_event(120, 'app ', 'sFIN', 0, mEventPool);
+		e.attachInt(sock);
+		e.startRead();
+		(*mUserEventCallback) (e, this);		// send to application
+	}
 
 	return 1;
 }
@@ -444,8 +451,15 @@ void NetworkSystem::netReportError ( int result )
 // Process Queue
 int NetworkSystem::netProcessQueue (void)
 {
-	// Recieve incoming data
+	// Recieve incoming data	
+	#ifdef PROFILE_NET
+		PERF_PUSH ("netRecv");
+	#endif
 	netRecieveData ();
+	
+	#ifdef PROFILE_NET	
+		PERF_POP();
+	#endif
 
 	// Handle incoming events on queue
 	int iOk = 0;
@@ -473,6 +487,9 @@ int NetworkSystem::netRecieveData ()
 	int result, maxfd=-1;
 
 	// Get all sockets that are Enabled or Connected
+	#ifdef PROFILE_NET
+		PERF_PUSH ( "socklist" );
+	#endif
 	FD_ZERO (&sock_set);
 	for (int n=0; n < (int) mSockets.size(); n++) {
 		if ( mSockets[n].status != NET_OFF && mSockets[n].status != NET_TERMINATED ) {		// look for NET_ENABLE or NET_CONNECT
@@ -480,23 +497,44 @@ int NetworkSystem::netRecieveData ()
 			if ( (int) mSockets[n].socket > maxfd ) maxfd = mSockets[n].socket;
 		}
 	}
+	#ifdef PROFILE_NET
+		PERF_POP();
+	#endif
 	maxfd++;
 	if ( maxfd == 0 ) return 0; // no sockets
 	//if ( sock_set.fd_count == 0 ) return 0;		// no sockets
 
 	// Select all sockets that have changed
+	#ifdef PROFILE_NET
+		PERF_PUSH ( "select" );
+	#endif
+
 	result = select ( maxfd, &sock_set, NULL, NULL, &mSockets[0].timeout );
+
+	#ifdef PROFILE_NET
+		PERF_POP();
+	#endif
 
 	if (result < 0 ) {
 		// Select failed. Report net error
 		netReportError ( result );
 		return 0;
 	}
+
 	// Select ok.
 	// Find next updated socket
+	#ifdef PROFILE_NET
+		PERF_PUSH ( "findsock" );
+	#endif
+
 	curr_socket = 0;
-	for (; curr_socket != (int) mSockets.size() && !FD_ISSET( mSockets[curr_socket].socket, &sock_set); )
+	for (; curr_socket != (int) mSockets.size() && !FD_ISSET( mSockets[curr_socket].socket, &sock_set); ) {
 		curr_socket++;
+	}
+
+	#ifdef PROFILE_NET
+		PERF_POP();
+	#endif
 
 	// Check on valid socket. Silent error if not.
 	if (curr_socket >= mSockets.size())
@@ -508,11 +546,17 @@ int NetworkSystem::netRecieveData ()
 	}
 
 	// Receive incoming data on socket
+	#ifdef PROFILE_NET
+		PERF_PUSH ( "recv" );
+	#endif
 	result = netSocketRecv ( curr_socket, mBuffer, NET_BUFSIZE-1, mBufferLen );
 	if ( result!=0 || mBufferLen==0 ) {
 		netReportError ( result );		// Recv failed. Report net error
 		return 0;
 	}
+	#ifdef PROFILE_NET
+		PERF_POP();
+	#endif
 
 	// Data packet found. mBufferLen > 0
 	mBufferPtr = &mBuffer[0];
@@ -545,14 +589,30 @@ int NetworkSystem::netRecieveData ()
 					// dbgprintf ( "WARNING: Received event with 0 payload.\n");
 				}
 				// Event is allocated with no name/target as this will be set during deserialize
+				#ifdef PROFILE_NET
+					PERF_PUSH ( "newevent" );
+				#endif
 				mEvent = new_event( mDataLen, 0, 0, 0, mEventPool);
+
+				#ifdef PROFILE_NET
+					PERF_POP();
+				#endif
 				mEvent.rescope("nets");		// belongs to network now
+
 				// Deserialize of actual buffer length (EventLen or BufferLen)
+				#ifdef PROFILE_NET
+					PERF_PUSH ( "header" );
+				#endif
 				mEvent.deserialize(mBufferPtr, imin(mEventLen, mBufferLen));	// Deserialize header
+
+				#ifdef PROFILE_NET
+					PERF_POP();
+				#endif
 			}
 			mEvent.setSrcSock(curr_socket);		// <--- tag event /w socket
 			mEvent.setSrcIP(mSockets[curr_socket].src.ipL); // recover sender address from socket
 			bDeserial = true;
+
 		} else {
 			// More data for existing Event..
 			bDeserial = false;
@@ -562,13 +622,22 @@ int NetworkSystem::netRecieveData ()
 		// EventLen = size of event in *network*, serialized event including data payload
 		//    bufferLen > eventLen      multiple events
 		//    bufferLen = eventLen      one event, or end of event
-		//    bufferLen < eventLen 		part of large event
+		//    bufferLen < eventLen 			part of large event
 
 		if ( mBufferLen >= mEventLen ) {
 
 			// One event, multiple, or end of large event..
-			if ( !bDeserial )		// not start of event, attach more data
+			if ( !bDeserial )	{
+				// not start of event, attach more data
+				#ifdef PROFILE_NET
+					PERF_PUSH ( "attach" );
+				#endif
 				mEvent.attachBuf ( mBufferPtr, mBufferLen );
+				#ifdef PROFILE_NET
+					PERF_POP ();
+				#endif
+			}
+			// End of event
 			mBufferLen -= mEventLen;			// advance buffer
 			mBufferPtr += mEventLen;
 			mEventLen = 0;
@@ -576,17 +645,40 @@ int NetworkSystem::netRecieveData ()
 			if ( mbDebugNet ) {
 				if (mbVerbose) dbgprintf( "recv: %d bytes, %s\n", mEvent.mDataLen + hsz, mEvent.getNameStr().c_str() );
 			}
-			// confirm final size received matches indicated payload size
+			// Confirm final size received matches indicated payload size
 			if ( mEvent.mDataLen != mDataLen ) {
-				if (mbVerbose) dbgprintf( "ERROR: Event recv length %d does not match expected %d.\n", mEvent.mDataLen + hsz, mEventLen + hsz);
+				if (mbVerbose) dbgprintf( "netSys ERROR: Event recv length %d does not match expected %d.\n", mEvent.mDataLen + hsz, mEventLen + hsz);
 			}
+			// Push completed event to the queue
+			#ifdef PROFILE_NET
+				PERF_PUSH ( "queue" );
+			#endif
 			netQueueEvent ( mEvent );
+			#ifdef PROFILE_NET
+				PERF_POP();
+			#endif
+
+			// Delete event
+			#ifdef PROFILE_NET
+				PERF_PUSH ( "delete" );
+			#endif
 			delete_event ( mEvent );
+			#ifdef PROFILE_NET
+				PERF_POP();
+			#endif
 
 		} else {
 			// Partial event..
-			if ( !bDeserial )		// not start of event, attach more data
+			if ( !bDeserial )	{
+				// not start of event, attach more data
+				#ifdef PROFILE_NET
+					PERF_PUSH ( "attach" );
+				#endif
 				mEvent.attachBuf ( mBufferPtr, mBufferLen );
+				#ifdef PROFILE_NET
+					PERF_POP ();
+				#endif
+			}
 			mEventLen -= mBufferLen;
 			mBufferPtr += mBufferLen;
 			mBufferLen = 0;
@@ -727,9 +819,9 @@ void NetworkSystem::netPrint ()
 		dst = netPrintAddr ( mSockets[n].dest );
 		msg = "";
 		if (mSockets[n].side==NET_CLI && mSockets[n].status==NET_CONNECTED )
-			msg = "<-- Direct Client-to-Server";
+			msg = "<-- to Server";
 		if (mSockets[n].side==NET_SRV && mSockets[n].status==NET_CONNECTED )
-			msg = "<-- Direct Server-to-Client";
+			msg = "<-- to Client";
 		if (mSockets[n].side==NET_SRV && mSockets[n].status==NET_ENABLE && mSockets[n].src.ipL == 0 )
 			msg = "<-- Server Listening Port";
 
@@ -749,32 +841,31 @@ void NetworkSystem::netStartSocketAPI ()
 {
 	FD_ZERO (&sock_set);
 
-#ifdef _MSC_VER
-	// Winsock startup
-	WSADATA WSAData;
-	int status;
-	if ((status = WSAStartup(MAKEWORD(1,1), &WSAData)) == 0) {
-		if (mbVerbose) dbgprintf ( "  Started Winsock.\n");
-	} else {
-		if (mbVerbose) dbgprintf ( "  ERROR: Unable to start Winsock.\n");
-	}
+	#ifdef _MSC_VER
 
-#else   // ANDROID and linux
+		// Winsock startup
+		WSADATA WSAData;
+		int status;
+		if ((status = WSAStartup(MAKEWORD(1,1), &WSAData)) == 0) {
+			if (mbVerbose) dbgprintf ( "  Started Winsock.\n");
+		} else {
+			netError ( "Unable to start Winsock.");
+		}
 
+	#else   
 
-        int sock;
-        struct sockaddr_in serv_addr;
-        char c;
+		// sockets lib, Linux & Android
+		int sock;
+		struct sockaddr_in serv_addr;
+		char c;
 
-        sock = (socket(AF_INET, SOCK_STREAM, 0));
+		sock = (socket(AF_INET, SOCK_STREAM, 0));
+		if ( sock == -1 ) {
+			dbgprintf ( "  ERROR: Unable to create sockets.\n");
+		}		
+		dbgprintf ( "  Started BSD sockets.\n");
 
-        if ( sock == -1 ) {
-	      dbgprintf ( "  ERROR: Unable to create sockets.\n");
-        }
-
-	// BSD Sockets
-	dbgprintf ( "  Started BSD sockets.\n");
-#endif
+	#endif
 }
 
 // get hostname
@@ -784,16 +875,15 @@ void NetworkSystem::netGetHostname ()
 	struct in_addr addr;
 	char name[512];
 
-
 	if ( gethostname(name, sizeof(name)) != 0 ) {
-		if (mbVerbose) dbgprintf ( "  net", "Cannot get local host name." );
+		netError ( "Cannot get local host name." );
 	}
    #ifdef _WIN32
 	//----- NOTE: Host may have multiple interfaces (-Marty)
 	// This is just to get one valid local IP address
 	phe = gethostbyname( name );
 	if (phe == 0) {
-		if (mbVerbose) dbgprintf ( "  ERROR: Bad host lookup." );
+		netError ( "Bad host lookup in gethostbyname." );
 	}
 	for (int i = 0; phe->h_addr_list[i] != 0; ++i) {
 		memcpy(&addr, phe->h_addr_list[i], sizeof(struct in_addr));
@@ -809,10 +899,10 @@ void NetworkSystem::netGetHostname ()
 
 	sock = socket( AF_INET, SOCK_DGRAM, 0);
 	if ( sock<0 ) {
-	  dbgprintf ("  ERROR: Cannot create socket to get host name.\n");
+	  dbgprintf ("netSys ERROR: Cannot create socket to get host name.\n");
 	}
 	if (ioctl( sock, SIOCGIFCONF, &ic) < 0 ) {
-	  dbgprintf ("  ERROR: Cannot do ioctl to get host name.\n");
+	  dbgprintf ("netSys ERROR: Cannot do ioctl to get host name.\n");
 	}
 
        	for (int i=0; i  < ic.ifc_len / sizeof(struct ifreq); i++) {
@@ -862,7 +952,7 @@ bool NetworkSystem::netCheckError ( int result, int sock )
 	#endif
 			// peer has shutdown (unexpected shutdown)
 			netTerminateSocket ( sock );
-			netError ( "Unexpected shutdown");		
+			netError ( "Unexpected shutdown." );
 			return false;
 	}
 	return true;
@@ -1001,7 +1091,7 @@ int NetworkSystem::netSocketConnect ( int sock )
 	result = connect ( s->socket, (sockaddr*) &s->dest.addr, addr_size );
 
 	if (result < 0) {
-		return netError ( "Connect error" );
+		return netError ( "Socket connect error." );
 	}	
 
 	return 0;
@@ -1016,8 +1106,9 @@ int NetworkSystem::netSocketBind ( int sock )
 	if (mbVerbose) dbgprintf("  bind: %s, port %i\n", (s->side==NET_CLI) ? "cli" : "srv", s->src.port);
 	int result = bind ( s->socket, (sockaddr*) &s->src.addr, addr_size );
 
-	if ( netIsError(result) )
+	if ( netIsError(result) ) {
 		netError ( "Cannot bind to source.");
+	}
 
 	return result;
 }
@@ -1099,21 +1190,36 @@ int NetworkSystem::netSocketRecv ( int sock, char* buf, int buflen, int& recvlen
 }
 
 // API-specific error checking
-int NetworkSystem::netError ( std::string msg )
+int NetworkSystem::netError ( std::string msg, int error_id )
 {
-	char buf[512];			
-	char* error;
+	std::string error_str;
+	char* error_buf;
 
-#ifdef _WIN32
-	int errn = WSAGetLastError();		// windows get error
-    error = strerror ( errn );	
-#else	
-	error = (char*) strerror_r ( errno, buf, 512 );   // linux get error
-#endif
-	buf[511] = '\0';	// safety
+	#ifdef _WIN32
+	  // get error on windows
+		if (error_id==0) {
+			error_id = WSAGetLastError();		// windows get last error
+		}		
+		// proper way to retrieve error string on Windows
+		LPTSTR errorText = NULL;
+		FormatMessage ( FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,
+					NULL, error_id, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR) &errorText, 0, NULL );
+		error_str = std::string(errorText);
+		LocalFree ( errorText );
+		// gai_strerror();   //-- another way
 
-	if (mbVerbose) dbgprintf ( "NET ERROR: %s: %s (%d)\n", msg.c_str(), error, errno );
-	return errno;
+	#else	
+	  // get error on linux/android
+		if (error_id==0) {
+			error_id = errno;								// linux error code
+		}
+		error_buf = (char*) strerror_r ( error_id, buf, 512 );
+		error_str = std::string(error_buf);
+	#endif	
+
+	if (mbVerbose) dbgprintf ( "  netSys ERROR: %s\n  %s (%d)\n", msg.c_str(), error_str.c_str(), error_id );
+	
+	return error_id;
 }
 
 // API-specific check for error

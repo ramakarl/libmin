@@ -21,6 +21,9 @@
 
 	#include <map>
 
+	#define NET_NOT_CONNECTED		11002
+	#define NET_DISCONNECTED		107
+
 	#define SRV_PORT			8000
 	#define SRV_SOCK			0
 	#define CLI_PORT			8001
@@ -85,7 +88,7 @@
 		void netSetUserCallback (funcEventHandler userfunc )	{ mUserEventCallback = userfunc; }
 		bool netIsConnected (int sock);					// confirm connected
 		bool netCheckError ( int result, int sock );
-		int netError ( std::string msg );
+		int netError ( std::string msg, int error_id=0);
 
 		// Sockets - abtract functions
 		int netAddSocket ( int side, int mode, int status, bool block, NetAddr src, NetAddr dest );
@@ -107,7 +110,7 @@
 		int netSocketRecv ( int sock, char* buf, int buflen, int& recvlen); // low-level recv()
 		bool netIsError ( int result );			// socket-specific error check
 		void netReportError ( int result );
-		int	netGetServerSocket ( int sock )	{ return mSockets[sock].dest.sock; }
+		int	netGetServerSocket ( int sock )	{ return (sock >= mSockets.size()) ? -1 : mSockets[sock].dest.sock; }
 
 		bool netIsQueueEmpty() { return (mEventQueue.size()==0); }
 

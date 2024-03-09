@@ -28,6 +28,7 @@ bool glib::init2D ( const char* fontName )
 	basetime.SetTimeNSec ();
 
 	// confirm GL context to start
+	#ifdef BUILD_OPENGL
     #if defined(_WIN32)
         HGLRC ctx = wglGetCurrentContext ();
         if (ctx==0x0) { dbgprintf ( "ERROR: need valid context before calling gxLib::init2D.\n"); exit(-1); }
@@ -35,6 +36,8 @@ bool glib::init2D ( const char* fontName )
         EGLContext ctx = eglGetCurrentContext();
         if (ctx==0x0) { dbgprintf ( "ERROR: need valid context before calling gxLib::init2D.\n"); exit(-1); }
     #endif
+				
+	#endif	
 
 	// create shaders 
 	// (must have GL context at this point)
@@ -48,8 +51,10 @@ bool glib::init2D ( const char* fontName )
 	}
 
 	// generate VAO
-	glGenVertexArrays ( 1, (GLuint*) &gx.mVAO );
-	glBindVertexArray ( gx.mVAO );
+	#ifdef BUILD_OPENGL
+		glGenVertexArrays ( 1, (GLuint*) &gx.mVAO );
+		glBindVertexArray ( gx.mVAO );
+	#endif
 
 	// load white img
 	gx.m_white_img.Create ( 8, 8, ImageOp::RGBA8, DT_CPU | DT_GLTEX );
@@ -642,73 +647,85 @@ void glib::drawText3D ( Vec3F a, float sz, char* msg, Vec4F clr )
 
 void glib::selfDraw3D ( Camera3D* cam ) 
 {		
-	glEnable ( GL_DEPTH_TEST );
-	glEnable ( GL_BLEND );
-	glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );	
-	#ifdef EXTRA_CHECKS
-		checkGL ( "selfdraw3D enable cmds");
+	#ifdef BUILD_OPENGL
+		glEnable ( GL_DEPTH_TEST );
+		glEnable ( GL_BLEND );
+		glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );	
+		#ifdef EXTRA_CHECKS
+			checkGL ( "selfdraw3D enable cmds");
+		#endif
+
+		glBindVertexArray(gx.mVAO);	
+		glUseProgram(gx.mSH[S3D]);
+		#ifdef EXTRA_CHECKS
+			checkGL ( "selfdraw3D bind vao");
+		#endif
+
+		Matrix4F ident;
+		ident.Identity();	
+		glUniformMatrix4fv ( gx.mPARAM[S3D][SP_MODEL], 1, GL_FALSE, ident.GetDataF() );
+		glUniformMatrix4fv ( gx.mPARAM[S3D][SP_VIEW],  1, GL_FALSE, cam->getViewMatrix().GetDataF() );
+		glUniformMatrix4fv ( gx.mPARAM[S3D][SP_PROJ],  1, GL_FALSE, cam->getProjMatrix().GetDataF() );
+		#ifdef EXTRA_CHECKS
+			checkGL ( "selfdraw3D matrices");
+		#endif
+
+		// send camera pos to shader
+		Vec3F c = cam->getPos();
+		glUniform3f ( gx.mPARAM[S3D][SP_CAMPOS], c.x, c.y, c.z );
+
+		// assume no texture
+		selfSetTexture ();	
 	#endif
-
-	glBindVertexArray(gx.mVAO);	
-	glUseProgram(gx.mSH[S3D]);
-	#ifdef EXTRA_CHECKS
-		checkGL ( "selfdraw3D bind vao");
-	#endif
-
-	Matrix4F ident;
-	ident.Identity();	
-	glUniformMatrix4fv ( gx.mPARAM[S3D][SP_MODEL], 1, GL_FALSE, ident.GetDataF() );
-	glUniformMatrix4fv ( gx.mPARAM[S3D][SP_VIEW],  1, GL_FALSE, cam->getViewMatrix().GetDataF() );
-	glUniformMatrix4fv ( gx.mPARAM[S3D][SP_PROJ],  1, GL_FALSE, cam->getProjMatrix().GetDataF() );
-	#ifdef EXTRA_CHECKS
-		checkGL ( "selfdraw3D matrices");
-	#endif
-
-	// send camera pos to shader
-	Vec3F c = cam->getPos();
-	glUniform3f ( gx.mPARAM[S3D][SP_CAMPOS], c.x, c.y, c.z );
-
-	// assume no texture
-	selfSetTexture ();	
 	
 }
 
 void glib::selfSetMaterial ( Vec3F Ka, Vec3F Kd, Vec3F Ks, float Ns, float Tf)
 {
-	glUniform3f ( gx.mPARAM[S3D][SP_AMBCLR],  Ka.x, Ka.y, Ka.z );
-	glUniform3f ( gx.mPARAM[S3D][SP_DIFFCLR], Kd.x, Kd.y, Kd.z );
-	glUniform3f ( gx.mPARAM[S3D][SP_SPECCLR], Ks.x, Ks.y, Ks.z );
-	glUniform1f ( gx.mPARAM[S3D][SP_SPECPOW], Ns );			
+	#ifdef BUILD_OPENGL
+		glUniform3f ( gx.mPARAM[S3D][SP_AMBCLR],  Ka.x, Ka.y, Ka.z );
+		glUniform3f ( gx.mPARAM[S3D][SP_DIFFCLR], Kd.x, Kd.y, Kd.z );
+		glUniform3f ( gx.mPARAM[S3D][SP_SPECCLR], Ks.x, Ks.y, Ks.z );
+		glUniform1f ( gx.mPARAM[S3D][SP_SPECPOW], Ns );			
+	#endif
 }
 
 void glib::selfSetLight3D ( Vec3F pos, Vec4F clr )
 {
-	glUniform3f ( gx.mPARAM[S3D][SP_LIGHTPOS], pos.x, pos.y, pos.z );		
-	glUniform3f ( gx.mPARAM[S3D][SP_LIGHTCLR], clr.x, clr.y, clr.z );
+	#ifdef BUILD_OPENGL
+		glUniform3f ( gx.mPARAM[S3D][SP_LIGHTPOS], pos.x, pos.y, pos.z );		
+		glUniform3f ( gx.mPARAM[S3D][SP_LIGHTCLR], clr.x, clr.y, clr.z );
+	#endif
 }
 
 void glib::selfSetTexture ( int glid ) 
 {
-	glActiveTexture ( GL_TEXTURE0 );				
-	glBindTexture ( GL_TEXTURE_2D, (glid==-1) ? gx.m_white_img.getGLID() : glid );
-	#ifdef EXTRA_CHECKS
-		checkGL ( "selfSetTexture");
-	#endif
+	#ifdef BUILD_OPENGL
+		glActiveTexture ( GL_TEXTURE0 );				
+		glBindTexture ( GL_TEXTURE_2D, (glid==-1) ? gx.m_white_img.getGLID() : glid );
+		#ifdef EXTRA_CHECKS
+			checkGL ( "selfSetTexture");
+		#endif
+	#endif	
 }
 void glib::selfSetModelMtx ( Matrix4F& mtx )
 {
-	glUniformMatrix4fv ( gx.mPARAM[S3D][SP_MODEL], 1, GL_FALSE, mtx.GetDataF() );
-	#ifdef EXTRA_CHECKS
-		checkGL ( "selfSetModelMtx");
-	#endif
+	#ifdef BUILD_OPENGL
+		glUniformMatrix4fv ( gx.mPARAM[S3D][SP_MODEL], 1, GL_FALSE, mtx.GetDataF() );
+		#ifdef EXTRA_CHECKS
+			checkGL ( "selfSetModelMtx");
+		#endif
+	#endif	
 }
 
 void glib::selfEndDraw3D ()
 {
-	glUseProgram ( 0 );
-	glBindVertexArray ( 0 );
-	#ifdef EXTRA_CHECKS
-		checkGL ( "selfSetModelMtx");
+	#ifdef BUILD_OPENGL
+		glUseProgram ( 0 );
+		glBindVertexArray ( 0 );
+		#ifdef EXTRA_CHECKS
+			checkGL ( "selfSetModelMtx");
+		#endif
 	#endif
 }
 
@@ -716,15 +733,17 @@ void glib::selfEndDraw3D ()
 
 void glib::drawAll ()
 {
-	checkGL ( "drawAll start");
+	#ifdef BUILD_OPENGL
+		checkGL ( "drawAll start");
 	
-	// draw each set
-	gx.drawSets();
+		// draw each set
+		gx.drawSets();
 
-	checkGL ( "drawAll end");
+		checkGL ( "drawAll end");
 
-	// restart sets
-	gx.m_curr_set = 0;
+		// restart sets
+		gx.m_curr_set = 0;
+	#endif
 }
 
 	
@@ -968,7 +987,8 @@ void gxLib::createShader2D ()
 
 void gxLib::createShader3D ()
 {
-
+	#ifdef BUILD_OPENGL
+	
 	// OpenGL - Create shaders
 	char buf[16384];
 	int len = 0;
@@ -1177,6 +1197,8 @@ void gxLib::createShader3D ()
 	mPARAM[S3D][SP_ENVMAP] =	glGetUniformLocation ( mSH[S3D], "envTex" );
 
 	checkGL( "Get Shader Matrices" );	
+
+	#endif
 }
 
 bool gxLib::loadFont ( const char * fontName )
@@ -1305,110 +1327,114 @@ void gxLib::drawSet ( int g )
 	// select shader
 	int sh = (s->stype=='3') ? S3D : S2D;
 
-	// viewport clipping
-	if ( s->clip_region.z != 0 ) {	
-		glViewport ( s->clip_region.x, s->clip_region.y, s->clip_region.z, s->clip_region.w );
-  }
-
-	// bind shader	
-	glUseProgram ( mSH[ sh ] );	
-	#ifdef EXTRA_CHECKS
-		checkGL ( "drawSet use program");
-	#endif
-	
-	// bind vao
-	glBindVertexArray (gx.mVAO);
-	#ifdef EXTRA_CHECKS
-		checkGL ( "drawSet bind vao");
-	#endif
-
-	// opengl enable prep	
-	if (sh==S3D) {		
-		// 3D setup
-		glEnable(GL_DEPTH_TEST);
+	// opengl render setup
+	#ifdef BUILD_OPENGL
+		// viewport clipping
+		if ( s->clip_region.z != 0 ) {	
+			glViewport ( s->clip_region.x, s->clip_region.y, s->clip_region.z, s->clip_region.w );
+		}
+		// bind shader	
+		glUseProgram ( mSH[ sh ] );	
 		#ifdef EXTRA_CHECKS
-			checkGL ( "drawSet enable depth");
-		#endif
-	} else {
-		// 2D setup
-		glDisable ( GL_DEPTH_TEST );
-		glDepthFunc ( GL_LEQUAL );
-		#ifdef EXTRA_CHECKS
-			checkGL ( "drawSet disable depth");
-		#endif
-	}
-	glEnable ( GL_BLEND );		
-	glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-	#ifdef EXTRA_CHECKS
-		checkGL ( "drawSet enable blend");
-	#endif
-
-	// write set to single vbo
-	updateVBO ( s );
-	#ifdef EXTRA_CHECKS
-		checkGL ( "drawSet update vbo");
-	#endif
-	
-	// update view matrices
-	glUniformMatrix4fv ( mPARAM[sh][SP_PROJ],  1, GL_FALSE, s->proj );
-	glUniformMatrix4fv ( mPARAM[sh][SP_MODEL], 1, GL_FALSE, s->model );
-	glUniformMatrix4fv ( mPARAM[sh][SP_VIEW],  1, GL_FALSE, s->view );
-	#ifdef EXTRA_CHECKS
-		checkGL ( "drawSet matrices");
-	#endif
-
-	if (sh==S3D) {
-		// update material
-		glUniform3f ( gx.mPARAM[sh][SP_AMBCLR],  s->ambclr.x, s->ambclr.y, s->ambclr.z );
-		glUniform3f ( gx.mPARAM[sh][SP_DIFFCLR], s->diffclr.x, s->diffclr.y, s->diffclr.z );
-		glUniform3f ( gx.mPARAM[sh][SP_SPECCLR], s->specclr.x, s->specclr.y, s->specclr.z );
-		glUniform1f ( gx.mPARAM[sh][SP_SPECPOW], s->specpow );			
-		#ifdef EXTRA_CHECKS
-			checkGL ( "drawSet material");
+			checkGL ( "drawSet use program");
 		#endif
 	
-		// update light
-		glUniform3f ( gx.mPARAM[sh][SP_LIGHTPOS], s->lightpos.x, s->lightpos.y, s->lightpos.z );		
-		glUniform3f ( gx.mPARAM[sh][SP_LIGHTCLR], s->lightclr.x, s->lightclr.y, s->lightclr.z );
+		// bind vao
+		glBindVertexArray (gx.mVAO);
 		#ifdef EXTRA_CHECKS
-			checkGL ( "drawSet light");
+			checkGL ( "drawSet bind vao");
 		#endif
 
-		// update envmap		
-		glActiveTexture ( GL_TEXTURE0 + 1 );		
-		glBindTexture ( GL_TEXTURE_2D, s->envmap );
-		glUniform1i ( mPARAM[sh][SP_ENVMAP], 1 );
-	}
+		// opengl enable prep	
+		if (sh==S3D) {		
+			// 3D setup
+			glEnable(GL_DEPTH_TEST);
+			#ifdef EXTRA_CHECKS
+				checkGL ( "drawSet enable depth");
+			#endif
+		} else {
+			// 2D setup
+			glDisable ( GL_DEPTH_TEST );
+			glDepthFunc ( GL_LEQUAL );
+			#ifdef EXTRA_CHECKS
+				checkGL ( "drawSet disable depth");
+			#endif
+		}
+		glEnable ( GL_BLEND );		
+		glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+		#ifdef EXTRA_CHECKS
+			checkGL ( "drawSet enable blend");
+		#endif
 
-	// enable attrib arrays
-	glEnableVertexAttribArray( slotPos );
-	glEnableVertexAttribArray( slotClr );
-	glEnableVertexAttribArray( slotUVs );
-	if (sh==S3D) 
-		glEnableVertexAttribArray(slotNorm);	
-	#ifdef EXTRA_CHECKS
-		checkGL ( "drawSet enable slots");
-	#endif	
+		// write set to single vbo
+		updateVBO ( s );
+		#ifdef EXTRA_CHECKS
+			checkGL ( "drawSet update vbo");
+		#endif
+	
+		// update view matrices
+		glUniformMatrix4fv ( mPARAM[sh][SP_PROJ],  1, GL_FALSE, s->proj );
+		glUniformMatrix4fv ( mPARAM[sh][SP_MODEL], 1, GL_FALSE, s->model );
+		glUniformMatrix4fv ( mPARAM[sh][SP_VIEW],  1, GL_FALSE, s->view );
+		#ifdef EXTRA_CHECKS
+			checkGL ( "drawSet matrices");
+		#endif
 
-	// bind vbo
-	glBindBuffer ( GL_ARRAY_BUFFER, s->vbo );	
-	#ifdef EXTRA_CHECKS
-		checkGL ( "drawSet bind vbo");
-	#endif
+		if (sh==S3D) {
+			// update material
+			glUniform3f ( gx.mPARAM[sh][SP_AMBCLR],  s->ambclr.x, s->ambclr.y, s->ambclr.z );
+			glUniform3f ( gx.mPARAM[sh][SP_DIFFCLR], s->diffclr.x, s->diffclr.y, s->diffclr.z );
+			glUniform3f ( gx.mPARAM[sh][SP_SPECCLR], s->specclr.x, s->specclr.y, s->specclr.z );
+			glUniform1f ( gx.mPARAM[sh][SP_SPECPOW], s->specpow );			
+			#ifdef EXTRA_CHECKS
+				checkGL ( "drawSet material");
+			#endif
+	
+			// update light
+			glUniform3f ( gx.mPARAM[sh][SP_LIGHTPOS], s->lightpos.x, s->lightpos.y, s->lightpos.z );		
+			glUniform3f ( gx.mPARAM[sh][SP_LIGHTCLR], s->lightclr.x, s->lightclr.y, s->lightclr.z );
+			#ifdef EXTRA_CHECKS
+				checkGL ( "drawSet light");
+			#endif
 
-	// bind texture slot	
-	glActiveTexture ( GL_TEXTURE0 );
-	glUniform1i ( mPARAM[sh][SP_TEX], 0 );
-	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );	
-	#ifdef EXTRA_CHECKS
-		checkGL ( "drawSet active tex");
+			// update envmap		
+			glActiveTexture ( GL_TEXTURE0 + 1 );		
+			glBindTexture ( GL_TEXTURE_2D, s->envmap );
+			glUniform1i ( mPARAM[sh][SP_ENVMAP], 1 );
+		}
+
+		// enable attrib arrays
+		glEnableVertexAttribArray( slotPos );
+		glEnableVertexAttribArray( slotClr );
+		glEnableVertexAttribArray( slotUVs );
+		if (sh==S3D) 
+			glEnableVertexAttribArray(slotNorm);	
+		#ifdef EXTRA_CHECKS
+			checkGL ( "drawSet enable slots");
+		#endif	
+
+		// bind vbo
+		glBindBuffer ( GL_ARRAY_BUFFER, s->vbo );	
+		#ifdef EXTRA_CHECKS
+			checkGL ( "drawSet bind vbo");
+		#endif
+
+		// bind texture slot	
+		glActiveTexture ( GL_TEXTURE0 );
+		glUniform1i ( mPARAM[sh][SP_TEX], 0 );
+		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );	
+		#ifdef EXTRA_CHECKS
+			checkGL ( "drawSet active tex");
+		#endif
 	#endif
 
 	gxPrim* p;
 	int elem_pos, elem_sz;
 	int pt, cnt;    
 	int pos = 0;
-	GLuint imgGL;	
+	#ifdef BUILD_OPENGL
+		GLuint imgGL;	
+	#endif
 
 	// parse and render command stream
 	//
@@ -1424,25 +1450,28 @@ void gxLib::drawSet ( int g )
 			elem_sz = sizeof(gxVert3D);
 			pos += sizeof(gxPrim);		// goto start of geometry
 
-			// point to section of vbo
-			glVertexAttribPointer( slotPos, 3, GL_FLOAT, GL_FALSE, sizeof(gxVert3D), (void*) (pos + 0) );
-			checkGL ( "glVertAttrPtr pos 3d");
-			glVertexAttribIPointer(slotClr, 1, GL_UNSIGNED_INT,    sizeof(gxVert3D), (void*) (pos + 12) );
-			checkGL ( "glVertAttrPtr clr 3d");
-			glVertexAttribPointer( slotUVs, 2, GL_FLOAT, GL_FALSE, sizeof(gxVert3D), (void*) (pos + 16) );
-			checkGL ( "glVertAttrPtr UV 3d");
-			glVertexAttribPointer( slotNorm,3, GL_FLOAT, GL_FALSE, sizeof(gxVert3D), (void*) (pos + 24) );
-			checkGL ( "glVertAttrPtr norm 3d");
+			// opengl render
+			#ifdef BUILD_OPENGL
+				// point to section of vbo
+				glVertexAttribPointer( slotPos, 3, GL_FLOAT, GL_FALSE, sizeof(gxVert3D), (void*) (pos + 0) );
+				checkGL ( "glVertAttrPtr pos 3d");
+				glVertexAttribIPointer(slotClr, 1, GL_UNSIGNED_INT,    sizeof(gxVert3D), (void*) (pos + 12) );
+				checkGL ( "glVertAttrPtr clr 3d");
+				glVertexAttribPointer( slotUVs, 2, GL_FLOAT, GL_FALSE, sizeof(gxVert3D), (void*) (pos + 16) );
+				checkGL ( "glVertAttrPtr UV 3d");
+				glVertexAttribPointer( slotNorm,3, GL_FLOAT, GL_FALSE, sizeof(gxVert3D), (void*) (pos + 24) );
+				checkGL ( "glVertAttrPtr norm 3d");
 
-			// bind image
-			imgGL = (p->typ=='x') ? m_white_img.getGLID() : (p->typ=='i') ? ((ImageX*) p->img_ptr)->getGLID() : 0;
-			glBindTexture ( GL_TEXTURE_2D, imgGL );
+				// bind image
+				imgGL = (p->typ=='x') ? m_white_img.getGLID() : (p->typ=='i') ? ((ImageX*) p->img_ptr)->getGLID() : 0;
+				glBindTexture ( GL_TEXTURE_2D, imgGL );
 		
-			// render elements	
-			switch (p->prim) {
-			case PRIM_LINES:	glDrawArrays(GL_LINES, 0, cnt);				break;
-			case PRIM_TRI:		glDrawArrays(GL_TRIANGLE_STRIP, 0, cnt);	break;
-			};
+				// render elements	
+				switch (p->prim) {
+				case PRIM_LINES:	glDrawArrays(GL_LINES, 0, cnt);				break;
+				case PRIM_TRI:		glDrawArrays(GL_TRIANGLE_STRIP, 0, cnt);	break;
+				};
+			#endif
 			s->calls++;		
 			s->primcnt += cnt;
 
@@ -1462,23 +1491,26 @@ void gxLib::drawSet ( int g )
 			elem_sz = sizeof(gxVert);
 			pos += sizeof(gxPrim);		// goto start of geometry
 
-			// point to section of vbo
-			glVertexAttribPointer( slotPos, 3, GL_FLOAT, GL_FALSE, sizeof(gxVert), (void*) (pos + 0) );
-			checkGL ( "glVertAttrPtr pos 2d");
-			glVertexAttribIPointer(slotClr, 1, GL_UNSIGNED_INT,    sizeof(gxVert), (void*) (pos + 12) );
-			checkGL ( "glVertAttrPtr clr 2d");
-			glVertexAttribPointer( slotUVs, 2, GL_FLOAT, GL_FALSE, sizeof(gxVert), (void*) (pos + 16) );
-			checkGL ( "glVertAttrPtr uv 2d");
+			// opengl render
+			#ifdef BUILD_OPENGL
+				// point to section of vbo
+				glVertexAttribPointer( slotPos, 3, GL_FLOAT, GL_FALSE, sizeof(gxVert), (void*) (pos + 0) );
+				checkGL ( "glVertAttrPtr pos 2d");
+				glVertexAttribIPointer(slotClr, 1, GL_UNSIGNED_INT,    sizeof(gxVert), (void*) (pos + 12) );
+				checkGL ( "glVertAttrPtr clr 2d");
+				glVertexAttribPointer( slotUVs, 2, GL_FLOAT, GL_FALSE, sizeof(gxVert), (void*) (pos + 16) );
+				checkGL ( "glVertAttrPtr uv 2d");
 			
-			// bind image
-			imgGL = (p->typ=='x') ? m_white_img.getGLID() : (p->typ=='i') ? ((ImageX*) p->img_ptr)->getGLID() : 0;			
-			glBindTexture ( GL_TEXTURE_2D, imgGL );
+				// bind image
+				imgGL = (p->typ=='x') ? m_white_img.getGLID() : (p->typ=='i') ? ((ImageX*) p->img_ptr)->getGLID() : 0;			
+				glBindTexture ( GL_TEXTURE_2D, imgGL );
 		
-			// render elements	
-			switch (p->prim) {
-			case PRIM_LINES:	glDrawArrays(GL_LINES, 0, cnt);				break;
-			case PRIM_TRI:		glDrawArrays(GL_TRIANGLE_STRIP, 0, cnt);	break;		
-			};
+				// render elements	
+				switch (p->prim) {
+				case PRIM_LINES:	glDrawArrays(GL_LINES, 0, cnt);				break;
+				case PRIM_TRI:		glDrawArrays(GL_TRIANGLE_STRIP, 0, cnt);	break;		
+				};
+			#endif
 		
 			//dbgprintf ( "%c", (pt==PRIM_TRI) ? '/' : '-' );
 			s->calls++;		
@@ -1493,9 +1525,11 @@ void gxLib::drawSet ( int g )
 	#endif
 
 	// stop using shader
-	glUseProgram ( 0 );
-	#ifdef EXTRA_CHECKS
-		checkGL ( "drawSet stop shader");
+	#ifdef BUILD_OPENGL
+		glUseProgram ( 0 );
+		#ifdef EXTRA_CHECKS
+			checkGL ( "drawSet stop shader");
+		#endif
 	#endif
 
 	#ifdef _WIN32
@@ -1522,24 +1556,26 @@ void gxLib::drawSet ( int g )
 
 void gxLib::updateVBO ( gxSet* s )
 {
-	// generate new vbo
-	if ( s->vbo==0 ) {
-		glGenBuffers ( 1, (GLuint*) &s->vbo );
-		checkGL ( "updateVBO:glGenBuffers" );
-	}
-	// bind buffer
-	glBindBuffer ( GL_ARRAY_BUFFER, s->vbo );			
+	#ifdef BUILD_OPENGL
+		// generate new vbo	
+		if ( s->vbo==0 ) {
+			glGenBuffers ( 1, (GLuint*) &s->vbo );
+			checkGL ( "updateVBO:glGenBuffers" );
+		}
+		// bind buffer
+		glBindBuffer ( GL_ARRAY_BUFFER, s->vbo );			
 
-	if (s->bufsize != s->max ) {
-		// reallocate buffer on GPU
-		s->bufsize = s->max;
-		glBufferData ( GL_ARRAY_BUFFER, s->bufsize, s->geom, GL_DYNAMIC_DRAW );
-	} else {
-		// avoid the reallocation if size is equal or smaller
-		glBufferSubData ( GL_ARRAY_BUFFER, 0, s->size, s->geom );
-	}
-	#ifdef EXTRA_CHECKS
-		checkGL ( "gxLib updateVBO" );		
+		if (s->bufsize != s->max ) {
+			// reallocate buffer on GPU
+			s->bufsize = s->max;
+			glBufferData ( GL_ARRAY_BUFFER, s->bufsize, s->geom, GL_DYNAMIC_DRAW );
+		} else {
+			// avoid the reallocation if size is equal or smaller
+			glBufferSubData ( GL_ARRAY_BUFFER, 0, s->size, s->geom );
+		}
+		#ifdef EXTRA_CHECKS
+			checkGL ( "gxLib updateVBO" );		
+		#endif
 	#endif
 }
 
