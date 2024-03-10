@@ -799,35 +799,36 @@ std::string NetworkSystem::netPrintAddr ( NetAddr adr )
 }
 
 // Print the network
-void NetworkSystem::netPrint ()
+void NetworkSystem::netPrint (bool verbose)
 {
-	if (!mbVerbose) return;
+	if (mbVerbose || verbose) {
 
-	std::string side, mode, stat, src, dst, msg;
+		std::string side, mode, stat, src, dst, msg;
 
-	dbgprintf ( "\n------ NETWORK SOCKETS. MyIP: %s, %s\n", mHostName.c_str(), getIPStr(mHostIP).c_str() );
-	for (int n=0; n < mSockets.size(); n++) {
-		side = (mSockets[n].side==NET_CLI) ? "cli" : "srv";
-		mode = (mSockets[n].mode==NET_TCP) ? "tcp" : "udp";
-		switch ( mSockets[n].status ) {
-		case NET_OFF:		stat = "off      ";	break;
-		case NET_ENABLE:	stat = "enable   "; break;
-		case NET_CONNECTED:	stat = "connected"; break;
-		case NET_TERMINATED: stat = "terminatd";	break;
-		};
-		src = netPrintAddr ( mSockets[n].src );
-		dst = netPrintAddr ( mSockets[n].dest );
-		msg = "";
-		if (mSockets[n].side==NET_CLI && mSockets[n].status==NET_CONNECTED )
-			msg = "<-- to Server";
-		if (mSockets[n].side==NET_SRV && mSockets[n].status==NET_CONNECTED )
-			msg = "<-- to Client";
-		if (mSockets[n].side==NET_SRV && mSockets[n].status==NET_ENABLE && mSockets[n].src.ipL == 0 )
-			msg = "<-- Server Listening Port";
+		dbgprintf ( "\n------ NETWORK SOCKETS. MyIP: %s, %s\n", mHostName.c_str(), getIPStr(mHostIP).c_str() );
+		for (int n=0; n < mSockets.size(); n++) {
+			side = (mSockets[n].side==NET_CLI) ? "cli" : "srv";
+			mode = (mSockets[n].mode==NET_TCP) ? "tcp" : "udp";
+			switch ( mSockets[n].status ) {
+			case NET_OFF:		stat = "off      ";	break;
+			case NET_ENABLE:	stat = "enable   "; break;
+			case NET_CONNECTED:	stat = "connected"; break;
+			case NET_TERMINATED: stat = "terminatd";	break;
+			};
+			src = netPrintAddr ( mSockets[n].src );
+			dst = netPrintAddr ( mSockets[n].dest );
+			msg = "";
+			if (mSockets[n].side==NET_CLI && mSockets[n].status==NET_CONNECTED )
+				msg = "<-- to Server";
+			if (mSockets[n].side==NET_SRV && mSockets[n].status==NET_CONNECTED )
+				msg = "<-- to Client";
+			if (mSockets[n].side==NET_SRV && mSockets[n].status==NET_ENABLE && mSockets[n].src.ipL == 0 )
+				msg = "<-- Server Listening Port";
 
-		dbgprintf ( "%d: %s %s %s src[%s] dst[%s] %s\n", n, side.c_str(), mode.c_str(), stat.c_str(), src.c_str(), dst.c_str(), msg.c_str() );
+			dbgprintf ( "%d: %s %s %s src[%s] dst[%s] %s\n", n, side.c_str(), mode.c_str(), stat.c_str(), src.c_str(), dst.c_str(), msg.c_str() );
+		}
+		dbgprintf ( "------\n");
 	}
-	dbgprintf ( "------\n");
 }
 
 

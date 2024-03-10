@@ -11,6 +11,7 @@ Message("PROJECT NAME: ${PROJNAME}")
 #
 set ( LIBMIN_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" )
 list (APPEND CMAKE_PREFIX_PATH "${LIBMIN_ROOT}/cmake" )
+list (APPEND CMAKE_MODULE_PATH "${LIBMIN_ROOT}/cmake" )
 set ( LIBMIN_INSTALL "SELF" CACHE PATH "Libmin binaries" )
 find_package ( Libmin CONFIG )
 unset ( Libmin_DIR CACHE )
@@ -22,6 +23,7 @@ add_definitions ( -DLIBMIN_EXPORTS)		# we are building the libmin.dll. create ex
 
 add_definitions ( -DBUILD_PNG)			# always build PNG
 add_definitions ( -DBUILD_TIF)			# always build TIF
+
 
 _REQUIRE_GL ()
 
@@ -42,12 +44,33 @@ if ( USE_PROFILE_NET )
   add_definitions ( -DPROFILE_NET )
 endif()
 
+####################################################################################
+# Find OpenSSL
+#
+OPTION (BUILD_OPENSSL "Build with OpenSSL" OFF)
+if (BUILD_OPENSSL) 
+
+	find_package(OpenSSL)
+
+	if ( OPENSSL_FOUND )	
+		add_definitions(-DUSE_OPENSSL)
+	
+		include_directories ( ${OPENSSL_INCLUDE_DIR} )
+		link_directories ( ${OPENSSL_LIB_DIR} )
+		LIST( APPEND LIBRARIES_OPTIMIZED "${OPENSSL_LIB}")
+		LIST( APPEND LIBRARIES_DEBUG "${OPENSSL_LIB}")	
+		_EXPANDLIST( OUTPUT PACKAGE_DLLS SOURCE ${OPENSSL_LIB_DIR} FILES ${OPENSSL_DLL} )
+		message ( STATUS "--> Using OpenSSL, ${OPENSSL_LIB_DIR}/${OPENSSL_DLL} ")
+	else()
+		message ( FATAL_ERROR "\n  Unable to find OpenSLL library. Link with a different /libext for third-party libs that include OpenSSL.\n")
+	endif()
+endif()
+
+#####################################################################################
+# Find CUDA
+
 OPTION (BUILD_CUDA "Build with CUDA" OFF)
 if (BUILD_CUDA) 
-
-	#####################################################################################
-	# Find CUDA
-
 	if (NOT CUDA_TOOLKIT_ROOT_DIR) 
 		set ( CUDA_TOOLKIT_ROOT_DIR "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2" CACHE PATH "CUDA Toolkit path")
 	endif()

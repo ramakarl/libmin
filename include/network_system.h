@@ -2,7 +2,25 @@
 //
 // Network System
 // Quanta Sciences, Rama Hoetzlein (c) 2007-2020
+// Updated: R.Hoetzlein, 2024
 //
+// Features:
+// - Client & Server model
+// - Server maintains many client connections (socket list)
+// - Buffered event queue
+// - User-level callbacks to process event queue
+// - Events hold packet payloads
+// - Events have 4-byte names for efficient custom protocols
+// - Events have attach/get methods to help serialize data
+// - Internal event pooling to handle many, small events
+// - Arbitrary event size, regardless of TCP/IP buffer size
+// - Graceful disconnect for unexpected shutdown of client or server
+// - Reconnect for clients
+// - Verbose error handling
+// - C++ class model allows for multiple client/server objects
+// - C++ class model with no inheritence for simplicity
+// - Cross-platform and tested on Windows, Linux and Android
+// 
 //---------------------------------------------------------------------
 
 #ifndef DEF_NETWORK_H
@@ -42,11 +60,11 @@
 	#define NET_BUFSIZE			65535		// Typical UDP max packet size
 
 	// -- NOTES --
-	// IP					= 20 bytes
-	// UDP = IP + 8			= 28 bytes
-	// TCP = IP + 28		= 48 bytes
-	// Event				= 24 bytes (header)
-	// TCP + Event			= 72 bytes (over TCP)
+	// IP               = 20 bytes
+	// UDP = IP + 8     = 28 bytes
+	// TCP = IP + 28    = 48 bytes
+	// Event            = 24 bytes (header)
+	// TCP + Event      = 72 bytes (over TCP)
 
 	typedef int (*funcEventHandler) ( Event& e, void* this_ptr  );
 
@@ -62,7 +80,7 @@
 		void netDestroy ();
 		void netDebug(bool v)		{ mbDebugNet = v; mbVerbose = v;  }
 		void netVerbose (bool v)	{ mbVerbose = v; }
-		void netPrint ();
+		void netPrint (bool verbose=false);
 		std::string netPrintAddr ( NetAddr adr );
 
 		// Server - Network API
