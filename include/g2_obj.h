@@ -22,8 +22,8 @@
 
     // object definition 
     struct g2Def {
-        std::string obj;
-        std::string isa;
+        std::string   name;
+        std::string   isa;
         std::vector<std::string> keys;        
         std::vector<std::string> vals;
     };
@@ -53,6 +53,8 @@
         virtual void drawForegrd (bool dbg) {};      
         
         void LoadImg ( ImageX*& img, std::string fname );
+        g2Size ParseSize ( std::string sz );
+        Vec4F SetMargins ( Vec4F p, g2Size minx, g2Size maxx, g2Size miny, g2Size maxy );
 
         std::string getName()       { return m_name;}
         
@@ -63,6 +65,7 @@
         Vec4F           m_pos;
         Vec4F           m_backclr;
         Vec4F           m_borderclr;
+        g2Size          m_minx, m_maxx, m_miny, m_maxy;
     };
 
     }

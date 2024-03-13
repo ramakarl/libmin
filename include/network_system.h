@@ -12,13 +12,13 @@
 // - Events hold packet payloads
 // - Events have 4-byte names for efficient custom protocols
 // - Events have attach/get methods to help serialize data
-// - Internal event pooling to handle many, small events
+// - Event memory pools to handle many, small events
 // - Arbitrary event size, regardless of TCP/IP buffer size
 // - Graceful disconnect for unexpected shutdown of client or server
 // - Reconnect for clients
 // - Verbose error handling
 // - C++ class model allows for multiple client/server objects
-// - C++ class model with no inheritence for simplicity
+// - C++ class model with no inheritence (for simplicity)
 // - Cross-platform and tested on Windows, Linux and Android
 // 
 //---------------------------------------------------------------------

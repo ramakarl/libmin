@@ -7,7 +7,7 @@ using namespace glib;
 g2Grid::g2Grid ()
 {
     m_layout[0].active = false; 
-    m_layout[1].active = false;
+    m_layout[1].active = false;    
 }
 
 void g2Grid::getDimensions ( uchar L, float sz, Vec4F& pos, Vec4F& adv )
@@ -23,27 +23,33 @@ void g2Grid::getDimensions ( uchar L, float sz, Vec4F& pos, Vec4F& adv )
 
 void g2Grid::UpdateLayout ( Vec4F p )
 {
-    // update self first
-    m_pos = p;
-
-    // 2D grid 
-    if (m_layout[0].active && m_layout[1].active) {        
-        printf ( "ERROR: 2D grids not yet supported.\n");
-        exit(-3);
-    } 
-
-    // 1D grid
-    int L = (m_layout[G_LX].active ? G_LX : G_LY);
-    g2Size spec;
-    g2Obj* obj;
-    float major_res = (L==G_LX) ? p.z-p.x : p.w-p.y;    
-    float minor_res = (L==G_LX) ? p.w-p.y : p.z-p.x;
+    g2Size spec, smax;
+    g2Obj* obj;    
     float x, y, sz;
     float major_used;
     bool repeat = false;
     int n, fill = -1;
     Vec4F adv;
-    Vec4F pos = p;    
+
+    // update self first
+    m_pos = p;
+
+    // margins (horiz & vert) 
+    m_pos = SetMargins ( p, m_minx, m_maxx, m_miny, m_maxy );    
+
+    // child regions
+    Vec4F pos = m_pos;    
+
+    // 2D grid 
+    if (m_layout[0].active && m_layout[1].active) {        
+        printf ( "ERROR: 2D grids not yet supported.\n");
+        exit(-3);
+    }
+      
+    // 1D grid layout
+    int L = (m_layout[G_LX].active ? G_LX : G_LY);      
+    float major_res = (L==G_LX) ? pos.z-pos.x : pos.w-pos.y;    
+    float minor_res = (L==G_LX) ? pos.w-pos.y : pos.z-pos.x;    
 
     // Pre-layout to define '*' (expand to fill)
     major_used = 0;
@@ -57,7 +63,7 @@ void g2Grid::UpdateLayout ( Vec4F p )
         if ( n < m_layout[L].sizes.size() )
             spec = m_layout[L].sizes[n];
     
-        // evaluate by size type
+        // evaluate by size type        
         sz = 0;
         switch (spec.typ) {
         case '%': sz = major_res * spec.amt/100.0f; break;
@@ -134,9 +140,9 @@ void g2Grid::drawChildren ( uchar what, bool dbg )
 
 void g2Grid::drawBackgrd (bool dbg)
 {
-    if (dbg) {
+    /*if (dbg) {
       drawFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(0.1,0,0,1) );      
-    }
+    }*/
     if ( m_backclr.w > 0 ) {
       drawFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr );      
     }

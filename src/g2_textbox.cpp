@@ -94,6 +94,8 @@ void g2TextBox::UpdateLayout ( Vec4F p )
   // update self 
   m_pos = p;
 
+  m_pos = SetMargins ( p, m_minx, m_maxx, m_miny, m_maxy );    
+
   LayoutIcon ();
 }
 

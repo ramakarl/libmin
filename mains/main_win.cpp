@@ -840,7 +840,6 @@ void Application::appSwapInterval(int i)
     #endif
 }
 
-
 void Application::appSetKeyPress(int key, bool state)
 {
     m_keyToggled[key] = (m_keyPressed[key] != state);

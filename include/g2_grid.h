@@ -17,8 +17,6 @@
   
     namespace glib {
 
-
-
     class GXAPI g2Grid : public g2Obj {
     public:
         g2Grid ();
@@ -32,9 +30,6 @@
 
         g2Layout* getLayout(uchar ly)   {return &m_layout[ly];}
         void getDimensions ( uchar L, float sz, Vec4F& pos, Vec4F& adv );
-
-
-
 
         g2Layout        m_layout[2];       
     };
