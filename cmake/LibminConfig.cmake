@@ -60,7 +60,7 @@ if ( NOT LIBMIN_INSTALL STREQUAL "SELF" )
     get_filename_component ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" REALPATH)
   endif()
   set ( LIBMIN_INSTALL ${LIBMIN_INSTALL} CACHE PATH "Path to /libmin installed binaries" )
-  _CONFIRM_PATH ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" "/bin/libmind.lib" "/bin/liblibmin.so" "LIBMIN_INSTALL")
+  _CONFIRM_PATH ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" "/bin/libmind.lib" "liblibmin.so" "LIBMIN_INSTALL")
 endif()
 
 # Repository paths
