@@ -112,7 +112,7 @@ void g2TextBox::SetProperty ( std::string key, std::string val )
   } else if ( key.compare("icon")==0 ) {
 
     g2Obj::LoadImg ( m_icon, val );  
-    printf ( "loaded: %s <- %s\n", m_name.c_str(), val.c_str() );
+    // printf ( "loaded: %s <- %s\n", m_name.c_str(), val.c_str() );
 
   } else if ( key.compare("icon-scale")==0 ) {
     

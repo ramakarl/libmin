@@ -59,9 +59,10 @@
         std::string getName()       { return m_name;}
         
     public:
+        int             m_id;
         std::string     m_name;
         bool            m_debug;
-
+        
         Vec4F           m_pos;
         Vec4F           m_backclr;
         Vec4F           m_borderclr;

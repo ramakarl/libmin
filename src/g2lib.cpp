@@ -62,7 +62,7 @@ void g2Lib::LoadSpec ( std::string fname )
     for (int n=0; n < m_objdefs.size(); n++) {
         // get object def
         name = m_objdefs[n].name;        
-        is_table = hasVal ( name, "also", "table" );        
+        is_table = hasVal ( name, "opt", "table" );        
 
         if (is_table) {          
           // retrieve list of table items
@@ -94,8 +94,7 @@ void g2Lib::LoadSpec ( std::string fname )
         }
     }
     // parse any new specs    
-    for (int n=0; n < m_spec.size(); n++) {
-        dbgprintf ("%s\n", m_spec[n].c_str() );
+    for (int n=0; n < m_spec.size(); n++) {        
         ParseSpecToDef ( m_spec[n] );         
     }    
     m_spec.clear();
@@ -152,7 +151,7 @@ void g2Lib::ParseSpecToDef ( std::string lin )
       if (words[1].compare ( "is a")==0) {
           SetDef ( words[0], words[2] );
       } 
-      if (words[1].compare ( "has")==0 || words[1].compare( "is")==0 ) {
+      if (words[1].compare ( "has")==0 || words[1].compare( "action")==0 ) {
           SetKeyVal ( words[0], words[2], words[3] );
       }
   }
@@ -175,7 +174,7 @@ void g2Lib::SetKeyVal ( std::string name, std::string key, std::string val )
     if (def) {
         def->keys.push_back ( key );
         def->vals.push_back ( val );
-        dbgprintf ( "%s: %s %s\n", name.c_str(), key.c_str(), val.c_str() );
+        // dbgprintf ( "%s: %s %s\n", name.c_str(), key.c_str(), val.c_str() );
     } else {
         printf ("ERROR: %s not defined yet.\n", name.c_str() );
     }
@@ -262,6 +261,7 @@ g2Obj* g2Lib::AddObj ( std::string name, uchar typ )
     default:
         return 0x0;
     };   
+    obj->m_id = m_objlist.size();
     obj->m_name = name;
 
     // add to master list
@@ -276,10 +276,19 @@ void g2Lib::AddPage ( int id )
 
   m_pages.push_back ( id );
 
-  bool is_startpage = hasVal ( obj_name, "also", "start page" );
-  bool is_active = hasVal ( obj_name, "also", "active" );
+  bool is_startpage = hasVal ( obj_name, "opt", "start page" );
+  bool is_active = hasVal ( obj_name, "opt", "active" );
   if ( is_active || is_startpage ) {
-    m_active_pages.push_back ( id );
+    OpenPage ( obj_name );    
+  }
+}
+
+void g2Lib::OpenPage ( std::string name )
+{
+  g2Obj* obj = FindObj ( name );
+  if ( obj !=0x0 ) {
+    printf ( "opened: %s\n", name.c_str() );
+    m_active_pages.push_back ( obj->m_id );
   }
 }
 
@@ -317,7 +326,7 @@ void g2Lib::BuildAll ()
         obj = m_objlist[n];
 
         // check for pages        
-        is_page = hasVal ( obj->getName(), "also", "page" );
+        is_page = hasVal ( obj->getName(), "opt", "page" );
         if (is_page) {
             AddPage ( n );
         }               

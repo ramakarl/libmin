@@ -8,10 +8,14 @@
 #  LIBMIN_INSTALL_PATH = path to installed libmin binaries (eg. libmin.lib, .dll, .so)
 #  LIBEXT_PATH         = path to third-party libs (eg. libjpg, libgvdb, liboptix)
 #
-function(_CONFIRM_PATH outvar targetPath targetFile varName )
-  set(oneValueArgs outVar targetPath targetFile varName )  
+function(_CONFIRM_PATH outvar targetPath targetWin targetLinux varName )
+  set(oneValueArgs outVar targetPath targetWin targetLinux varName )  
   unset ( result CACHE )  
-  find_file ( result ${targetFile} PATHS ${targetPath} )  
+  if ( WIN32 )
+    find_file ( result ${targetWin} PATHS ${targetPath} )  
+  else()
+    find_file ( result ${targetLinux} PATHS ${targetPath} )  
+  endif()
   if ( ${result} STREQUAL "result-NOTFOUND" )
     set (${outvar} "NOTFOUND" CACHE PATH "" )
     set (found "NOTFOUND")
@@ -34,7 +38,7 @@ endfunction()
 message ( STATUS "  LIBMIN_ROOT: ${LIBMIN_ROOT}")
 get_filename_component ( LIBMIN_REPO "${LIBMIN_ROOT}" REALPATH)
 set ( LIBMIN_REPO "${LIBMIN_REPO}" CACHE PATH "Path to /libmin source" )
-_CONFIRM_PATH ( LIBMIN_REPO "${LIBMIN_REPO}" "/src/dataptr.cpp" "LIBMIN_ROOT" )
+_CONFIRM_PATH ( LIBMIN_REPO "${LIBMIN_REPO}" "/src/dataptr.cpp" "/src/dataptr.cpp" "LIBMIN_ROOT" )
 
 # LIBEXT_ROOT - libext src, by default use the minimal /libext that comes with libmin
 #
@@ -44,7 +48,7 @@ else()
   get_filename_component ( LIBEXT_REPO "${LIBEXT_REPO}" REALPATH)
 endif()
 set ( LIBEXT_REPO ${LIBEXT_REPO} CACHE PATH "Path to /libext source" )
-_CONFIRM_PATH ( LIBEXT_REPO "${LIBEXT_REPO}" "/win64/libjpg_2019x64.lib" "LIBEXT_REPO")
+_CONFIRM_PATH ( LIBEXT_REPO "${LIBEXT_REPO}" "/include/openssl/bio.h" "/include/openssl/bio.h" "LIBEXT_REPO")
 
 # LIBMIN_INSTALL - libmin binaries, by default assume its in /build/libmin 
 # if set to "SELF" it means we are building libmin itself, and dont need the install path
@@ -56,7 +60,7 @@ if ( NOT LIBMIN_INSTALL STREQUAL "SELF" )
     get_filename_component ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" REALPATH)
   endif()
   set ( LIBMIN_INSTALL ${LIBMIN_INSTALL} CACHE PATH "Path to /libmin installed binaries" )
-  _CONFIRM_PATH ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" "/bin/libmind.lib" "LIBMIN_INSTALL")
+  _CONFIRM_PATH ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" "/bin/libmind.lib" "/bin/liblibmin.so" "LIBMIN_INSTALL")
 endif()
 
 # Repository paths
