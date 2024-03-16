@@ -60,7 +60,7 @@ if ( NOT LIBMIN_INSTALL STREQUAL "SELF" )
     get_filename_component ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" REALPATH)
   endif()
   set ( LIBMIN_INSTALL ${LIBMIN_INSTALL} CACHE PATH "Path to /libmin installed binaries" )
-  _CONFIRM_PATH ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" "/bin/libmind.lib" "liblibmin.so" "LIBMIN_INSTALL")
+  _CONFIRM_PATH ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" "/bin/libmind.lib" "/liblibmin.so" "LIBMIN_INSTALL")
 endif()
 
 # Repository paths
@@ -389,7 +389,39 @@ function(_EXPANDLIST)
 
 endfunction()
 
-#------------------------------------ CROSS-PLATFORM INSTALL
+#------------------------------------ CROSS-PLATFORM, MULTI-FILE INSTALLS
+
+# _INSTALL_PRE - install multiple files prior to build, at cmake time
+#
+function( _INSTALL_PRE )   
+  set (options "")
+  set (oneValueArgs DESTINATION SOURCE OUTPUT )
+  set (multiValueArgs FILES )
+  CMAKE_PARSE_ARGUMENTS(_INSTALL "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  if (_INSTALL_PRE_SOURCE)      
+     set ( _INSTALL_PRE_SOURCE "${_INSTALL_PRE_SOURCE}/" )	  
+  endif()
+  set ( OUT_LIST ${${_INSTALL_PRE_OUTPUT}} )
+
+  file ( MAKE_DIRECTORY "${_INSTALL_PRE_DESTINATION}/" )
+  
+  # collect files to pre-install
+  foreach (_file ${_INSTALL_PRE_FILES} )	
+    get_filename_component ( _path "${_file}" DIRECTORY )               
+    if ( "${_path}" STREQUAL "" )		   
+        set ( _fullpath "${_INSTALL_PRE_SOURCE}${_file}")            
+    else ()
+        set ( _fullpath "${_file}" )            
+    endif()        
+ 	list ( APPEND OUT_LIST "${_fullpath}" )
+  endforeach()        
+
+  # install multiple files at cmake time
+  install ( FILES ${OUT_LIST} DESTINATION ${_INSTALL_PRE_DESTINATION} )
+
+endfunction()
+
+
 function( _INSTALL )   
   set (options "")
   set (oneValueArgs DESTINATION SOURCE OUTPUT )
@@ -400,13 +432,13 @@ function( _INSTALL )
   endif()
   set ( OUT_LIST ${${_INSTALL_OUTPUT}} )
 
+  file ( MAKE_DIRECTORY "${_INSTALL_DESTINATION}/" )
+
   if ( WIN32 )      
-      # Windows - copy to desintation at post-build
-      file ( MAKE_DIRECTORY "${_INSTALL_DESTINATION}/" )
+      # Windows - copy to desintation at post-build      
       foreach (_file ${_INSTALL_FILES} )	
           get_filename_component ( _path "${_file}" DIRECTORY )               
-          if ( "${_path}" STREQUAL "" )
-		   
+          if ( "${_path}" STREQUAL "" )		   
             set ( _fullpath "${_INSTALL_SOURCE}${_file}")            
           else ()
             set ( _fullpath "${_file}" )            
@@ -427,6 +459,7 @@ function( _INSTALL )
       else()
 	     list ( APPEND OUT_LIST ${_INSTALL_FILES} )
       endif() 
+      install ( FILES ${OUT_LIST} DESTINATION ${_INSTALL_DESTINATION} )
   endif( )
   set ( ${_INSTALL_OUTPUT} ${OUT_LIST} PARENT_SCOPE )
    
