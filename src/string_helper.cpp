@@ -77,7 +77,7 @@ xlong strToI64 (std::string s)
     #elif defined(__ANDROID__)
         return std::strtoull( s.c_str(), NULL, 0 );
     #else
-		return strtoull( s.c_str(), NULL< 0 );
+		return strtoull( s.c_str(), NULL, 0 );
 	#endif
 }
 

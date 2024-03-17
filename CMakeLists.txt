@@ -182,7 +182,9 @@ if (BUILD_CUDA)
 endif()
 
 install ( FILES ${GLEW_FILES} DESTINATION ${_bin_path} )
-install ( FILES ${INCLUDE_FILES} DESTINATION ${_inc_path} )
+
+message ( "INC: ${INCLUDE_FILES} " )
+_INSTALL_PRE ( FILES ${INCLUDE_FILES} DESTINATION ${_inc_path} )
 
 if ( LINUX )
   install ( FILES $<TARGET_PDB_FILE:${PROJNAME}> DESTINATION ${_bin_path} OPTIONAL )

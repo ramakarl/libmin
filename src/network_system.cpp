@@ -1214,7 +1214,8 @@ int NetworkSystem::netError ( std::string msg, int error_id )
 		if (error_id==0) {
 			error_id = errno;								// linux error code
 		}
-		error_buf = (char*) strerror_r ( error_id, buf, 512 );
+		char buf[2048];
+		error_buf = (char*) strerror_r ( error_id, buf, 2048 );
 		error_str = std::string(error_buf);
 	#endif	
 
