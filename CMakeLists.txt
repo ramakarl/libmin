@@ -189,7 +189,7 @@ endif()
 
 install ( FILES ${GLEW_FILES} DESTINATION ${_bin_path} )
 
-message ( "INC: ${INCLUDE_FILES} " )
+# header files
 _INSTALL_PRE ( FILES ${INCLUDE_FILES} DESTINATION ${_inc_path} )
 
 if ( LINUX )

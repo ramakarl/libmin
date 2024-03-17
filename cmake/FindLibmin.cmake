@@ -36,7 +36,7 @@ else ()
 
     #-- Paths
 	set ( LIBMIN_INC_DIR "${LIBMIN_INSTALL}/include" CACHE PATH "Path to include files" FORCE)
-    set ( LIBMIN_LIB_DIR "${LIBMIN_INSTALL}/bin" CACHE PATH "Path to libraries" FORCE)
+        set ( LIBMIN_LIB_DIR "${LIBMIN_INSTALL}/bin" CACHE PATH "Path to libraries" FORCE)
 	set ( LIBMIN_SRC_DIR "${LIBMIN_INSTALL}/src" CACHE PATH "Path to libraries" FORCE)
 	set ( LIBMIN_GLEW_DIR "${LIBMIN_INSTALL}/GL" CACHE PATH "Path to glew.c" FORCE)
 	
@@ -61,11 +61,11 @@ else ()
 		set ( LIST_REL "" )
 		set ( OK_DLL 0 )
 		set ( OK_LIB 0 )
-		_FIND_FILE ( LIST_DEBUG LIBMIN_LIB_DIR "libmind.lib" "liblibmind.so" OK_LIB )
-		_FIND_FILE ( LIST_DLL LIBMIN_LIB_DIR "libmind.dll" "liblibmind.so" OK_DLL )
+		_FIND_FILE ( LIST_DEBUG LIBMIN_LIB_DIR "libmind.lib" "../liblibmind.so" OK_LIB )
+		_FIND_FILE ( LIST_DLL LIBMIN_LIB_DIR "libmind.dll" "../liblibmind.so" OK_DLL )
   
-		_FIND_FILE ( LIST_REL LIBMIN_LIB_DIR "libmin.lib" "liblibmin.so" OK_LIB )
-		_FIND_FILE ( LIST_DLL LIBMIN_LIB_DIR "libmin.dll" "liblibmin.so" OK_DLL )
+		_FIND_FILE ( LIST_REL LIBMIN_LIB_DIR "libmin.lib" "../liblibmin.so" OK_LIB )
+		_FIND_FILE ( LIST_DLL LIBMIN_LIB_DIR "libmin.dll" "../liblibmin.so" OK_DLL )
 
 		if ( (${OK_DLL} GREATER_EQUAL 1) AND (${OK_LIB} GREATER_EQUAL 1) )
 		   message ( STATUS "  Found. Libmin so/dlls in ${LIBMIN_LIB_DIR}" )

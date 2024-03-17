@@ -397,14 +397,14 @@ function( _INSTALL_PRE )
   set (options "")
   set (oneValueArgs DESTINATION SOURCE OUTPUT )
   set (multiValueArgs FILES )
-  CMAKE_PARSE_ARGUMENTS(_INSTALL "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  CMAKE_PARSE_ARGUMENTS(_INSTALL_PRE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
   if (_INSTALL_PRE_SOURCE)      
      set ( _INSTALL_PRE_SOURCE "${_INSTALL_PRE_SOURCE}/" )	  
   endif()
   set ( OUT_LIST ${${_INSTALL_PRE_OUTPUT}} )
 
   file ( MAKE_DIRECTORY "${_INSTALL_PRE_DESTINATION}/" )
-  
+       
   # collect files to pre-install
   foreach (_file ${_INSTALL_PRE_FILES} )	
     get_filename_component ( _path "${_file}" DIRECTORY )               
@@ -413,11 +413,10 @@ function( _INSTALL_PRE )
     else ()
         set ( _fullpath "${_file}" )            
     endif()        
- 	list ( APPEND OUT_LIST "${_fullpath}" )
+    list ( APPEND OUT_LIST "${_fullpath}" )
+    # copy the file now (cmake time)
+    file (COPY "${_fullpath}" DESTINATION "${_INSTALL_PRE_DESTINATION}/" )
   endforeach()        
-
-  # install multiple files at cmake time
-  install ( FILES ${OUT_LIST} DESTINATION ${_INSTALL_PRE_DESTINATION} )
 
 endfunction()
 
