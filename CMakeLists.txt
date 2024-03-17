@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 2.8)
 set (CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "")
 
-set(PROJNAME libmin)
+if(WIN32)
+  set(PROJNAME libmin)
+else()
+  # linux prefixes the lib automatically
+  set(PROJNAME min)
+endif()
+
 Project(${PROJNAME})
 Message("-------------------------------")
 Message("PROJECT NAME: ${PROJNAME}")
@@ -189,6 +195,7 @@ _INSTALL_PRE ( FILES ${INCLUDE_FILES} DESTINATION ${_inc_path} )
 if ( LINUX )
   install ( FILES $<TARGET_PDB_FILE:${PROJNAME}> DESTINATION ${_bin_path} OPTIONAL )
 endif()
+# output shared library
 install ( FILES $<TARGET_LINKER_FILE:${PROJNAME}> DESTINATION ${_bin_path} )
 _INSTALL ( FILES ${PACKAGE_DLLS} DESTINATION ${_bin_path} )
 install ( TARGETS ${PROJNAME} DESTINATION ${_bin_path} )
