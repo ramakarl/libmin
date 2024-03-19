@@ -179,6 +179,60 @@ function ( _REQUIRE_GLEW)
     endif()
 endfunction()
 
+
+###################################################################################
+# Include OpenSSL
+#
+function ( _REQUIRE_OPENSSL use_openssl_default)
+    OPTION (BUILD_OPENSSL "Build with OpenSSL" ${use_openssl_default} )
+    if (BUILD_OPENSSL) 
+
+	    find_package(OpenSSL)
+
+	    if ( OPENSSL_FOUND )	
+		    add_definitions(-DUSE_OPENSSL)
+	
+		    include_directories ( ${OPENSSL_INCLUDE_DIR} )
+		    link_directories ( ${OPENSSL_LIB_DIR} )
+		    LIST( APPEND LIBRARIES_OPTIMIZED "${OPENSSL_LIB}")
+		    LIST( APPEND LIBRARIES_DEBUG "${OPENSSL_LIB}")	
+            set(LIBRARIES_OPTIMIZED ${LIBRARIES_OPTIMIZED} PARENT_SCOPE)
+            set(LIBRARIES_DEBUG ${LIBRARIES_DEBUG} PARENT_SCOPE)
+		    _EXPANDLIST( OUTPUT PACKAGE_DLLS SOURCE ${OPENSSL_LIB_DIR} FILES ${OPENSSL_DLL} )
+		    message ( STATUS "--> Using OpenSSL, ${OPENSSL_LIB_DIR}/${OPENSSL_DLL} ")
+	    else()
+		    message ( FATAL_ERROR "\n  Unable to find OpenSLL library. Link with a different /libext for third-party libs that include OpenSSL.\n")
+	    endif()
+    endif()
+endfunction()
+
+#####################################################################################
+# Include Bcrypt
+#
+function ( _REQUIRE_BCRYPT use_bcrypt_default)
+    OPTION (BUILD_BCRYPT "Build with Bcrypt" ${use_bcrypt_default} )
+    if (BUILD_BCRYPT) 
+        find_package(Bcrypt)
+
+        if ( BCRYPT_FOUND )	
+	        if ( NOT DEFINED USE_BCRYPT )	       
+		        SET(USE_BCRYPT ON CACHE BOOL "Use Bcrypt")
+	        endif()
+	        if ( USE_BCRYPT )
+		        add_definitions(-DUSE_BCRYPT)		
+		        message ( STATUS " Using Bcrypt")
+		        include_directories ( ${BCRYPT_INCLUDE_DIR} )
+		        link_directories ( ${BCRYPT_LIB_DIR} )
+		        LIST( APPEND LIBRARIES_DEBUG "${BCRYPT_DEBUG_LIB}" )	
+		        LIST( APPEND LIBRARIES_OPTIMIZED "${BCRYPT_RELEASE_LIB}" )   
+                set(LIBRARIES_OPTIMIZED ${LIBRARIES_OPTIMIZED} PARENT_SCOPE)
+                set(LIBRARIES_DEBUG ${LIBRARIES_DEBUG} PARENT_SCOPE)
+		        _EXPANDLIST( OUTPUT PACKAGE_DLLS SOURCE ${BCRYPT_LIB_DIR} FILES ${BCRYPT_DLL})
+	        endif()
+        endif()
+    endif()
+endfunction()
+
 #####################################################################################
 # Include JPG    
 #   
@@ -206,7 +260,7 @@ endfunction()
 ####################################################################################
 # Include CUDA
 #
-function ( _REQUIRE_CUDA use_cuda_default kernel_path) 
+function ( _REQUIRE_CUD use_cuda_default kernel_path) 
     
     OPTION (BUILD_CUDA "Build with CUDA" ${use_cuda_default})
 

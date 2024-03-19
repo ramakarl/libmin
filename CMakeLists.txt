@@ -35,6 +35,8 @@ _REQUIRE_GL ()
 
 _REQUIRE_GLEW ()	       
 
+_REQUIRE_OPENSSL (false)	            # default = false
+
 set( BUILD_JPG false CACHE BOOL "")
 if (BUILD_JPG)
   _REQUIRE_JPG ()
@@ -48,28 +50,6 @@ endif()
 set( USE_PROFILE_NET false CACHE BOOL "")	# profile network system
 if ( USE_PROFILE_NET )
   add_definitions ( -DPROFILE_NET )
-endif()
-
-####################################################################################
-# Find OpenSSL
-#
-OPTION (BUILD_OPENSSL "Build with OpenSSL" OFF)
-if (BUILD_OPENSSL) 
-
-	find_package(OpenSSL)
-
-	if ( OPENSSL_FOUND )	
-		add_definitions(-DUSE_OPENSSL)
-	
-		include_directories ( ${OPENSSL_INCLUDE_DIR} )
-		link_directories ( ${OPENSSL_LIB_DIR} )
-		LIST( APPEND LIBRARIES_OPTIMIZED "${OPENSSL_LIB}")
-		LIST( APPEND LIBRARIES_DEBUG "${OPENSSL_LIB}")	
-		_EXPANDLIST( OUTPUT PACKAGE_DLLS SOURCE ${OPENSSL_LIB_DIR} FILES ${OPENSSL_DLL} )
-		message ( STATUS "--> Using OpenSSL, ${OPENSSL_LIB_DIR}/${OPENSSL_DLL} ")
-	else()
-		message ( FATAL_ERROR "\n  Unable to find OpenSLL library. Link with a different /libext for third-party libs that include OpenSSL.\n")
-	endif()
 endif()
 
 #####################################################################################
