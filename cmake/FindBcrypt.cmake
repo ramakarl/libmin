@@ -23,7 +23,7 @@ if ( BCRYPT_ROOT_DIR )
 	   set ( BCRYPT_LIB_DIR "${BCRYPT_ROOT_DIR}/win64" CACHE PATH "Path to libraries" FORCE)	
     else()
        # Linux sub-path to libs
-       set ( BCRYPT_LIB_DIR "${BCRYPT_ROOT_DIR}/" CACHE PATH "Path to libraries" FORCE)	
+       set ( BCRYPT_LIB_DIR "${BCRYPT_ROOT_DIR}/linux" CACHE PATH "Path to libraries" FORCE)	
     endif()
 
 	#-------- Locate Header files
@@ -42,10 +42,10 @@ if ( BCRYPT_ROOT_DIR )
     unset(LIST_DLL)
     unset(LIST_DEBUG_LIB)
     unset(LIST_RELEASE_LIB)
-	_FIND_FILE ( LIST_DLL BCRYPT_LIB_DIR "bcrypt.dll" "" OK_DLL )		
-    _FIND_FILE ( LIST_DLL BCRYPT_LIB_DIR "bcryptd.dll" "" OK_DLL )		
-  	_FIND_FILE ( LIST_DEBUG_LIB BCRYPT_LIB_DIR "bcryptd.lib" "bcryptd.lib" OK_LIB )  	    
-    _FIND_FILE ( LIST_RELEASE_LIB BCRYPT_LIB_DIR "bcrypt.lib" "bcrypt.lib" OK_LIB )  	    
+    _FIND_FILE ( LIST_DLL BCRYPT_LIB_DIR "bcrypt.dll" "libbcrypt.so" OK_DLL )		
+    _FIND_FILE ( LIST_DLL BCRYPT_LIB_DIR "bcryptd.dll" "libbcrypt.so" OK_DLL )		
+    _FIND_FILE ( LIST_DEBUG_LIB BCRYPT_LIB_DIR "bcryptd.lib" "libbcrypt.so" OK_LIB )  	    
+    _FIND_FILE ( LIST_RELEASE_LIB BCRYPT_LIB_DIR "bcrypt.lib" "libbcrypt.so" OK_LIB )  	    
     
 	if ( (${OK_DLL} EQUAL 2) AND (${OK_LIB} EQUAL 2) ) 
 	   message ( STATUS "  Found. Bcrypt Library. ${BCRYPT_LIB_DIR}" )	   
