@@ -542,6 +542,8 @@ int NetworkSystem::netRecieveData ()
 
 	// Listen for TCP connections on socket
 	if ( mSockets[curr_socket].src.type == NET_ANY ) {
+		// if we got here, then 'select' indicated incoming data on the server listening socket,
+		// which means a new client is trying to connect. complete the client connection.
 		netServerListen ( curr_socket );
 	}
 
