@@ -28,6 +28,13 @@ To see some example uses of Libmin, check out the Just Math repository:<br>
 Just math - <a href="https://github.com/ramakarl/just_math">https://github.com/ramakarl/just_math</a><br>
 All samples there make use of Libmin.<br>
 
+## Building
+
+Steps:
+1) git clone https://github.com/ramakarl/libmin.git
+2) Run ./build.sh
+3) For more details/options, see <a href="https://github.com/ramakarl/just_math?tab=readme-ov-file#how-to-build">just_math, How to Build</a>
+
 ## Mains
 
 Libmin provides main wrappers for multiple platforms including Windows, Linux and Android.<br>
