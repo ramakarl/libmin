@@ -39,7 +39,18 @@ Third party libs may be found in \libext.
 
 These are not built into libmin.<br>
 They are provided for convenience to applications that use libmin.<br>
-For example, the _REQUIRED_JPG() cmake function allows an application to request linkage to libjpg dynamic libs. <br>
+<Br>
+Convenience functions (called by application CMake):
+- _REQUIRE_MAIN - request linkage to interactive cross-platform main
+- _REQUIRE_GL - request linkage to OpenGL lib
+- _REQUIRE_GLEW - request linkage to GLEW lib
+- _REQUIRE_LIBEXT - request linkage to third-party libs, enables LIBEXT
+- _REQUIRE_JPG - request linkage to libjpg 
+- _REQUIRE_OPENSSL(default) - requrest linkage to libssl-dev
+- _REQUIRE_BCRYPT(default) - requiest linkage to bcrypt
+- _REQUIRE_CUDA(default) - request linkage to NV CUDA
+<br>
+<br>
 
 ## License
 
