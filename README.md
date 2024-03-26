@@ -69,27 +69,30 @@ set (CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "")
 set(PROJNAME _your_project_name_)
 Project(${PROJNAME})
 
-# LIBMIN Bootstrap
+# LIBMIN Bootstrap - this section finds the libmin/cmakes
 ..
-# Include LIBMIN
+# Include LIBMIN - this section loads and links with libmin
 find_package( Libmin QUIET )
 ..
-# Options
+# Options - this section specifies the linkage that the application desires
 _REQUIRE_MAIN()  - optional
 _REQUIRE_GL()    - optional
 _REQUIRE_GLEW()  - optional
+_REQUIRE_LIBEXT() - optional, load and link with additional 3rd party libs
+_REQUIRE_OPENSSL(bool) - optional, links with openssl (from libext)
+_REQUIRE_BCRYPT(bool) - optional, links with bcrypt (from libext)
 _REQUIRE_CUDE(bool, ".")  - optional
 ..
-# Asset Path
+# Asset Path - this section provides an ASSET_PATH variable to the 'assets' folder during compile
 ..
-# App Code & Executable
+# App Code & Executable - this section finds the user-application cpp/h files
 file( GLOB MAIN_FILES *.cpp *.c *.h )
 ..add_executable (..)
 ..
-# Link Additional Libraries
+# Link Additional Libraries - this section links with all requires & optional libs
 _LINK ( PROJECT ${PROJNAME} OPT ${LIBRARIES_OPTIMIZED} DEBUG ${LIBRARIES_DEBUG} PLATFORM ${PLATFORM_LIBRARIES} )
 ..
-# Install Binaries
+# Install Binaries - this section builds the install, with dlls, shaders, ptx, exe & include as needed
 file (COPY ..) - for assets folder
 _INSTALL (FILES ${SHADERS} .. ) - for shaders
 _INSTALL (FILES ${PACKAGE_DLLS} .. ) - for libext/libmin dlls
