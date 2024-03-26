@@ -40,7 +40,7 @@ Third party libs may be found in \libext.
 These are not built into libmin.<br>
 They are provided for convenience to applications that use libmin.<br>
 <Br>
-Convenience functions (called by application CMake):
+Convenience functions (called in application CMake):
 - _REQUIRE_MAIN - request linkage to interactive cross-platform main
 - _REQUIRE_GL - request linkage to OpenGL lib
 - _REQUIRE_GLEW - request linkage to GLEW lib
@@ -49,8 +49,6 @@ Convenience functions (called by application CMake):
 - _REQUIRE_OPENSSL(default) - requrest linkage to libssl-dev
 - _REQUIRE_BCRYPT(default) - requiest linkage to bcrypt
 - _REQUIRE_CUDA(default) - request linkage to NV CUDA
-<br>
-<br>
 
 ## License
 
