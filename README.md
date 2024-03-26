@@ -46,8 +46,8 @@ Convenience functions (called in application CMake):
 - _REQUIRE_GLEW - request linkage to GLEW lib
 - _REQUIRE_LIBEXT - request linkage to third-party libs, enables LIBEXT
 - _REQUIRE_JPG - request linkage to libjpg 
-- _REQUIRE_OPENSSL(default) - requrest linkage to libssl-dev
-- _REQUIRE_BCRYPT(default) - requiest linkage to bcrypt
+- _REQUIRE_OPENSSL(default) - request linkage to libssl-dev
+- _REQUIRE_BCRYPT(default) - request linkage to bcrypt
 - _REQUIRE_CUDA(default) - request linkage to NV CUDA
 
 ## License
