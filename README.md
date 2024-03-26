@@ -58,6 +58,45 @@ Convenience functions (called in application CMake):
 - _REQUIRE_BCRYPT(default) - request linkage to bcrypt
 - _REQUIRE_CUDA(default) - request linkage to NV CUDA
 
+## Application Cmakes 
+Libmin was designed to be a very versatile library, providing application wrappers from interactive OpenGL apps, to GPU-based CUDA apps, to console-based networking apps.<br>
+To achieve this, an application CMakeLists.txt follows this pseudo-code.<br>
+For a detailed example see: https://github.com/ramakarl/Flock2/blob/main/CMakeLists.txt<br>
+
+```
+cmake_minimum_required(VERSION 2.8)
+set (CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "")
+set(PROJNAME _your_project_name_)
+Project(${PROJNAME})
+
+# LIBMIN Bootstrap
+..
+# Include LIBMIN
+find_package( Libmin QUIET )
+..
+# Options
+_REQUIRE_MAIN()  - optional
+_REQUIRE_GL()    - optional
+_REQUIRE_GLEW()  - optional
+_REQUIRE_CUDE(bool, ".")  - optional
+..
+# Asset Path
+..
+# App Code & Executable
+file( GLOB MAIN_FILES *.cpp *.c *.h )
+..add_executable (..)
+..
+# Link Additional Libraries
+_LINK ( PROJECT ${PROJNAME} OPT ${LIBRARIES_OPTIMIZED} DEBUG ${LIBRARIES_DEBUG} PLATFORM ${PLATFORM_LIBRARIES} )
+..
+# Install Binaries
+file (COPY ..) - for assets folder
+_INSTALL (FILES ${SHADERS} .. ) - for shaders
+_INSTALL (FILES ${PACKAGE_DLLS} .. ) - for libext/libmin dlls
+install (FILES $<TARGET_PDB_FILE:$PROJNAME}) .. ) -for pdb debug symbols
+install (FIELS ${INSTALL_LIST} .. ) - for executable
+```
+
 ## License
 
 Libmin is MIT Licensed with contributions from other BSD and MIT licensed sources.<br>
