@@ -60,7 +60,7 @@ Convenience functions (called in application CMake):
 
 ## Application Cmakes 
 Libmin was designed to be a very versatile library, providing application wrappers from interactive OpenGL apps, to GPU-based CUDA apps, to console-based networking apps.<br>
-To achieve this, an application using libmin creates a CMakeLists.txt following this pseudo-code.<br>
+To achieve this, an application that uses libmin creates a CMakeLists.txt following this pseudo-code.<br>
 For a detailed example see: https://github.com/ramakarl/Flock2/blob/main/CMakeLists.txt<br>
 
 ```
@@ -78,13 +78,13 @@ find_package( Libmin QUIET )
 ..
 # Options - this section specifies the linkage that the application desires
 #
-_REQUIRE_MAIN()  - optional
+_REQUIRE_MAIN()  - optional (leave out for console apps)
 _REQUIRE_GL()    - optional
 _REQUIRE_GLEW()  - optional
+_REQUIRE_CUDA(bool, ".")  - optional, for GPU-based apps
 _REQUIRE_LIBEXT() - optional, load and link with additional 3rd party libs
 _REQUIRE_OPENSSL(bool) - optional, links with openssl (from libext)
 _REQUIRE_BCRYPT(bool) - optional, links with bcrypt (from libext)
-_REQUIRE_CUDE(bool, ".")  - optional
 ..
 # Asset Path - this section provides an ASSET_PATH variable to the 'assets' folder during compile
 #
