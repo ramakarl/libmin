@@ -60,7 +60,7 @@ Convenience functions (called in application CMake):
 
 ## Application Cmakes 
 Libmin was designed to be a very versatile library, providing application wrappers from interactive OpenGL apps, to GPU-based CUDA apps, to console-based networking apps.<br>
-To achieve this, an application CMakeLists.txt follows this pseudo-code.<br>
+To achieve this, an application using libmin creates a CMakeLists.txt follows this pseudo-code.<br>
 For a detailed example see: https://github.com/ramakarl/Flock2/blob/main/CMakeLists.txt<br>
 
 ```
