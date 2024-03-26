@@ -11,6 +11,7 @@ The functionality in Libmin includes:
 - Quaternions (quaternion.h)
 - Stateful Mersenee Twister RNG (mersenne.h)
 - Event system (event.h, event_system.h)
+- Network system, real-time non-blocking, event-based (network_system.h)
 - Drawing in 2D/3D in OpenGL core profile (gxlib)
 - 2D GUI Interface library (g2lib)
 - Smart memory pointers for CPU/GPU via OpenGL/CUDA (dataptr.h)
