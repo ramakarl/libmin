@@ -172,7 +172,8 @@
             #include <EGL/egl.h>
             #include <GLES3/gl3.h>
         #elif defined(__linux__)
-
+            #include <GL/glew.h>
+            #include <GL/gl.h>
         #elif defined(_WIN32)                
             #include <GL/glew.h>
             #include <GL/gl.h>
