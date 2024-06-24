@@ -201,6 +201,7 @@ f32 Quaternion::dotProduct(const Quaternion& q2) const
 	return (X * q2.X) + (Y * q2.Y) + (Z * q2.Z) + (W * q2.W);
 }
 
+
 // Quaternion from orthogonal basis
 Quaternion& Quaternion::fromBasis (Vec3F a, Vec3F b, Vec3F c)
 {

@@ -206,17 +206,16 @@ void glib::drawGradient ( Vec2F a, Vec2F b, Vec4F c0, Vec4F c1, Vec4F c2, Vec4F 
 void glib::drawCircle ( Vec2F a, float r, Vec4F clr  )
 {
 	int ndx;
-	int du = 15;
-	gxVert* v = gx.allocGeom2D ( 2*(361/du), PRIM_LINES );	
+	int du = 15;	
+	gxVert* v = gx.allocGeom2D ( 2*((360/du)+1), PRIM_LINES );	
 
 	// draw circle
 	Vec2F pl, p, c;
 	pl = a + Vec2F(1 * r, 0);
 	for (int u=0; u <= 360; u += du ) {
-		c = Vec3F( gx.cos_table[u*100] * r, gx.sin_table[u*100] * r, 0 );
-		p = a + c;
-		v->x = pl.x; v->y = pl.y; vclr (v,clr); v++;
-		v->x = p.x; v->y = p.y;   vclr (v,clr);  v++;
+		p = a + Vec2F( gx.cos_table[u*100] * r, gx.sin_table[u*100] * r );		
+		v->x = pl.x; v->y = pl.y; v->z = 0; vclr (v,clr); v++;
+		v->x = p.x ; v->y = p.y ; v->z = 0; vclr (v,clr); v++;
 		pl = p;
 	}		
 
@@ -239,9 +238,10 @@ void glib::drawImg ( ImageX* img, Vec2F a, Vec2F b, Vec4F clr )
 	v->x = b.x; v->y = b.y; v->z = 0; vclr(v,clr,0); v++;
 }
 
-void glib::drawText ( Vec2F a, char* msg, Vec4F clr )
+
+void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 {
-	int len = (int) strlen ( msg );
+	int len = (int) msg.size();
 	if ( len == 0 ) 
 		return;
 
@@ -253,9 +253,9 @@ void glib::drawText ( Vec2F a, char* msg, Vec4F clr )
 	float lX = a.x;
 	float lY = a.y;
 	float lLinePosX = a.x;
-	float lLinePosY = a.y;
-	const char* c = msg;
-	int cnt = 0;
+	float lLinePosY = a.y;		
+	int c = 0;
+	char ch = msg.at(0);
 	
 	// text_hgt = desired height of font in pixels
 	// text_kern = spacing between letters
@@ -263,13 +263,14 @@ void glib::drawText ( Vec2F a, char* msg, Vec4F clr )
 	float textSz = gx.m_text_hgt / glyphHeight;	// glyph scale
 	float textStartPy = textSz;					// start location in pixels
 	
-	while (*c != '\0' && cnt < len ) {
-		if ( *c == '\n' ) {
+	for (; c < len; c++ ) {
+		ch = msg.at(c);
+		if ( ch == '\n' ) {
 			lX = lLinePosX;
 			lLinePosY += gx.m_text_hgt;
 			lY = lLinePosY;
-		} else if ( *c >=0 && *c <= 128 ) {
-			gxGlyph& gly = font.glyphs[*c];
+		} else if ( ch >=0 && ch <= 128 ) {
+			gxGlyph& gly = font.glyphs[ ch ];
 			float pX = lX + gly.offX * textSz;
 			float pY = lY + gly.offY * textSz; 
 			float pW = gly.width * textSz;
@@ -289,14 +290,14 @@ void glib::drawText ( Vec2F a, char* msg, Vec4F clr )
 			v->x = pX+pW;	v->y = pY;	v->z = 0;			vclr(v,clr, 0);		v->tx = gly.u + gly.du; v->ty = gly.v + gly.dv;	v++;
 	
 			lX += (gly.advance + gx.m_text_kern) * textSz;
-			lY += 0;
-			cnt++;
+			lY += 0;			
+		}	else if ( ch=='\0' ) {
+			break;
 		}
-		c++;
 	}
 
 	// clear remainder of VBO entries
-	for (int n=cnt; n < len; n++ ) {
+	for (int n=c; n < len; n++ ) {
 		memset ( v, 0, 6*sizeof(gxVert) ); v += 6;				
 	}
 }

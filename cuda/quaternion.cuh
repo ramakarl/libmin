@@ -31,6 +31,59 @@
 		return q;
 	}
 
+	inline __device__ __host__ quat4 quat_mult ( quat4 b, quat4 a )
+	{
+		quat4 q;
+		q.w = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
+		q.x = (a.w * b.x) + (a.x * b.w) + (a.y * b.z) - (a.z * b.y);
+		q.y = (a.w * b.y) + (a.y * b.w) + (a.z * b.x) - (a.x * b.z);
+		q.z = (a.w * b.z) + (a.z * b.w) + (a.x * b.y) - (a.y * b.x);
+		return q;
+	}
+
+	inline __device__ __host__ quat4 quat_normalize ( quat4 a )
+	{
+		float n = a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w;
+		//if ( fabs(n) < 0.00001 ) return a;
+		a *= 1.0f / sqrt(n);		
+		return a;
+	}
+
+
+	inline __device__ __host__ quat4 quat_from_basis (float3 a, float3 b, float3 c)
+	{
+		quat4 q;
+		float T = a.x + b.y + c.z;
+		float s;
+		if (T > 0) {
+			float s = sqrt(T + 1) * 2.f;
+			q.x = (b.z - c.y) / s;
+			q.y = (c.x - a.z) / s;
+			q.z = (a.y - b.x) / s;
+			q.w = 0.25f * s;
+		} else if ( a.x > b.y && a.x > c.z) {
+			s = sqrt(1 + a.x - b.y - c.z) * 2;
+			q.x = 0.25f * s;
+			q.y = (a.y + b.x) / s;
+			q.z = (c.x + a.z) / s;
+			q.w = (b.z - c.y) / s;
+		} else if (b.y > c.z) {
+			s = sqrt(1 + b.y - a.x - c.z) * 2;
+			q.x = (a.y + b.x) / s;
+			q.y = 0.25f * s;
+			q.z = (b.z + c.y) / s;
+			q.w = (c.x - a.z) / s;
+		} else {
+			s = sqrt(1 + c.z - a.x - b.y) * 2;
+			q.x = (c.x + a.z) / s;
+			q.y = (b.z + c.y) / s;
+			q.z = 0.25f * s;
+			q.w = (a.y - b.x) / s;
+		}
+		quat_normalize( q );
+		return q;
+	}
+
 	inline __device__ __host__  float3 quat_to_euler ( quat4 op )
 	{
 		float3 v;
@@ -76,29 +129,21 @@
 		return q;
 	}
 	
-	inline __device__ __host__ quat4 quat_mult ( quat4 b, quat4 a )
-	{
-		quat4 q;
-		q.w = (a.w * b.w) - (a.x * b.x) - (a.y * b.y) - (a.z * b.z);
-		q.x = (a.w * b.x) + (a.x * b.w) + (a.y * b.z) - (a.z * b.y);
-		q.y = (a.w * b.y) + (a.y * b.w) + (a.z * b.x) - (a.x * b.z);
-		q.z = (a.w * b.z) + (a.z * b.w) + (a.x * b.y) - (a.y * b.x);
-		return q;
-	}
-
-	inline __device__ __host__ quat4 quat_normalize ( quat4 a )
-	{
-		float n = a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w;
-		//if ( fabs(n) < 0.00001 ) return a;
-		a *= 1.0f / sqrt(n);		
-		return a;
-	}
 
 	inline __device__ __host__ quat4 quat_rotation_fromto (float3 from, float3 to, float frac)
   {
 	  float3 axis = to;	
 	  axis = normalize ( cross(from, to ) );										// axis of rotation between vectors (from and to unmodified)	  
 		return normalize ( quat_from_angleaxis ( acos( dot(from,to) )*frac, axis) );		// dot product = angle of rotation between 'from' and 'to' vectors	
+  }
+
+	inline __device__ __host__ quat4 quat_from_directionup (float3 fwd, float3 up)
+  {
+	  float3 side;
+		fwd = normalize(fwd);
+		side = normalize ( cross( fwd, up ) );
+		up = normalize ( cross ( side, fwd ) );
+		return quat_from_basis ( fwd, up, side );
   }
 
 

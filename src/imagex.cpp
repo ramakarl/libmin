@@ -936,7 +936,7 @@ void ImageX::Fill (float r, float g, float b, float a)
 void ImageX::setPixelRGB8 (int x, int y, Vec4F c)
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 3);
+		XBYTE* pix = (XBYTE*) (GetData() + (y * mXres + x) * 3);
 		*pix++ = c.x;
 		*pix++ = c.y;
 		*pix++ = c.z;		
@@ -945,7 +945,7 @@ void ImageX::setPixelRGB8 (int x, int y, Vec4F c)
 void ImageX::getPixelRGB8 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 3);
+		XBYTE* pix = (XBYTE*) (GetData() + (y * mXres + x) * 3);
     c.x = *pix++;
     c.y = *pix++;
     c.z = *pix++;
@@ -955,7 +955,7 @@ void ImageX::getPixelRGB8 (int x, int y, Vec4F& c )
 void ImageX::setPixelRGBA8 (int x, int y, Vec4F c)
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 4);
+		XBYTE* pix = (XBYTE*) (GetData() + (y * mXres + x) * 4);
 		*pix++ = c.x;
 		*pix++ = c.y;
 		*pix++ = c.z;		
@@ -966,7 +966,7 @@ void ImageX::setPixelRGBA8 (int x, int y, Vec4F c)
 void ImageX::getPixelRGBA8 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 4);
+		XBYTE* pix = (XBYTE*) (GetData() + (y * mXres + x) * 4);
         c.x = *pix++;
         c.y = *pix++;
         c.z = *pix++;
@@ -977,7 +977,7 @@ void ImageX::getPixelRGBA8 (int x, int y, Vec4F& c )
 void ImageX::setPixelRGBA32F (int x, int y, Vec4F c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		float* pix = (float*) GetData() + ( (y * mXres + x) * GetBytesPerPix() );
+		float* pix = (float*) (GetData() + (y * mXres + x) * GetBytesPerPix() );
 		*pix++ = c.x;
 		*pix++ = c.y;
 		*pix++ = c.z;
@@ -987,7 +987,7 @@ void ImageX::setPixelRGBA32F (int x, int y, Vec4F c )
 void ImageX::getPixelRGBA32F (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		float* pix = (float*) GetData() + ( (y * mXres + x) * GetBytesPerPix() );
+		float* pix = (float*) (GetData() + (y * mXres + x) * GetBytesPerPix() );
         c.x = *pix++;
         c.y = *pix++;
         c.z = *pix++;
@@ -997,7 +997,7 @@ void ImageX::getPixelRGBA32F (int x, int y, Vec4F& c )
 void ImageX::setPixelBGR8 (int x, int y, Vec4F c)
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 3 );
+		XBYTE* pix = (XBYTE*) (GetData() + (y * mXres + x) * 3 );
 		*pix++ = c.z;
 		*pix++ = c.y;
 		*pix++ = c.x;		
@@ -1006,7 +1006,7 @@ void ImageX::setPixelBGR8 (int x, int y, Vec4F c)
 void ImageX::getPixelBGR8 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * 3);
+		XBYTE* pix = (XBYTE*) (GetData() + (y * mXres + x) * 3);
         c.z = *pix++;
         c.y = *pix++;
         c.z = *pix++;
@@ -1016,7 +1016,7 @@ void ImageX::getPixelBGR8 (int x, int y, Vec4F& c )
 void ImageX::setPixelRGB16 (int x, int y, Vec4F c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE2* pix = (XBYTE2*) GetData() + ( (y * mXres + x) * GetBytesPerPix() );
+		XBYTE2* pix = (XBYTE2*) (GetData() + (y * mXres + x)*GetBytesPerPix());
 		*pix++ = c.x;
 		*pix++ = c.y;
 		*pix++ = c.z;
@@ -1026,7 +1026,7 @@ void ImageX::setPixelRGB16 (int x, int y, Vec4F c )
 void ImageX::getPixelRGB16 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE2* pix = (XBYTE2*) GetData() + ( (y * mXres + x) * GetBytesPerPix() );
+		XBYTE2* pix = (XBYTE2*) (GetData() + (y * mXres + x)*GetBytesPerPix());
         c.x = *pix++;
         c.y = *pix++;
         c.z = *pix++;
@@ -1037,29 +1037,29 @@ void ImageX::getPixelRGB16 (int x, int y, Vec4F& c )
 void ImageX::setPixelBW8 (int x, int y, Vec4F c)
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData() + ( (y * mXres + x) * GetBytesPerPix() );
+		XBYTE* pix = ((XBYTE*) GetData()) + (y * mXres + x);			// XBYTE stride
 		*pix = c.x;		
 	}	
 }
 void ImageX::getPixelBW8 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x <mXres && y < mYres ) {
-		XBYTE* pix = (XBYTE*) GetData()  + ( (y * mXres + x) * GetBytesPerPix()  );
-        c.x = *pix;
+		XBYTE* pix = ((XBYTE*) GetData()) + (y * mXres + x);			// XBYTE stride
+		c.x = *pix;
 		c.y = 0; c.z = 0; c.w = 255;        
 	}
 }
 void ImageX::setPixelBW16 (int x, int y, Vec4F c)
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE2* pix = (XBYTE2*) (GetData() + ( (y * mXres + x) * GetBytesPerPix() ));
+		XBYTE2* pix = ((XBYTE2*) GetData()) + (y * mXres + x);		// XBYTE2 stride
 		*pix = c.x;		
 	}	
 }
 void ImageX::getPixelBW16 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE2* pix = (XBYTE2*) GetData() + ( (y * mXres + x) * GetBytesPerPix() );
+		XBYTE2* pix = ((XBYTE2*) GetData()) + (y * mXres + x);		// XBYTE2 stride
         c.x = *pix;
         c.y = 0; c.z = 0; c.w = 1;
 	}
@@ -1067,14 +1067,14 @@ void ImageX::getPixelBW16 (int x, int y, Vec4F& c )
 void ImageX::setPixelBW32 (int x, int y, Vec4F c)
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE4* pix = (XBYTE4*) (GetData() + ( (y * mXres + x) * GetBytesPerPix() ));
+		XBYTE4* pix = ((XBYTE4*) GetData()) + (y * mXres + x);	// XBYTE4 stride
 		*pix = c.x;	
 	}	
 }
 void ImageX::getPixelBW32 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		XBYTE4* pix = (XBYTE4*) GetData() + ( (y * mXres + x) * GetBytesPerPix() );
+		XBYTE4* pix = ((XBYTE4*) GetData()) + (y * mXres + x);	// XBYTE4 stride
         c.x = *pix;
 		c.y = 0; c.z = 0; c.w = 1;        
 	}
@@ -1082,15 +1082,15 @@ void ImageX::getPixelBW32 (int x, int y, Vec4F& c )
 void ImageX::setPixelF32 (int x, int y, Vec4F c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		float* pix = (float*) GetData() + ( (y * mXres + x) * GetBytesPerPix() );
+		float* pix = ((float*) GetData()) + (y * mXres + x);		// float stride
 		*pix = c.x;		
 	}	
 }
 void ImageX::getPixelF32 (int x, int y, Vec4F& c )
 {
 	if ( x>=0 && y>=0 && x < mXres && y < mYres ) {
-		float* pix = (float*) GetData()  + ( (y * mXres + x) * GetBytesPerPix()  );
-        c.x = *pix;        
+		float* pix = ((float*) GetData())  + (y * mXres + x);		// float stride
+    c.x = *pix;        
 		c.y = 0; c.z = 0; c.w = 1;        
 	}
 }

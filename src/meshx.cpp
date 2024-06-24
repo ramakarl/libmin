@@ -1246,7 +1246,7 @@ bool MeshX::LoadObj ( const char* fname, float scal )
 		SetMtlGroup ( curr_mtl, grp_start, grp_end );
 	}
 
-	printf ( " Mesh. idx_max: %lld\n",  idx_max );
+	printf ( " Mesh. idx_max: %lld\n",  (unsigned long long) idx_max );
 
 	//Measure ();
 

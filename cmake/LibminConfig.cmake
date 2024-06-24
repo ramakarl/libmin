@@ -190,7 +190,7 @@ function ( _REQUIRE_OPENSSL use_openssl_default)
 	    find_package(OpenSSL)
 
 	    if ( OPENSSL_FOUND )	
-		    add_definitions(-DUSE_OPENSSL)
+		    add_definitions(-DBUILD_OPENSSL)
 	
 		    include_directories ( ${OPENSSL_INCLUDE_DIR} )
 		    link_directories ( ${OPENSSL_LIB_DIR} )
@@ -261,7 +261,7 @@ endfunction()
 ####################################################################################
 # Include CUDA
 #
-function ( _REQUIRE_CUD use_cuda_default kernel_path) 
+function ( _REQUIRE_CUDA use_cuda_default kernel_path) 
     
     OPTION (BUILD_CUDA "Build with CUDA" ${use_cuda_default})
 
@@ -270,7 +270,9 @@ function ( _REQUIRE_CUD use_cuda_default kernel_path)
 	        set ( CUDA_TOOLKIT_ROOT_DIR "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2" CACHE PATH "CUDA Toolkit path")
         endif()        
         message( STATUS "  Searching for CUDA..") 
-        find_package(CUDA)
+
+        find_package(CUDA QUIET)
+
         if ( CUDA_FOUND )
             ##########################################
             # Link CUDA

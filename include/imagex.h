@@ -219,7 +219,7 @@
 		bool IsTransparent ()					{ return HasFlag ( ImageOp::Alpha); }
 		bool IsCube ()							{ return HasFlag ( ImageOp::Cube ); }
 		bool HasPowerSize ();
-		inline unsigned char GetBitsPerPix (ImageOp::Format ef);
+		unsigned char GetBitsPerPix (ImageOp::Format ef);
 		inline unsigned char GetBitsPerPix ()	{ return mBitsPerPix; }			
 		inline int GetBytesPerPix ()			{ return mBitsPerPix >> 3; }
 		inline unsigned long GetBytesPerRow ()	{ return mBytesPerRow; }

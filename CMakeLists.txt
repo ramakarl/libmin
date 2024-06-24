@@ -6,7 +6,12 @@ if(WIN32)
 else()
   # linux prefixes the lib automatically
   set(PROJNAME min)
+  add_compile_options (-g)
+  # set_source_files_properties (network_system.cpp PROPERTIES COMPILE_FLAGS -g)
+  add_compile_options (-Wno-multichar)
 endif()
+
+# add_compile_options (-O3)
 
 Project(${PROJNAME})
 Message("-------------------------------")
@@ -155,8 +160,10 @@ endif()
 ################################################################
 # Install Binaries
 #
-set (_inc_path "${CMAKE_INSTALL_PREFIX}/include" )
-set (_bin_path "${CMAKE_INSTALL_PREFIX}/bin" )
+set (_inc_path "${CMAKE_INSTALL_PREFIX}/include/" )
+set (_bin_path "${CMAKE_INSTALL_PREFIX}/bin/" )
+file (MAKE_DIRECTORY "${_inc_path}" )
+file (MAKE_DIRECTORY "${_bin_path}" )
 
 if (BUILD_OPENGL)
 	file (COPY "${LIBEXT_REPO}/include/GL" DESTINATION ${_inc_path} )
@@ -172,12 +179,14 @@ install ( FILES ${GLEW_FILES} DESTINATION ${_bin_path} )
 # header files
 _INSTALL_PRE ( FILES ${INCLUDE_FILES} DESTINATION ${_inc_path} )
 
-if ( LINUX )
+# pdb & dlls (windows)
+if ( WIN32 )
   install ( FILES $<TARGET_PDB_FILE:${PROJNAME}> DESTINATION ${_bin_path} OPTIONAL )
+  _INSTALL ( FILES ${PACKAGE_DLLS} DESTINATION ${_bin_path} )
 endif()
+
 # output shared library
 install ( FILES $<TARGET_LINKER_FILE:${PROJNAME}> DESTINATION ${_bin_path} )
-_INSTALL ( FILES ${PACKAGE_DLLS} DESTINATION ${_bin_path} )
 install ( TARGETS ${PROJNAME} DESTINATION ${_bin_path} )
 
 #################################

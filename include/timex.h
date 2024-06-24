@@ -180,7 +180,9 @@
 			bool SetTime ( std::string line );							// Set time from string (hr,min,sec)
 
 			void SetSystemTime ();										// Set date/time to system clock		
-			void SetTimeNSec ();			
+			void SetTimeNSec ();
+
+			void SleepNSec ( float ns );
 
 			static sjtime GetSystemMSec ();
 			static sjtime GetSystemNSec ();

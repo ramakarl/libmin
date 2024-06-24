@@ -48,7 +48,7 @@
     GXAPI void drawFill ( Vec2F a, Vec2F b, Vec4F clr );
     GXAPI void drawGradient ( Vec2F a, Vec2F b, Vec4F c0, Vec4F c1, Vec4F c2, Vec4F c3 );
     GXAPI void drawCircle ( Vec2F a, float r, Vec4F clr  );
-    GXAPI void drawText ( Vec2F a, char* msg, Vec4F clr );    
+    GXAPI void drawText ( Vec2F a, std::string msg, Vec4F clr );    
     GXAPI void drawImg ( ImageX* img, Vec2F a, Vec2F b, Vec4F clr );
     
     // 3D Interface

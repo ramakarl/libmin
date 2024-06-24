@@ -153,9 +153,8 @@ void Widgets::SetText		( int i, std::string txt )
 }
 void Widgets::SetTextEntry	( int i, std::string txt)
 {
-	mWidgets[i].textEntry = txt;
+	mWidgets[i].textEntry = txt;	
 	
-	float y;
 	mFocusPos = txt.length();
 	mFocusX = mFocusPos;
 
@@ -197,7 +196,7 @@ void Widgets::SetOption ( int start, int end, ushort op, bool on )
 
 void Widgets::Draw ()
 {
-	float h, valx, entryx;
+	float valx, entryx;
 	Widget* w;
 	char txt[1024];
 	Vec4F clr;
@@ -366,8 +365,7 @@ bool Widgets::OnKeyboard ( int key )
 	// get current entry text (to be modified)
 	// on the focused widget
 	std::string txt = mWidgets[mFocus].textEntry;
-	std::string ch; ch = key;
-	float y;
+	std::string ch; ch = key;	
 
 	//dbgprintf ( "KEY: %d, %s\n", key, ch.c_str ());		//-- debugging
 	
@@ -622,7 +620,6 @@ bool Widgets::OnUpdate3D ( int wi, int x, int y )
 	// get the widget local axes
 	float sz = mWidgetSize3D * std::min(1.0f, mCam->getOrbitDist() / 32.0f) ;				// widget size, limited by zoom
 
-	float d;
 	p0 = mActWgOrig.pos;
 	p1.Set(sz,0,0); p1 = mActWgOrig.rot.rotateVec(p1);		// x-norm
 	p2.Set(0,sz,0); p2 = mActWgOrig.rot.rotateVec(p2);		// y-norm
