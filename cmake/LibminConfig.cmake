@@ -8,7 +8,7 @@
 #  LIBMIN_INSTALL_PATH = path to installed libmin binaries (eg. libmin.lib, .dll, .so)
 #  LIBEXT_PATH         = path to third-party libs (eg. libjpg, libgvdb, liboptix)
 #
-function(_CONFIRM_PATH outvar targetPath targetWin targetLinux varName )
+function(_CONFIRM_PATH outvar targetPath targetWin targetLinux varName isFatal )
   set(oneValueArgs outVar targetPath targetWin targetLinux varName )  
   unset ( result CACHE )  
   if ( WIN32 )
@@ -17,39 +17,57 @@ function(_CONFIRM_PATH outvar targetPath targetWin targetLinux varName )
     find_file ( result ${targetLinux} PATHS ${targetPath} )  
   endif()
   if ( ${result} STREQUAL "result-NOTFOUND" )
-    set (${outvar} "NOTFOUND" CACHE PATH "" )
+    set (${outvar} "NOTFOUND" CACHE PATH "" )    
     set (found "NOTFOUND")
   else()
-    set (${outvar} ${result} CACHE PATH "" )
+    set (${outvar} ${result} CACHE PATH "" )    
     set (found "OK")
-  endif()   
-  message ( STATUS "  Confirming: ${targetFile} in ${targetPath} -> ${found}")
-  if ( ${found} STREQUAL "NOTFOUND" )
-    message ( FATAL_ERROR "\n  Cannot find ${varName} at ${targetPath}.
-       Please set ${varName} to the correct path, which should contain
-       files such as ${targetFile}.\n"   
-    )
+  endif()     
+  if ( isFatal ) 
+    message ( STATUS "  Confirming: ${targetFile} in ${targetPath} -> ${found}")
+    if ( ${outvar} STREQUAL "NOTFOUND" )
+      message ( FATAL_ERROR "\n  Cannot find ${varName} at ${targetPath}.
+         Please set ${varName} to the correct path, which should contain
+         files such as ${targetFile}.\n"   
+      )
+    endif()
   endif()
   unset ( result CACHE )
 endfunction()
 
+##############
 # LIBMIN_ROOT - libmin src, should be set by caller during bootstrap
 #
 message ( STATUS "  LIBMIN_ROOT: ${LIBMIN_ROOT}")
 get_filename_component ( LIBMIN_ROOT "${LIBMIN_ROOT}" REALPATH)
 set ( LIBMIN_ROOT "${LIBMIN_ROOT}" CACHE PATH "Path to /libmin source" )
-_CONFIRM_PATH ( LIBMIN_ROOT "${LIBMIN_ROOT}" "/src/dataptr.cpp" "/src/dataptr.cpp" "LIBMIN_ROOT" )
+_CONFIRM_PATH ( LIBMIN_ROOT "${LIBMIN_ROOT}" "/src/dataptr.cpp" "/src/dataptr.cpp" "LIBMIN_ROOT" TRUE)
 
+##############
 # LIBEXT_ROOT - libext src, by default use the minimal /libext that comes with libmin
 #
 if ( NOT DEFINED LIBEXT_ROOT )
-  get_filename_component ( LIBEXT_ROOT "${LIBMIN_ROOT}/libext" REALPATH)
-else()
+  # check for /libext with extended third party libs
+  _CONFIRM_PATH ( LIBEXT_EXTENDED "${LIBMIN_ROOT}/../libext/" "cmake/FindFFTW.cmake" "cmake/FindFFTW.cmake" "LIBEXT_EXTENDED" FALSE)
+  if ( LIBEXT_EXTENDED STREQUAL "NOTFOUND" ) 
+    get_filename_component ( LIBEXT_ROOT "${LIBMIN_ROOT}/libext" REALPATH)    
+  else()
+    get_filename_component ( LIBEXT_ROOT "${LIBMIN_ROOT}/../libext" REALPATH)       
+  endif()
+else() 
+  # use cached or user-set path for /libext
   get_filename_component ( LIBEXT_ROOT "${LIBEXT_ROOT}" REALPATH)
 endif()
+_CONFIRM_PATH ( LIBEXT_EXTENDED "${LIBEXT_ROOT}" "cmake/FindFFTW.cmake" "cmake/FindFFTW.cmake" "LIBEXT_EXTENDED" FALSE)
+if ( LIBEXT_EXTENDED STREQUAL "NOTFOUND" ) 
+  message ( "  LIBEXT using internal to LIBMIN at ${LIBEXT_ROOT}")    
+else()
+  message ( "  LIBEXT using *extended* third-parties at ${LIBEXT_ROOT}.")    
+endif()  
 set ( LIBEXT_ROOT ${LIBEXT_ROOT} CACHE PATH "Path to /libext source" )
-_CONFIRM_PATH ( LIBEXT_ROOT "${LIBEXT_ROOT}" "/include/openssl/bio.h" "/include/openssl/bio.h" "LIBEXT_ROOT")
+_CONFIRM_PATH ( LIBEXT_ROOT "${LIBEXT_ROOT}" "/include/openssl/bio.h" "/include/openssl/bio.h" "LIBEXT_ROOT" TRUE)
 
+################
 # LIBMIN_INSTALL - libmin binaries, by default assume its in /build/libmin 
 # if set to "SELF" it means we are building libmin itself, and dont need the install path
 #
@@ -60,7 +78,7 @@ if ( NOT LIBMIN_INSTALL STREQUAL "SELF" )
     get_filename_component ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" REALPATH)
   endif()
   set ( LIBMIN_INSTALL ${LIBMIN_INSTALL} CACHE PATH "Path to /libmin installed binaries" )
-  _CONFIRM_PATH ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" "/bin/libmind.lib" "/libmin.so" "LIBMIN_INSTALL")
+  _CONFIRM_PATH ( LIBMIN_INSTALL "${LIBMIN_INSTALL}" "/bin/libmind.lib" "/libmin.so" "LIBMIN_INSTALL" TRUE)
 endif()
 
 # Repository paths
@@ -81,6 +99,9 @@ message ( STATUS "  CURRENT DIRECTORY: ${CMAKE_CURRENT_SOURCE_DIR}" )
 message ( STATUS "  LIBMIN REPOSITORY: ${LIBMIN_ROOT}" )
 message ( STATUS "  LIBEXT REPOSITORY: ${LIBEXT_ROOT}" )
 message ( STATUS "  LIBMIN INSTALLED:  ${LIBMIN_INSTALL}" )
+
+# BOOTSTRAP COMPLETE
+###############################
 
 #-------------------------------------- COPY CUDA BINS
 # This macro copies all binaries for the CUDA library to the target executale location. 
@@ -608,7 +629,6 @@ endfunction()
 #----------------------------------------------- CROSS-PLATFORM FIND FILES
 # Find one or more of a specific file in the given folder
 # Returns the file name w/o path
-
 macro(_FIND_FILE targetVar searchDir nameWin64 nameLnx cnt)
   unset ( fileList )  
   unset ( nameFind )
