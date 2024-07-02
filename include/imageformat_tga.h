@@ -24,6 +24,8 @@
 	public:		
 		virtual bool Load (char *filename, ImageX* img);	
 
+		virtual std::string UsesExt() { return "tga"; }
+
 		virtual bool CanLoadType ( unsigned char* magic, std::string ext ) 
 		{
 			if (magic[1] == 0 && (magic[2] == 2 || magic[2] == 3) )  return true;

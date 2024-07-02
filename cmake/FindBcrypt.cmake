@@ -8,7 +8,7 @@ unset(BCRYPT_DLL)
 unset(BCRYPT_LIB)
 
 if ( NOT DEFINED BCRYPT_ROOT_DIR )  
-  set ( BCRYPT_ROOT_DIR ${LIBEXT_REPO} CACHE PATH "Location of bcrypt" FORCE)    
+  set ( BCRYPT_ROOT_DIR ${LIBEXT_ROOT} CACHE PATH "Location of bcrypt" FORCE)    
 endif()
 
 message ( STATUS "Searching for Bcrypt at.. ${BCRYPT_ROOT_DIR}")

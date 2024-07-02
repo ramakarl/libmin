@@ -118,7 +118,9 @@
 		
 		virtual bool Load(std::string fname) {
 			std::string errmsg;
-			return Load(fname, errmsg);			
+			bool result = Load(fname, errmsg);
+			if (!result) dbgprintf("ERROR ImageX::Load: %s\n", errmsg.c_str());
+			return result;
 		}
 
 		// Image Loading & Saving

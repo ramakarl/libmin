@@ -372,9 +372,7 @@ void g2Lib::BuildAll ()
 
 bool g2Lib::BuildLayout ( g2Obj* obj, uchar ly )
 {
-    g2Obj tmp;
-    uchar typ;
-    float amt;
+    g2Obj tmp;    
     g2Size size;
     std::string key, val, sz_str;
     g2Grid* grid = dynamic_cast<g2Grid*>( obj );    

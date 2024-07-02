@@ -194,15 +194,15 @@ void Widgets::SetOption ( int start, int end, ushort op, bool on )
 			mWidgets[n].opts &= ~op;	// clear
 }
 
-void Widgets::Draw ()
+void Widgets::Draw (int xres, int yres )
 {
 	float valx, entryx;
 	Widget* w;
 	char txt[1024];
-	Vec4F clr;
+	Vec4F clr;	
 
 	#ifdef USE_OPENGL
-		//start2D (getWidth(), getHeight());
+		start2D( xres, yres );
 
 		// draw widgets
 		for (int n=0; n < mWidgets.size(); n++) {

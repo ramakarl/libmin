@@ -130,7 +130,7 @@ void delete_event (Event& p)
 
 EventQueue::EventQueue ()
 {
-	mList.empty ();
+	bool e = mList.empty ();
 	mTraceFile = 0x0;
 }
 

@@ -102,6 +102,27 @@ bool addSearchPath ( const char* path )
     return exists;
 }
 
+bool addSearchPath(const std::string path)
+{   
+    std::string p = path;
+
+    // replace to match platform
+    std::replace(p.begin(), p.end(), getPathDelimOpposite(), getPathDelim());
+
+    // every search path must be terminated with a delimiter. add one if needed
+    if (p.at(p.length() - 1) != getPathDelim()) {
+        p = p + getPathDelim();
+    }
+    gPaths.push_back(p);
+
+    // check for path existence
+    char pathch[2048];
+    strncpy(pathch, p.c_str(), 2048);
+    struct stat  info;
+    bool exists = (stat(pathch, &info) == 0);
+    return exists;
+}
+
 
 bool getFileLocation ( const char* filename, char* outpath )
 {
@@ -155,6 +176,25 @@ unsigned long getFilePos ( FILE* fp )
     return ftell ( fp );
 }
 
+void getFileParts(std::string fname, std::string& path, std::string& name, std::string& ext)
+{
+    std::size_t slash = fname.find_last_of("/\\");
+    if (slash == std::string::npos) {
+        path = ""; slash = 0;
+}
+    else {
+        path = fname.substr(0, slash);
+        fname = fname.substr(slash + 1);		// strip off path
+    }
+    std::size_t pos1 = fname.find_first_of(".");
+    if (pos1 != std::string::npos) {      
+        name = fname.substr(0, pos1);
+        ext = fname.substr(pos1 + 1);
+    } else {
+        name = fname;
+        ext = "";       // no extension
+    }  
+}
 
 void strncpy_sc ( char *dst, const char *src, size_t len)
 {

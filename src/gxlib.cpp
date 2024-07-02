@@ -204,8 +204,7 @@ void glib::drawGradient ( Vec2F a, Vec2F b, Vec4F c0, Vec4F c1, Vec4F c2, Vec4F 
 }
 
 void glib::drawCircle ( Vec2F a, float r, Vec4F clr  )
-{
-	int ndx;
+{	
 	int du = 15;	
 	gxVert* v = gx.allocGeom2D ( 2*((360/du)+1), PRIM_LINES );	
 
@@ -473,8 +472,7 @@ void glib::drawCircle3D ( Vec3F p1, float r, Vec4F clr  )
 
 
 void glib::drawCircle3D ( Vec3F p1, Vec3F n, float r, Vec4F clr  )
-{
-	int ndx;
+{	
 	int du = 15;
 	gxVert3D* v = gx.allocGeom3D ( 2*((360/du)+1), PRIM_LINES );	
 
@@ -522,8 +520,7 @@ void glib::drawSphere3D (Vec3F p, float r, Vec4F clr, bool solid)
 }
 
 void glib::drawTri3D( Vec3F a, Vec3F b, Vec3F c, Vec3F n, Vec4F clr, bool solid )
-{
-	int ndx;
+{	
 	gxVert3D* v = gx.allocGeom3D (5, PRIM_TRI);
 	
 	// repeat first for jump
@@ -538,8 +535,7 @@ void glib::drawTri3D( Vec3F a, Vec3F b, Vec3F c, Vec3F n, Vec4F clr, bool solid 
 }
 
 void glib::drawFace3D( Vec3F a, Vec3F b, Vec3F c, Vec3F d, Vec3F n, Vec4F clr, bool solid )
-{
-	int ndx;
+{	
 	gxVert3D* v = gx.allocGeom3D (8, PRIM_TRI);
 	
 	// repeat first for jump
@@ -1430,9 +1426,9 @@ void gxLib::drawSet ( int g )
 	#endif
 
 	gxPrim* p;
-	int elem_pos, elem_sz;
-	int pt, cnt;    
-	int pos = 0;
+	int elem_sz;
+	int cnt;    
+	signed long long pos = 0;
 	#ifdef BUILD_OPENGL
 		GLuint imgGL;	
 	#endif

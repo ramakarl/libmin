@@ -120,7 +120,7 @@
 		Widget* getWidget(int i)	{ return &mWidgets[i]; }
 
 		// 2D Drawing
-		void Draw ();		
+		void Draw (int w, int h);		
 
 		// Event handling
 		bool OnMouse ( AppEnum button, AppEnum state, int mods, int x, int y, Widget3D& dw, bool& finish);		// called from app on mouse activity

@@ -128,7 +128,7 @@ int NetworkSystem::netClientConnectToServer(std::string srv_name, netPort srv_po
 	NetSock cs;
 	std::string cli_name;
 	netIP cli_ip, srv_ip;
-	int cli_port, cli_sock_svc, cli_sock_tcp, cli_sock;
+	int cli_port, cli_sock_svc, cli_sock_tcp;
 
 	// check server name for dots
 	int dots = 0;
@@ -481,8 +481,7 @@ int NetworkSystem::netRecieveData ()
 {
 	if ( mSockets.size() == 0 ) return 0;
 
-	bool bDeserial;
-	int event_alloc;
+	bool bDeserial;	
 	int curr_socket;
 	int result, maxfd=-1;
 
@@ -763,8 +762,6 @@ int NetworkSystem::netFindOutgoingSocket ( bool bTcp )
 // Return true if any complete connection is valid
 bool NetworkSystem::netIsConnected (int sock)
 {
-	int result;
-
 	if (sock < 0 || sock >= mSockets.size()) return false;
 
 	NetSock& s = mSockets[sock];
@@ -1195,8 +1192,7 @@ int NetworkSystem::netSocketRecv ( int sock, char* buf, int buflen, int& recvlen
 // API-specific error checking
 int NetworkSystem::netError ( std::string msg, int error_id )
 {
-	std::string error_str;
-	char* error_buf;
+	std::string error_str;	
 
 	#ifdef _WIN32
 	  // get error on windows

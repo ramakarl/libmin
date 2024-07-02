@@ -154,11 +154,13 @@
     HELPAPI char getPathDelim();
     HELPAPI char getPathDelimOpposite();
     HELPAPI bool addSearchPath ( const char* path );
+    HELPAPI bool addSearchPath ( const std::string path);
     HELPAPI bool getFileLocation ( const char* filename, char* outpath );
     HELPAPI bool getFileLocation ( const char* filename, char* outpath, std::vector<std::string> paths );
-    HELPAPI bool getFileLocation ( const std::string filename, std::string &outpath );
+    HELPAPI bool getFileLocation ( const std::string filename, std::string &outpath );    
     HELPAPI unsigned long getFileSize ( const std::string filename );
     HELPAPI unsigned long getFilePos ( FILE* fp );
+    HELPAPI void getFileParts(std::string fname, std::string& path, std::string& name, std::string& ext);
     HELPAPI void dbgprintf(const char * fmt, ...);
 
     //--- report CUDA availability 

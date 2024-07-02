@@ -7,7 +7,7 @@ unset(OPENSSL_INCLUDE_DIR CACHE)
 
 if ( NOT DEFINED OPENSSL_ROOT_DIR )
   if (WIN32)
-    get_filename_component ( BASEDIR "${LIBEXT_REPO}" REALPATH )
+    get_filename_component ( BASEDIR "${LIBEXT_ROOT}" REALPATH )
   else()
     get_filename_component ( BASEDIR "/usr/" REALPATH )
   endif()

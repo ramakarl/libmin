@@ -89,7 +89,7 @@
 			if ( g_perfGPU ) (*g_nvtxPush) ( (char*) g_perfMsg[g_perfLevel] );
 			if ( g_perfCPU && g_perfLevel < g_perfPrintLev ) {			
 				PERF_PRINTF ( "%*s%s\n", g_perfLevel <<1, "", g_perfMsg[g_perfLevel] );
-				if ( g_perfFile != 0x0 ) fprintf ( g_perfFile, "%*s%s\n", g_perfLevel <<1, "", g_perfMsg[g_perfLevel]  );
+				if ( g_perfFile != 0x0 ) fprintf ( g_perfFile, "%*s%s\n", g_perfLevel << 1, "", (char*) g_perfMsg[g_perfLevel]  );
 				g_perfStack [ g_perfLevel ] = TimeX::GetSystemNSec ();
 			}
 			g_perfLevel++;

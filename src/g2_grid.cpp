@@ -23,9 +23,9 @@ void g2Grid::getDimensions ( uchar L, float sz, Vec4F& pos, Vec4F& adv )
 
 void g2Grid::UpdateLayout ( Vec4F p )
 {
-    g2Size spec, smax;
+    g2Size spec;
     g2Obj* obj;    
-    float x, y, sz;
+    float sz;
     float major_used;
     bool repeat = false;
     int n, fill = -1;

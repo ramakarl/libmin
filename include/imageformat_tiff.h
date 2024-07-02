@@ -105,8 +105,10 @@
 
 		CImageFormatTiff ();
 
-	  virtual bool Load (char *filename, ImageX* img);
+	    virtual bool Load (char *filename, ImageX* img);
 		virtual bool Save (char *filename, ImageX* img);
+
+		virtual std::string UsesExt() { return "tif"; }
 
 		virtual bool CanLoadType ( unsigned char* magic, std::string ext ) 
 		{

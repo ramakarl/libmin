@@ -40,6 +40,8 @@
 		virtual bool Load (char *filename, ImageX* img);
 		virtual bool Save (char *filename, ImageX* img);		
 
+		virtual std::string UsesExt() { return "jpg"; }
+
 		virtual bool CanLoadType ( unsigned char* magic, std::string ext ) 
 		{
 			if ((magic[0] == 0xD8 && magic[1] == 0xFF) || (magic[1] == 0xD8 && magic[0] == 0xFF)) return true;

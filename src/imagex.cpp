@@ -652,8 +652,8 @@ bool ImageX::Load (char* filename, char* alphaname )
 
 bool ImageX::Load ( std::string filename, std::string& errmsg)
 {	
-	char fname[2048];
-	strncpy ( fname, filename.c_str(), 2048 );
+	char ffull[2048];
+	strncpy ( ffull, filename.c_str(), 2048 );
 
 	// Add default formats
 	if ( gImageFormats.size()==0) {
@@ -672,7 +672,7 @@ bool ImageX::Load ( std::string filename, std::string& errmsg)
   // PNG: if (magic[0] == 0x89 && magic[1] == 0x50 && magic[2] == 0x4E && magic[3] == 0x47) 
   // TGA: if( magic[1] == 0 && (magic[2] == 2 || magic[2] == 3) ) 
 	//
-	FILE* fp = fopen( fname, "rb" );  
+	FILE* fp = fopen(ffull, "rb" );
 	if ( !fp ) {		
 		errmsg = std::string("ERROR: File not found: ") + filename;
 		return false;
@@ -683,23 +683,33 @@ bool ImageX::Load ( std::string filename, std::string& errmsg)
 
 	// Try to load with each loader 	
 	//
-	std::string msg;	
+	std::string msg;
+	bool extmatch = false;
 	bool loaded = false;
+
+	// Get file parts
+	std::string fpath, fname, fext;
+	getFileParts(filename, fpath, fname, fext);
+
 	for (int n=0; n < gImageFormats.size() && !loaded; n++) {
 		
-		if ( gImageFormats[n]->CanLoadType ( magic, fname ) ) {
-			if ( gImageFormats[n]->Load ( fname, this ) ) {
-				// success
-				loaded = true;				
-			} else {  
-				// loader was unable to load
-				errmsg = gImageFormats[n]->GetStatusMsg ();
-				return false;
+		if (fext.compare(gImageFormats[n]->UsesExt()) == 0) {
+			extmatch = true;
+			if (gImageFormats[n]->CanLoadType(magic, ffull)) {
+				if (gImageFormats[n]->Load(ffull, this)) {
+					// success
+					loaded = true;
+				}
+				else {
+					// loader was unable to load
+					errmsg = gImageFormats[n]->GetStatusMsg();
+					return false;
+				}
 			}
 		}
 	}
-	if ( !loaded ) {		// no loader found		
-		errmsg = "Unsupported image format.";
+	if ( !extmatch ) {		// extension not supported
+		errmsg = "Unsupported image extension ." + fext;
 		return false;
 	}
 

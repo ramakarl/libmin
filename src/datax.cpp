@@ -166,8 +166,6 @@ void DataX::MatchAllBuffers ( DataX* src, uchar use_flags )
 void DataX::CopyAllBuffers ( DataX* dest, uchar dest_flags )
 {
 	// copy all buffers between two DataX
-	int b; 
-
 	for (int b=0; b < mBuf.size(); b++ )  {				
 		if ( mBuf[b].mRefID != dest->mBuf[b].mRefID) {
 			dbgprintf ( "ERROR: CopyAllBuffers. RefIDs do not match.\n" );

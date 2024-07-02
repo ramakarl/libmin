@@ -93,8 +93,8 @@ file(GLOB INCLUDE_FILES include/*.hpp include/*.h)
 file(GLOB INSTALL_CMAKES cmake/*.*)
 file(GLOB INSTALL_MAINS mains/*.*)
 
-include_directories(${LIBMIN_REPO_SRC})
-include_directories(${LIBMIN_REPO_INC})
+include_directories(${LIBMIN_ROOT_SRC})
+include_directories(${LIBMIN_ROOT_INC})
 
 #####################################################################################
 # Library output
@@ -166,8 +166,8 @@ file (MAKE_DIRECTORY "${_inc_path}" )
 file (MAKE_DIRECTORY "${_bin_path}" )
 
 if (BUILD_OPENGL)
-	file (COPY "${LIBEXT_REPO}/include/GL" DESTINATION ${_inc_path} )
-	file (COPY "${LIBEXT_REPO}/include/GL/glew.c" DESTINATION ${_inc_path} )
+	file (COPY "${LIBEXT_ROOT}/include/GL" DESTINATION ${_inc_path} )
+	file (COPY "${LIBEXT_ROOT}/include/GL/glew.c" DESTINATION ${_inc_path} )
 endif()
 if (BUILD_CUDA)
     message ( STATUS "CUDA Files: ${CUDA_FILES}")

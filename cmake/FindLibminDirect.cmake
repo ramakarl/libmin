@@ -32,16 +32,16 @@ endfunction()
 # LIBMIN_ROOT - should be set by caller during bootstrap
 #
 message ( STATUS "  LIBMIN_ROOT: ${LIBMIN_ROOT}")
-if ( NOT DEFINED LIBEXT_REPO )
-  set ( LIBMIN_REPO "${LIBMIN_ROOT}" CACHE PATH "Path to /libmin source" )
+if ( NOT DEFINED LIBEXT_ROOT )
+  set ( LIBMIN_ROOT "${LIBMIN_ROOT}" CACHE PATH "Path to /libmin source" )
 endif()
-_CONFIRM_PATH ( LIBMIN_REPO "${LIBMIN_REPO}" "/src/dataptr.cpp" "LIBMIN_ROOT" )
+_CONFIRM_PATH ( LIBMIN_ROOT "${LIBMIN_ROOT}" "/src/dataptr.cpp" "LIBMIN_ROOT" )
 
 # Repository paths
-set ( LIBMIN_REPO_MAINS "${LIBMIN_REPO}/mains" )
-set ( LIBMIN_REPO_SRC "${LIBMIN_REPO}/src")
-set ( LIBMIN_REPO_INC "${LIBMIN_REPO}/include")
-set ( LIBEXT_REPO ${LIBEXT_REPO} )
+set ( LIBMIN_ROOT_MAINS "${LIBMIN_ROOT}/mains" )
+set ( LIBMIN_ROOT_SRC "${LIBMIN_ROOT}/src")
+set ( LIBMIN_ROOT_INC "${LIBMIN_ROOT}/include")
+set ( LIBEXT_ROOT ${LIBEXT_ROOT} )
 
 #set ( DEBUG_HEAP false CACHE BOOL "Enable heap checking (debug or release).")
 set ( DEBUG_HEAP true CACHE BOOL "Enable heap checking (debug or release).")
@@ -52,7 +52,7 @@ endif()
 
 message ( STATUS "----- Running LibminDirect.cmake" )
 message ( STATUS "  CURRENT DIRECTORY:  ${CMAKE_CURRENT_SOURCE_DIR}" )
-message ( STATUS "  LIBMIN SOURCE CODE: ${LIBMIN_REPO}" )
+message ( STATUS "  LIBMIN SOURCE CODE: ${LIBMIN_ROOT}" )
 
 ###################################################################################
 # Provide a cross-platform main
@@ -64,18 +64,18 @@ function ( _REQUIRE_MAIN )
 
     add_definitions(-DUSE_MAIN)
     IF(BUILD_CONSOLE)
-    	LIST( APPEND SRC_FILES "${LIBMIN_REPO_MAINS}/main_console.cpp" )
+    	LIST( APPEND SRC_FILES "${LIBMIN_ROOT_MAINS}/main_console.cpp" )
     ELSE()
 	    IF(WIN32)
-  		    LIST( APPEND SRC_FILES "${LIBMIN_REPO_MAINS}/main_win.cpp" )
+  		    LIST( APPEND SRC_FILES "${LIBMIN_ROOT_MAINS}/main_win.cpp" )
 	    ELSEIF(ANDROID)
-		    LIST( APPEND SRC_FILES "${LIBMIN_REPO_MAINS}/main_android.cpp" )
+		    LIST( APPEND SRC_FILES "${LIBMIN_ROOT_MAINS}/main_android.cpp" )
 	    ELSE()
-	  	    LIST( APPEND SRC_FILES "${LIBMIN_REPO_MAINS}/main_x11.cpp" )
+	  	    LIST( APPEND SRC_FILES "${LIBMIN_ROOT_MAINS}/main_x11.cpp" )
 	    ENDIF()
     ENDIF()
-	LIST( APPEND SRC_FILES "${LIBMIN_REPO_MAINS}/main.h" )
-    include_directories( ${LIBMIN_REPO_MAINS} )
+	LIST( APPEND SRC_FILES "${LIBMIN_ROOT_MAINS}/main.h" )
+    include_directories( ${LIBMIN_ROOT_MAINS} )
 
     set ( PACKAGE_SOURCE_FILES ${SRC_FILES} PARENT_SCOPE )
 endfunction()

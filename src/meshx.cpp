@@ -1039,15 +1039,13 @@ bool MeshX::LoadObj ( const char* fname, float scal )
 	std::vector<Vec3F>		tlist;
 	std::vector<Vec3F>		vlist;
 
-	FILE* fp;
-	char* chp;
+	FILE* fp;	
 	char buf[4096];
 	Vec3F vec;
 	Vec3F norm, fnorm;
 	std::string strline, word;	
 	xref v[3], n[3], t[3], fv[3];
-	xref idx_max = 0;
-	int tmp;
+	xref idx_max = 0;	
 	bool bNeedNormals = true;
 
 	t[0] = -1;
@@ -1187,8 +1185,6 @@ bool MeshX::LoadObj ( const char* fname, float scal )
 			// v      = current verts, this face
 			// n      = current norms, this face
 			// t      = current uvs, this face
-			
-			xref tf;
 
 			// for each vertex in the currently added face 'f'..
 			//

@@ -256,7 +256,7 @@ dir_list Directory::DirList( std::string path, std::string ext )
 
 	hFind = FindFirstFileA( path.c_str(), &fileData );
 
-	if ((int) INVALID_HANDLE_VALUE == (int) hFind) 
+	if (hFind == INVALID_HANDLE_VALUE) 
 	{
 		out.clear();
 		return out;

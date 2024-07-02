@@ -33,9 +33,10 @@
 		CImageFormat ();
 		~CImageFormat ();
 
-		// Interface functions (called by Image)		
+		// Interface functions (called by Image)	
+		virtual std::string UsesExt() { return ""; }
 		virtual bool Load (char *filename, ImageX* img) {return false;}
-		virtual bool Save (char *filename, ImageX* img) {return false;}
+		virtual bool Save (char *filename, ImageX* img) {return false;}		
 		virtual bool CanLoadType ( unsigned char* magic, std::string ext ) { return false; }
 		virtual bool CanSaveType ( std::string ext )		{ return false; }
 		virtual void SetQuality (int q)									{m_quality= q;}
