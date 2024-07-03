@@ -115,6 +115,8 @@
 			void		Retrieve ( int i );													// retrieve buffer from GPU to CPU
 			void		RetrieveAll ();
 			void		Commit ( int i );													// commit buffer from CPU to GPU			
+			bool		Map (int i);
+			bool		Unmap (int i);
 			void		CommitAll ();														// commit all buffers to GPU
 
 			// Buffer accessors

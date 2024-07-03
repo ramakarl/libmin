@@ -152,6 +152,8 @@
 		// GPU
 		void SetUsage ( uchar use_flags );		
 		void Commit (uchar use_flags = 0);
+		void Map();
+		void Unmap();
 		void Retrieve();
 		int getGLID() { 
 			if ( !(m_Pix.mUseFlags & DT_GLTEX) )	

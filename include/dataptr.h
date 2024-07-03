@@ -79,7 +79,9 @@
 		void			FillBuffer ( uchar v );
 		void			CopyTo ( DataPtr* dest, uchar dest_flags );
 		void			Commit ();		
-		void			Retrieve ();		
+		void			Retrieve ();	
+		bool			Map();
+		bool			Unmap();
 		void			Clear ();
 
 		// Data access

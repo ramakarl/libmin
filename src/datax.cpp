@@ -181,12 +181,22 @@ void DataX::CopyAllBuffers ( DataX* dest, uchar dest_flags )
 }
 
 
-
 void DataX::Commit ( int i )
 {
 	int b = mRef[i];  if (b==BUNDEF) return;
 	mBuf[b].Commit ();
 }
+bool DataX::Map(int i)
+{
+	int b = mRef[i];  if (b == BUNDEF) return false;
+	return mBuf[b].Map();
+}
+bool DataX::Unmap(int i)
+{
+	int b = mRef[i];  if (b == BUNDEF) return false;
+	return mBuf[b].Unmap();
+}
+
 void DataX::RetrieveAll ()
 {
 	for (int b=0; b < mBuf.size(); b++)

@@ -101,6 +101,14 @@ void ImageX::Commit ( uchar use_flags )
 	SetUsage ( use_flags );			// reserves GLID
 	m_Pix.Commit();							// assumes allocated on gpu
 }
+void ImageX::Map()
+{
+	m_Pix.Map();
+}
+void ImageX::Unmap()
+{
+	m_Pix.Unmap();
+}
 
 void ImageX::Retrieve()
 {		

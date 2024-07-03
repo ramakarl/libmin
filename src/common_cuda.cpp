@@ -40,12 +40,11 @@
 			dbgprintf("------- CUDA ERROR:\n");
 			if (launch_stat==CUDA_ERROR_NOT_INITIALIZED) {
 				dbgprintf("  ERROR: CUDA NOT INITIALIZED. Call cuStart().\n" );
-			} else {
+			} else {				
+				dbgprintf("  Caller: %s\n", method);
+				dbgprintf("  Call:   %s, %s\n", apicall, arg);
 				dbgprintf("  Launch status: %s\n", launch_statmsg);
-				dbgprintf("  Kernel status: %s\n", kern_statmsg);
-				dbgprintf("  Caller: Particles::%s\n", method);
-				dbgprintf("  Call:   %s\n", apicall);
-				dbgprintf("  Args:   %s\n", arg);
+				dbgprintf("  Kernel status: %s\n", kern_statmsg);								
 				if (bDebug) {
 					dbgprintf("  Generating assert to examine call stack.\n");
 					assert(0);		// set debug breakpoint here - see call stack

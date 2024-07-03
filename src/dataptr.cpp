@@ -44,7 +44,7 @@ void DataPtr::Clear ()
   #ifdef USE_OPENGL
     if ( mUseFlags & DT_GLTEX ) {
 		#ifdef USE_CUDA
-			if ( mUseFlags & DT_CUMEM ) {				// release cuda-gl interop
+			if ( mUseFlags & DT_CUINTEROP ) {				// release cuda-gl interop
 				if ( mGrsc != 0x0 ) cuGraphicsUnregisterResource ( mGrsc );
 				mGrsc=0; mGpu = 0;
 			}
@@ -96,6 +96,9 @@ int DataPtr::getStride ( uchar dtype )
 void DataPtr::SetUsage ( uchar dt, uchar flags, int rx, int ry, int rz )
 {
   mUseType = dt;
+
+  // usage checks should go here
+
   if ( flags != DT_MISC ) mUseFlags = flags;
   if ( rz != -1) { mUseRX=rx; mUseRY=ry; mUseRZ=rz; }
 }
@@ -188,69 +191,34 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
       checkGL ( "glTexImage2D (DataPtr::Append)" );
 
       // CUDA-GL interop with GL texture. (provides mGpu pointer w/o cuMemAlloc)
-      #ifdef USE_CUDA                
-        if ( dest_flags & DT_CUMEM ) {
-          dbgprintf ( "ERROR: CUDA does not allow GL texture interop with linear memory. Must use DT_CUARRAY.\n" );
-          exit(-3);
-        }
-        if ( dest_flags & DT_CUARRAY ) {
+      #ifdef USE_CUDA
+        if ( dest_flags & DT_CUINTEROP ) {
           // Get array from OpenGL ID
           cuCheck ( cuCtxSynchronize(), "sync", "", "", false );
-
           if ( mGrsc != 0 ) cuCheck ( cuGraphicsUnregisterResource ( mGrsc ), "DataPtr::Append", "cuGraphicsUnregisterResrc", "", false );
           cuCheck ( cuGraphicsGLRegisterImage( &mGrsc, (GLuint) mGLID, GL_TEXTURE_2D, CU_GRAPHICS_MAP_RESOURCE_FLAGS_NONE ), "DataPtr::Append", "cuGraphicsRegisterImage", "", false );
-          cuCheck ( cuGraphicsMapResources(1, &mGrsc, 0), "DataPtr::Append", "cuGraphicsMapResources", "", false);
-          cuCheck ( cuGraphicsSubResourceGetMappedArray( &mGarray, mGrsc, 0, 0), "DataPtr::Append", "cuGraphicsSubResourceGetMappedArray", "", false );
-
-          // CUDA texture/surface interop - resource description
-          CUDA_RESOURCE_DESC resDesc;
-          memset ( &resDesc, 0, sizeof(resDesc) );
-          resDesc.resType = CU_RESOURCE_TYPE_ARRAY;
-          resDesc.res.array.hArray = mGarray;      // <---- CUDA 2D array
-          resDesc.flags = 0;
-
-          CUDA_TEXTURE_DESC texDesc;
-          memset ( &texDesc, 0, sizeof(texDesc) );
-          texDesc.filterMode = CU_TR_FILTER_MODE_LINEAR;    // filter mode
-          // texDesc.filterMode = CU_TR_FILTER_MODE_POINT;
-          switch ( mUseType ) {                // pixel format
-          case DT_FLOAT: case DT_FLOAT3: case DT_FLOAT4: case DT_USHORT: case DT_INT: texDesc.flags = 0;  break;  // float 2D array
-          case DT_UCHAR: case DT_UCHAR3: case DT_UCHAR4:    texDesc.flags = CU_TRSF_READ_AS_INTEGER; break;    // int 2D array
-          };
-          texDesc.addressMode[0] = CU_TR_ADDRESS_MODE_CLAMP;  // border mode
-          texDesc.addressMode[1] = CU_TR_ADDRESS_MODE_CLAMP;
-          texDesc.addressMode[2] = CU_TR_ADDRESS_MODE_CLAMP;
-
-          if ( mGtex != -1 ) cuCheck ( cuTexObjectDestroy ( mGtex ), "DataPtr::Append", "cuTexObjectDestroy", "", false );
-          if ( mGsurf != -1) cuCheck ( cuSurfObjectDestroy ( mGsurf ), "DataPtr::Append", "cuSurfObjectDestroy", "", false );
-          cuCheck ( cuTexObjectCreate ( &mGtex, &resDesc, &texDesc, NULL ), "DataPtr::Append", "cuTexObjectCreate", "", false );
-          cuCheck ( cuSurfObjectCreate ( &mGsurf, &resDesc ), "DataPtr::Append", "cuSurfObjectCreate", "", false );
-
-          cuCheck ( cuGraphicsUnmapResources (1, &mGrsc, 0), "DataPtr::Append", "cuGraphicsUnmapResrc", "", false );
+          // ready for DataPtr::Map and ::Unmap         
         }
       #endif
     }
     // OpenGL VBO
-    if ( dest_flags & DT_GLVBO ) {              
+    else if ( dest_flags & DT_GLVBO ) {              
       if ( mGLID == -1 ) glGenBuffers ( 1, (GLuint*) &mGLID );               // GLID = VBO
       glBindBuffer ( GL_ARRAY_BUFFER, mGLID );
       glBufferData ( GL_ARRAY_BUFFER, new_size, src, GL_STATIC_DRAW );
 
       // CUDA-GL interop with GL VBO. (provides mGpu pointer w/o cuMemAlloc)
       #ifdef USE_CUDA          
-        if ( dest_flags & DT_CUMEM ) {
+        if ( dest_flags & DT_CUINTEROP ) {
           if ( mGrsc != 0 ) cuCheck ( cuGraphicsUnregisterResource ( mGrsc ), "DataPtr::Append", "cuGraphicsUnregisterResource", "", false );
-          cuCheck ( cuGraphicsGLRegisterBuffer ( &mGrsc, mGLID, CU_GRAPHICS_REGISTER_FLAGS_NONE ), "DataPtr::Append", "cuGraphicsGLReg", "", false );
-          cuCheck ( cuGraphicsMapResources(1, &mGrsc, 0), "", "cuGraphicsMapResrc", "", false );
-          size_t sz = 0;
-          cuCheck ( cuGraphicsResourceGetMappedPointer ( &mGpu, &sz, mGrsc ),  "", "cuGraphicsResrcGetMappedPtr", "", false );
-          cuCheck ( cuGraphicsUnmapResources (1, &mGrsc, 0), "DataPtr::Append", "cuGraphicsUnmapResrc", "", false );
+          cuCheck ( cuGraphicsGLRegisterBuffer ( &mGrsc, mGLID, CU_GRAPHICS_REGISTER_FLAGS_NONE ), "DataPtr::Append", "cuGraphicsGLReg", "", false );    
+          // ready for DataPtr::Map and ::Unmap
         }
       #endif
     }
   #endif
   #ifdef USE_CUDA
-    if ( (dest_flags & DT_CUMEM) && !(dest_flags & DT_CUINTEROP) ) {        // CUDA Linear Memory
+    if ( dest_flags & DT_CUMEM ) {        // CUDA Linear Memory
       cuCheck ( cuMemAlloc ( &newdat.mGpu, new_size ), "DataPtr::Append", "cuMemAlloc", "", false );
       if ( src != 0x0 ) {
         cuCheck ( cuMemcpyHtoD ( newdat.mGpu + old_size, src, added_size), "DataPtr::Append", "cuMemcpyHtoD", "", false);
@@ -264,6 +232,69 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
 
   return mSize / mStride;
 }
+
+
+bool DataPtr::Map()
+{
+    if ( mUseFlags & DT_CUINTEROP) { 
+
+      if ( mUseFlags & DT_GLVBO) {
+        // Map VBO with CUDA interop
+        cuCheck(cuGraphicsMapResources(1, &mGrsc, 0), "DataPtr::Map", "cuGraphicsMapResrc", "", false);
+        size_t sz = 0;
+        cuCheck(cuGraphicsResourceGetMappedPointer(&mGpu, &sz, mGrsc), "DataPtr::Map", "cuGraphicsResrcGetMappedPtr", "", false);
+        return true;
+      }
+      if (mUseFlags & DT_GLTEX) {
+        // Map texture with CUDA interop
+        cuCheck(cuGraphicsMapResources(1, &mGrsc, 0), "DataPtr::Append", "cuGraphicsMapResources", "", false);
+        cuCheck(cuGraphicsSubResourceGetMappedArray(&mGarray, mGrsc, 0, 0), "DataPtr::Append", "cuGraphicsSubResourceGetMappedArray", "", false);
+
+        // CUDA texture/surface interop - resource description
+        CUDA_RESOURCE_DESC resDesc;
+        memset(&resDesc, 0, sizeof(resDesc));
+        resDesc.resType = CU_RESOURCE_TYPE_ARRAY;
+        resDesc.res.array.hArray = mGarray;      // <---- CUDA 2D array
+        resDesc.flags = 0;
+        CUDA_TEXTURE_DESC texDesc;
+        memset(&texDesc, 0, sizeof(texDesc));
+        texDesc.filterMode = CU_TR_FILTER_MODE_LINEAR;    // filter mode
+        // texDesc.filterMode = CU_TR_FILTER_MODE_POINT;
+        switch (mUseType) {                // pixel format
+        case DT_FLOAT: case DT_FLOAT3: case DT_FLOAT4: case DT_USHORT: case DT_INT: texDesc.flags = 0;  break;  // float 2D array
+        case DT_UCHAR: case DT_UCHAR3: case DT_UCHAR4:    texDesc.flags = CU_TRSF_READ_AS_INTEGER; break;    // int 2D array
+        };
+        texDesc.addressMode[0] = CU_TR_ADDRESS_MODE_CLAMP;  // border mode
+        texDesc.addressMode[1] = CU_TR_ADDRESS_MODE_CLAMP;
+        texDesc.addressMode[2] = CU_TR_ADDRESS_MODE_CLAMP;
+
+        cuCheck(cuTexObjectCreate(&mGtex, &resDesc, &texDesc, NULL), "DataPtr::Append", "cuTexObjectCreate", "", false);
+        cuCheck(cuSurfObjectCreate(&mGsurf, &resDesc), "DataPtr::Append", "cuSurfObjectCreate", "", false);
+        return true;
+      }
+    }
+    return false;
+}
+
+bool DataPtr::Unmap()
+{
+    if ( mUseFlags& DT_CUINTEROP ) {
+      if ( mUseFlags & DT_GLVBO ) {
+        cuCheck(cuGraphicsUnmapResources(1, &mGrsc, 0), "DataPtr::Unmap", "cuGraphicsUnmapResrc", "", false);
+        return true;
+      }
+      if (mUseFlags & DT_GLTEX) {
+        if (mGtex != -1) cuCheck(cuTexObjectDestroy(mGtex), "DataPtr::Append", "cuTexObjectDestroy", "", false);
+        if (mGsurf != -1) cuCheck(cuSurfObjectDestroy(mGsurf), "DataPtr::Append", "cuSurfObjectDestroy", "", false);
+        cuCheck(cuGraphicsUnmapResources(1, &mGrsc, 0), "DataPtr::Append", "cuGraphicsUnmapResrc", "", false);
+        mGtex = -1;
+        mGsurf = -1;
+        return true;
+      }
+    }
+    return false;
+}
+
 
 void DataPtr::Commit ()
 {
@@ -279,27 +310,34 @@ void DataPtr::Commit ()
       case DT_USHORT: glTexImage2D ( GL_TEXTURE_2D, 0, GL_R16F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_SHORT,mCpu );  break;
       case DT_INT:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_INT,  mCpu );  break;
       case DT_UCHAR3:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGB,  GL_UNSIGNED_BYTE, mCpu );  break;
-	case DT_USHORT3:glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB16I,	mUseRX, mUseRY, 0, GL_RGB,	GL_UNSIGNED_SHORT, mCpu );	break;
+	  case DT_USHORT3:glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB16I,	mUseRX, mUseRY, 0, GL_RGB,	GL_UNSIGNED_SHORT, mCpu );	break;
       case DT_UCHAR4:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGBA,  GL_UNSIGNED_BYTE, mCpu );  break;
       case DT_FLOAT:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,  mUseRX, mUseRY, 0, GL_RED,  GL_FLOAT, mCpu);      break;
       case DT_FLOAT4:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA32F, mUseRX, mUseRY, 0, GL_RGBA,  GL_FLOAT, mCpu);    break;
       };
-		#ifdef USE_CUDA
-		if ( mUseFlags & DT_CUMEM ) {
-			// CUDA-GL Interop
-			//cuCheck ( cuGraphicsMapResources(1, &mGrsc, 0), "", "cuGraphicsMapResrc", "", false );
-			//size_t szmap = 0;
-			//cuCheck ( cuGraphicsResourceGetMappedPointer ( &mGpu, &szmap, mGrsc ),  "", "cuGraphicsResrcGetMappedPtr", "", false );				
-			cuCheck ( cuMemcpyHtoD ( mGpu, mCpu, sz), "DataPtr::Commit", "cuMemcpyHtoD", "", false );
-			//cuCheck ( cuGraphicsUnmapResources (1, &mGrsc, 0), "DataPtr::Append", "cuGraphicsUnmapResrc", "", false );
-			return;
-		} 		
-		#endif
+	  #ifdef USE_CUDA
+        if (mUseFlags & DT_CUINTEROP) {
+          // CUDA-GL Interop
+          Map();
+          cuCheck(cuMemcpyHtoD(mGpu, mCpu, sz), "DataPtr::Commit", "cuMemcpyHtoD", "", false);          
+          Unmap();
+          return;
+        }
+	  #endif
     }
     if ( mUseFlags & DT_GLVBO ) {            // CPU -> OpenGL VBO
       // OpenGL VBO
       glBindBuffer ( GL_ARRAY_BUFFER, mGLID );
       glBufferData ( GL_ARRAY_BUFFER, sz, mCpu, GL_STATIC_DRAW );
+      #ifdef USE_CUDA
+        if (mUseFlags & DT_CUINTEROP) {
+          // CUDA-GL Interop
+          Map();
+          cuCheck(cuMemcpyHtoD(mGpu, mCpu, sz), "DataPtr::Commit", "cuMemcpyHtoD", "", false);
+          Unmap();
+          return;
+        }
+      #endif
     }
   #endif
   #ifdef USE_CUDA
@@ -357,9 +395,14 @@ void DataPtr::Retrieve ()
         memcpy(pixbuf + ((h - y - 1) * pitch), buf, pitch);
       }*/
     }
+
     if ( mUseFlags & DT_GLVBO ) {
       #ifdef USE_CUDA              // CUDA-GL Interop
-        if ( mUseFlags & DT_CUMEM ) cuCheck ( cuMemcpyDtoH ( mCpu, mGpu, mSize ), "DataPtr::Retrieve", "cuMemcpyDtoH", "DT_GLVBO", false );      // cuda-interop
+        if (mUseFlags & DT_CUINTEROP) {
+            Map();
+            cuCheck(cuMemcpyDtoH(mCpu, mGpu, mSize), "DataPtr::Retrieve", "cuMemcpyDtoH", "DT_GLVBO", false);      // cuda-interop
+            Unmap();
+        }
       #endif
     }
   #endif
@@ -369,6 +412,7 @@ void DataPtr::Retrieve ()
     }
   #endif
 }
+
 
 void DataPtr::CopyTo ( DataPtr* dest, uchar dest_flags )
 {
@@ -380,16 +424,32 @@ void DataPtr::CopyTo ( DataPtr* dest, uchar dest_flags )
     memcpy ( dest->mCpu, mCpu, mSize );
   }
 
-  #ifdef USE_OPENGL
-    if ( (mUseFlags & DT_GLTEX || mUseFlags & DT_GLVBO) && !(mUseFlags & DT_CUINTEROP) ) {
-      dbgprintf ( "WARNING: CopyTo not yet supported for OpenGL\n" );
+  if (dest_flags & DT_CUMEM) {
+
+    if (mUseFlags & DT_CUINTEROP) {
+        #ifdef USE_CUDA
+        if ( mUseFlags & DT_GLTEX || mUseFlags & DT_GLVBO ) {
+            // src cuda interop, dest in cuda linear mem
+            Map();
+            cuCheck(cuMemcpyDtoD(dest->mGpu, mGpu, mSize), "DataPtr::CopyTo", "cuMemcpyDtoD", "", false);    // also covers cuda-interop cases
+            Unmap();
+        }
+        #endif
+    } else {
+        #ifdef USE_OPENGL
+        if ( mUseFlags & DT_GLTEX || mUseFlags & DT_GLVBO ) {
+            // src and dest are opengl
+            dbgprintf("WARNING: CopyTo not yet supported for OpenGL. Not using CUINTEROP.\n");
+        }
+        #endif
+        #ifdef USE_CUDA
+        if (mUseFlags && DT_CUMEM) {
+            // src and dest are cuda linear mem
+            cuCheck(cuMemcpyDtoD(dest->mGpu, mGpu, mSize), "DataPtr::CopyTo", "cuMemcpyDtoD", "", false);    // also covers cuda-interop cases
+        }
+        #endif  
     }    
-  #endif
-  #ifdef USE_CUDA
-    if ( (mUseFlags & DT_CUMEM) && (dest_flags & DT_CUMEM) ) {
-      cuCheck ( cuMemcpyDtoD ( dest->mGpu, mGpu, mSize), "DataPtr::CopyTo", "cuMemcpyDtoD", "", false );    // also covers cuda-interop cases
-    }
-  #endif
+  }
 }
 
 void DataPtr::FillBuffer ( uchar v )
