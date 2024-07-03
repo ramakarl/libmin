@@ -179,11 +179,14 @@ void Camera3D::setDirection ( Vec3F from, Vec3F to, float roll )
 	to_pos = to;
 	Vec3F del = from_pos - to_pos;	
 	float r = sqrt(del.x*del.x + del.z*del.z);
+
+	// orbit dist
+	mOrbitDist = (to - from).Length();
 	
-	// update angles
+	// new angles
 	ang_euler.x = atan2 ( del.x, del.z ) * RADtoDEG;
 	ang_euler.y = asin ( del.y / r ) * RADtoDEG;
-	ang_euler.z = roll;
+	ang_euler.z = roll;	
 
 	// up vector
 	Matrix4F local; 	
@@ -194,7 +197,7 @@ void Camera3D::setDirection ( Vec3F from, Vec3F to, float roll )
 	local.toBasis(xaxis, yaxis, zaxis);	
 
 	up_dir.Set ( 0, cos(roll*DEGtoRAD), sin(roll*DEGtoRAD) );
-	up_dir *= local; 
+	up_dir *= local; 	
 
 	LookAt();
 }

@@ -53,8 +53,10 @@
 	#define DT_CPU			1		// use flags
 	#define DT_CUMEM		2
 	#define DT_CUARRAY		4
-	#define DT_GLTEX		8	
-	#define DT_GLVBO		16
+	#define DT_CUINTEROP	8
+	#define DT_GLTEX		16	
+	#define DT_GLVBO		32
+
 
 	class HELPAPI DataPtr {
 	public:

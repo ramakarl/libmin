@@ -160,7 +160,8 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
 
   // GPU allocation
   #ifdef USE_OPENGL
-    if ( dest_flags & DT_GLTEX ) {              // OpenGL Texture
+    // OpenGL Texture
+    if ( dest_flags & DT_GLTEX ) {              
       checkGL ( "start create DT_GLTEX" );
       if ( mGLID==-1 ) glGenTextures( 1, (GLuint*) &mGLID );
       checkGL ( "glGenTextures (DataPtr::Append)" );
@@ -186,7 +187,8 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
       };
       checkGL ( "glTexImage2D (DataPtr::Append)" );
 
-      #ifdef USE_CUDA                // CUDA-GL interop
+      // CUDA-GL interop with GL texture. (provides mGpu pointer w/o cuMemAlloc)
+      #ifdef USE_CUDA                
         if ( dest_flags & DT_CUMEM ) {
           dbgprintf ( "ERROR: CUDA does not allow GL texture interop with linear memory. Must use DT_CUARRAY.\n" );
           exit(-3);
@@ -228,12 +230,14 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
         }
       #endif
     }
-    if ( dest_flags & DT_GLVBO ) {              // OpenGL VBO
+    // OpenGL VBO
+    if ( dest_flags & DT_GLVBO ) {              
       if ( mGLID == -1 ) glGenBuffers ( 1, (GLuint*) &mGLID );               // GLID = VBO
       glBindBuffer ( GL_ARRAY_BUFFER, mGLID );
       glBufferData ( GL_ARRAY_BUFFER, new_size, src, GL_STATIC_DRAW );
 
-      #ifdef USE_CUDA                    // CUDA-GL interop
+      // CUDA-GL interop with GL VBO. (provides mGpu pointer w/o cuMemAlloc)
+      #ifdef USE_CUDA          
         if ( dest_flags & DT_CUMEM ) {
           if ( mGrsc != 0 ) cuCheck ( cuGraphicsUnregisterResource ( mGrsc ), "DataPtr::Append", "cuGraphicsUnregisterResource", "", false );
           cuCheck ( cuGraphicsGLRegisterBuffer ( &mGrsc, mGLID, CU_GRAPHICS_REGISTER_FLAGS_NONE ), "DataPtr::Append", "cuGraphicsGLReg", "", false );
@@ -246,13 +250,14 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
     }
   #endif
   #ifdef USE_CUDA
-    if ( dest_flags & DT_CUMEM ) {              // CUDA Linear Memory
+    if ( (dest_flags & DT_CUMEM) && !(dest_flags & DT_CUINTEROP) ) {        // CUDA Linear Memory
       cuCheck ( cuMemAlloc ( &newdat.mGpu, new_size ), "DataPtr::Append", "cuMemAlloc", "", false );
-      if ( dat != 0x0 ) {
+      if ( src != 0x0 ) {
         cuCheck ( cuMemcpyHtoD ( newdat.mGpu + old_size, src, added_size), "DataPtr::Append", "cuMemcpyHtoD", "", false);
       }
-      if ( mGpu != 0x0 )
+      if ( mGpu != 0x0 ) {
         cuCheck ( cuMemFree ( mGpu ), "DataPtr::Append", "cuMemFree", "", false);
+      }
       mGpu = newdat.mGpu;
     }
   #endif
