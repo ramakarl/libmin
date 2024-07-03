@@ -239,17 +239,18 @@
 
     // color storage in 4-byte uint
 	typedef uint32_t			CLRVAL;
-    #define CLRA(r,g,b,a)       ( (uint(a)<<24) | (uint(b)<<16) | (uint(g)<<8) | uint(r) )
+    #define CLRA(r,g,b,a)       ( (uint(r)) | (uint(g)<<8) | (uint(b)<<16) | (uint(a)<<24) )
     #ifndef COLOR
-	    #define COLOR(r,g,b)	( (uint(r*255.0f)<<24) | (uint(g*255.0f)<<16) | (uint(b*255.0f)<<8) )
+	    #define COLOR(r,g,b)	( (uint(r*255.0f)) | (uint(g*255.0f)<<8) | (uint(b*255.0f)<<16) )
 	#endif
     #ifndef COLORA
-	    #define COLORA(r,g,b,a)	( (uint(a*255.0f)<<24) | (uint(b*255.0f)<<16) | (uint(g*255.0f)<<8) | uint(r*255.0f) )
+	    #define COLORA(r,g,b,a)	( (uint(r*255.0f)) | (uint(g*255.0f)<<8) | (uint(b*255.0f)<<16) | (uint(a*255.0f)<<24)  )
     #endif
-	#define ALPH(c)			(float((c>>24) & 0xFF)/255.0)
-	#define BLUE(c)			(float((c>>16) & 0xFF)/255.0)
-	#define GRN(c)			(float((c>>8)  & 0xFF)/255.0)
-	#define RED(c)			(float( c      & 0xFF)/255.0)
+    #define RED(r)			(float( r      & 0xFF)/255.0)
+	#define GRN(g)			(float((g>>8)  & 0xFF)/255.0)
+    #define BLUE(b)			(float((b>>16) & 0xFF)/255.0)
+    #define ALPH(a)			(float((a>>24) & 0xFF)/255.0)
+
     #ifndef CLRVEC
 	    #define CLRVEC(c)			( Vec4F( RED(c), GRN(c), BLUE(c), ALPH(c) ) )
     #endif
