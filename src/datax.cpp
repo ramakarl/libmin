@@ -140,7 +140,12 @@ void DataX::UpdateGPUAccess ()
 	#ifdef USE_CUDA
 	int userid;
 
-	//dbgprintf ("------\n" );
+	// clear all buf slots
+	for (int i = 0; i < DMAXBUF; i++) {
+		cuDataCPU.mbuf[i] = 0;
+	}
+
+	// update buf slots in use
 	for (int i=0; i < mBuf.size(); i++) {		
 		userid = mBuf[i].mRefID;
 		cuDataCPU.mbuf[ userid ] = mBuf[i].mGpu;

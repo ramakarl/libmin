@@ -267,9 +267,10 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
 
 void DataPtr::Commit ()
 {
+  if (mCpu == 0) return;      // commit only makes sense if DT_CPU enabled
   int sz = mNum * mStride;    // only copy in-use elements
-  if ( sz==0 ) return;
-
+  if ( sz==0 ) return;  
+  
   #ifdef USE_OPENGL
     if ( mUseFlags & DT_GLTEX ) {            // CPU -> OpenGL Texture
       glBindTexture ( GL_TEXTURE_2D, mGLID );
@@ -380,7 +381,7 @@ void DataPtr::CopyTo ( DataPtr* dest, uchar dest_flags )
   }
 
   #ifdef USE_OPENGL
-    if ( mUseFlags & DT_GLTEX || mUseFlags & DT_GLVBO) {
+    if ( (mUseFlags & DT_GLTEX || mUseFlags & DT_GLVBO) && !(mUseFlags & DT_CUINTEROP) ) {
       dbgprintf ( "WARNING: CopyTo not yet supported for OpenGL\n" );
     }    
   #endif

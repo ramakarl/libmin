@@ -43,7 +43,8 @@
 	typedef signed short		bufPos;
 	
 	// DataX buffers (GPU)
-	#define	DMAXBUF		16				// fixed for now
+	#define	DMAXBUF		16					// fixed for now
+
 	struct HELPAPI cuDataX {
 		devdata_t	mbuf[DMAXBUF];				// See DataX::UpdateGPUAccess
 
