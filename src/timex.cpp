@@ -59,6 +59,18 @@
 	std::string			g_perfFName = "";			// File name for CPU output. Set with PERF_SET
 	FILE*				g_perfFile = 0x0;			// File handle for output
 
+	float strToDateF(std::string s, int mp, int mc, int dp, int dc, int yp, int yc)
+	{
+		// default format: mm-dd-yyyy
+		TimeX t;
+		return t.SetDateF(s, mp, mc, dp, dc, yp, yc);
+	}
+
+	void strFromDateF(float f, int& m, int& d, int& y)
+	{
+		TimeX t;
+		t.GetDateF(f, m, d, y);
+	}
 
 	void PERF_PRINTF ( char* format, ... )
 	{

@@ -81,28 +81,6 @@ xlong strToI64 (std::string s)
 	#endif
 }
 
-float strToDateF( std::string s, int mp, int mc, int dp, int dc, int yp, int yc )
-{
-  #ifdef USE_TIMEX
-    // default format: mm-dd-yyyy
-    TimeX t;
-    return t.SetDateF ( s, mp, mc, dp, dc, yp, yc );
-  #else
-    dbgprintf ( "TimeX not loaded.\n");
-    return 0;
-  #endif
-}
-
-void strFromDateF ( float f, int& m, int& d, int& y )
-{
-  #ifdef USE_TIMEX
-    TimeX t;
-    t.GetDateF ( f, m, d, y );
-  #else
-    dbgprintf ( "TimeX not loaded.\n");
-  #endif
-}
-
 bool isFloat (std::string s) {
 
   int st = 0;
@@ -292,17 +270,19 @@ bool strGet ( std::string str, std::string& result, std::string lsep, std::strin
   return false;
 }
 
-// strGet - return a substring between two separators, without modifying input string.
-// input:   strGet ( "hello(world)", "(", ")", result, pos )
-// output:  result = "world", pos=7
+// strGet - return a substring between two separator *strings*, without modifying input string.
+// //       does NOT treat lsep/rsep as a list of possible single-char separators.
+// input:   strGet ( "THIS(world) THAT(one)", "THIS(", ")", result, pos )
+// output:  result = "world", pos=6
 bool strGet ( const std::string& str, std::string lsep, std::string rsep, std::string& result, size_t& pos )
 {
   size_t lfound, rfound;
-  lfound = str.find_first_of ( lsep );
+  lfound = str.find ( lsep );
   if ( lfound != std::string::npos ) {
-    rfound = str.find_first_of ( rsep, lfound+1 );
+    lfound += lsep.length();
+    rfound = str.find ( rsep, lfound );
     if ( rfound != std::string::npos ) {
-      result = str.substr ( lfound, rfound-lfound+1 );
+      result = str.substr ( lfound, rfound - lfound );
       pos = lfound;
       return true;
     }
@@ -407,26 +387,28 @@ bool strFileSplit ( std::string str, std::string& path, std::string& name, std::
 
 
 // Parse out
-// e.g. "date=VEC4 | more" --> result "VEC4", str="date | more"
+// - parse a value out of a string, keeping remainder (left & right) intact
+// e.g. "date=VEC4 | more" --> value "VEC4", str="date | more"
 std::string strParseOut ( std::string& str, std::string lsep, std::string rsep )
 {
-  std::string result, rest;
-  strParseOut ( str, lsep, rsep, result, rest);
-  str = rest;
-  return result;
+  std::string value, remain;
+  strParseOut ( str, lsep, rsep, value, remain);
+  str = remain;
+  return value;
 }
-bool strParseOut ( std::string str, std::string lsep, std::string rsep, std::string& result, std::string& rest )
+bool strParseOut ( std::string str, std::string lsep, std::string rsep, std::string& value, std::string& remain)
 {
   size_t f1, f2;
-  result = "";
+  value = "";
+  remain = str;
 
-  f1 = str.find_first_of ( lsep );          // find separators
+  f1 = str.find_first_of ( lsep );              // find separators
   if ( f1 == std::string::npos) return false;
   f2 = str.find_first_of ( rsep, f1 );
   if ( f2 == std::string::npos ) return false;
 
-  result = str.substr ( f1+1, f2-f1-1 );
-  rest = str.substr ( 0, f1 ) + str.substr ( f2+1 );  // keep left & right side
+  value = str.substr ( f1+1, f2-f1-1 );
+  remain = str.substr ( 0, f1 ) + str.substr ( f2+1 );  // keep left & right side
   return true;
 }
 

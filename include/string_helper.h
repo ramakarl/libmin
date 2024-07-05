@@ -47,9 +47,7 @@
 	HELPAPI xlong strToI64 (std::string s);
 	HELPAPI float strToF (std::string s);
 	HELPAPI int strToF (std::string s, float &val);
-	HELPAPI double strToD (std::string s);
-	HELPAPI float strToDateF( std::string s, int mp=0, int mc=2, int dp=3, int dc=2, int yp=6, int yc=4 );
-	HELPAPI void strFromDateF ( float f, int& m, int& d, int& y );
+	HELPAPI double strToD (std::string s);	
 	HELPAPI unsigned char strToC ( std::string s );
 	HELPAPI unsigned long strToUL ( std::string s );
 	HELPAPI unsigned long strToID ( std::string str );		// should only be used for 4-byte literals. for actual unsigned long see strToUL

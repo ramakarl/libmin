@@ -43,6 +43,9 @@
 		HELPAPI void PERF_SET(bool cpu, int lev, bool gpu, char* fname);
 		HELPAPI void PERF_PRINTF ( char* format, ... );
 
+		HELPAPI float strToDateF(std::string s, int mp = 0, int mc = 2, int dp = 3, int dc = 2, int yp = 6, int yc = 4);
+		HELPAPI void strFromDateF(float f, int& m, int& d, int& y);
+
 
 		// Time Class
 		// Copyright Rama Hoetzlein (C) 2007
