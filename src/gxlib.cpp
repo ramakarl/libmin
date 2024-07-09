@@ -247,8 +247,7 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	gxVert* v = gx.allocImg2D ( len*6, PRIM_TRI, &gx.m_font_img );
 
 	// get current font
-	gxFont& font = gx.getCurrFont ();	
-	int glyphHeight = font.ascent + font.descent + font.linegap;
+	gxFont& font = gx.getCurrFont ();		
 	float lX = a.x;
 	float lY = a.y;
 	float lLinePosX = a.x;
@@ -256,12 +255,13 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	int c = 0;
 	char ch = msg.at(0);
 	
-	// text_hgt = desired height of font in pixels
-	// text_kern = spacing between letters
+	// text_hgt = desired height of font in world units
+	// text_kern = spacing between letters in world units
+  // font.ascent = height of font in pixels
 
-	float textSz = gx.m_text_hgt / glyphHeight;	// glyph scale
-	float textStartPy = textSz;					// start location in pixels
-	
+	float textDel = gx.m_text_hgt / font.ascent;	// world:font ratio
+	float textStartPy = textDel;										// start location in pixels
+
 	for (; c < len; c++ ) {
 		ch = msg.at(c);
 		if ( ch == '\n' ) {
@@ -270,25 +270,25 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 			lY = lLinePosY;
 		} else if ( ch >=0 && ch <= 128 ) {
 			gxGlyph& gly = font.glyphs[ ch ];
-			float pX = lX + gly.offX * textSz;
-			float pY = lY + gly.offY * textSz; 
-			float pW = gly.width * textSz;
-			float pH = gly.height * textSz;
+			float pX = lX + gly.offX * textDel;
+			float pY = lY - gly.offY * textDel;
+			float pW = gly.width * textDel;
+			float pH = gly.height * textDel;
 	
 			// GRP_TRITEX is a triangle strip!
 			// repeat first point (jump), zero alpha
-			v->x = pX;		v->y = pY+pH;	v->z = 0;		vclr(v,clr, 0);		v->tx = gly.u; v->ty = gly.v;	v++;
+			v->x = pX;		v->y = pY;	v->z = 0;		vclr(v,clr, 0);		v->tx = gly.u; v->ty = gly.v;	v++;
 
 			// four corners of glyph
-			v->x = pX;		v->y = pY+pH;	v->z = 0; 		vclr(v,clr, 1);		v->tx = gly.u; v->ty = gly.v;	v++;
-			v->x = pX;		v->y = pY ;		v->z = 0;		vclr(v,clr, 1);		v->tx = gly.u; v->ty = gly.v + gly.dv;	v++;			
-			v->x = pX+pW;	v->y = pY+pH;	v->z = 0;		vclr(v,clr, 1);		v->tx = gly.u + gly.du; v->ty = gly.v;	v++;			
-			v->x = pX+pW;	v->y = pY ;		v->z = 0; 		vclr(v,clr, 1);		v->tx = gly.u + gly.du; v->ty = gly.v + gly.dv;	v++;
+			v->x = pX;		v->y = pY;		v->z = 0; 	vclr(v,clr, 1);		v->tx = gly.u; v->ty = gly.v + gly.dv;	v++;
+			v->x = pX;		v->y = pY-pH;	v->z = 0;		vclr(v,clr, 1);		v->tx = gly.u; v->ty = gly.v;	v++;			
+			v->x = pX+pW;	v->y = pY;		v->z = 0;		vclr(v,clr, 1);		v->tx = gly.u + gly.du; v->ty = gly.v + gly.dv;	v++;
+			v->x = pX+pW;	v->y = pY-pH;	v->z = 0; 	vclr(v,clr, 1);		v->tx = gly.u + gly.du; v->ty = gly.v ;	v++;
 
 			// repeat last point (jump), zero alpha
-			v->x = pX+pW;	v->y = pY;	v->z = 0;			vclr(v,clr, 0);		v->tx = gly.u + gly.du; v->ty = gly.v + gly.dv;	v++;
+			v->x = pX+pW;	v->y = pY-pH;	v->z = 0;			vclr(v,clr, 0);		v->tx = gly.u + gly.du; v->ty = gly.v; v++;
 	
-			lX += (gly.advance + gx.m_text_kern) * textSz;
+			lX += (gly.advance + gx.m_text_kern) * textDel;
 			lY += 0;			
 		}	else if ( ch=='\0' ) {
 			break;
@@ -299,6 +299,33 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	for (int n=c; n < len; n++ ) {
 		memset ( v, 0, 6*sizeof(gxVert) ); v += 6;				
 	}
+}
+
+Vec2F glib::getTextPix (std::string msg, Vec4F view )
+{
+	int len = (int) msg.size();
+	if (len == 0)	return Vec2F(0,0);
+
+	// get current font
+	gxFont& font = gx.getCurrFont();	
+	float textDel = gx.m_text_hgt / font.ascent;		// glyph scale
+	
+	gxGlyph& gly = font.glyphs[ 'A' ];				// estimate width using fix char
+	Vec2F sz;
+	sz.x = len * (gly.advance + gx.m_text_kern) * textDel;
+	sz.y = font.ascent * textDel;
+
+	sz.x *= gx.m_Xres / (view.z - view.x);
+	sz.y *= gx.m_Yres / (view.w - view.y);
+
+	return sz;
+}
+
+void glib::setTextPix(float hgt, Vec4F view)
+{
+	gxFont& font = gx.getCurrFont();
+
+	gx.m_text_hgt = hgt * (view.w-view.y) / gx.m_Yres;
 }
 
 

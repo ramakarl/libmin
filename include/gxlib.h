@@ -42,6 +42,8 @@
     GXAPI void setview2D ( Matrix4F& model, Matrix4F& view, Matrix4F& proj );      
     GXAPI void setMatrices2D ( int grp, int xr, int yr, Matrix4F& model, Matrix4F& view, Matrix4F& proj );    
     GXAPI void setTextSz ( float hgt, float kern );
+    GXAPI void setTextPix ( float hgt, Vec4F view );
+    GXAPI Vec2F getTextPix ( std::string txt, Vec4F view );
     GXAPI void end2D ();    
     GXAPI void drawLine ( Vec2F a, Vec2F b, Vec4F clr );
     GXAPI void drawRect ( Vec2F a, Vec2F b, Vec4F clr );

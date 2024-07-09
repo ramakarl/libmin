@@ -739,9 +739,9 @@ void Application::appOpenBrowser ( std::string app, std::string query )
 
 #ifdef USE_NETWORK
 
-    void Application::appSendEventToApp ( Event* e )
+    bool Application::appSendEventToApp ( Event* e )
     {
-        pApp->on_event ( e );
+        return pApp->on_event ( e );
     }
 #endif
 

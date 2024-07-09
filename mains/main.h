@@ -105,8 +105,8 @@
 		virtual void checkpoint() {}
 	
 		#ifdef USE_NETWORK
-			virtual void on_event( Event* e )  {}			// Events
-			void appSendEventToApp ( Event* e );
+			virtual bool on_event( Event* e )  {return false;}			// Events
+			bool appSendEventToApp ( Event* e );
 		#endif	
 
 		// App Context
