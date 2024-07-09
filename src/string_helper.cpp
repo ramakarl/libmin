@@ -100,7 +100,7 @@ float strToF (std::string s) {
   std::istringstream str_stream ( s );
   float x;
   if (str_stream >> x) return x;    // this is the correct way to convert std::string to float, do not use atof
-  return 0;
+  return std::numeric_limits<float>::quiet_NaN();
 };
 
 int strToF (std::string s, float &val) {
@@ -117,7 +117,7 @@ double strToD (std::string s) {
   std::istringstream str_stream ( s );
   double x;
   if (str_stream >> x) return x;    // this is the correct way to convert std::string to float, do not use atof
-  return 0;
+  return std::numeric_limits<double>::quiet_NaN();
 };
 unsigned long strToUL ( std::string s )
 {
