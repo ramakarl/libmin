@@ -40,6 +40,7 @@
     GXAPI void start2D ( int w, int h, Vec4F region, bool bStatic = false );
     GXAPI void setview2D ( int w, int h );
     GXAPI void setview2D ( Matrix4F& model, Matrix4F& view, Matrix4F& proj );      
+    GXAPI void setAspectCorrect ( float a );
     GXAPI void setMatrices2D ( int grp, int xr, int yr, Matrix4F& model, Matrix4F& view, Matrix4F& proj );    
     GXAPI void setTextSz ( float hgt, float kern );
     GXAPI void setTextPix ( float hgt, Vec4F view );
@@ -50,6 +51,7 @@
     GXAPI void drawFill ( Vec2F a, Vec2F b, Vec4F clr );
     GXAPI void drawGradient ( Vec2F a, Vec2F b, Vec4F c0, Vec4F c1, Vec4F c2, Vec4F c3 );
     GXAPI void drawCircle ( Vec2F a, float r, Vec4F clr  );
+    GXAPI void drawCircleFill (Vec2F a, float r, Vec4F clr);
     GXAPI void drawText ( Vec2F a, std::string msg, Vec4F clr );    
     GXAPI void drawImg ( ImageX* img, Vec2F a, Vec2F b, Vec4F clr );
     
@@ -95,6 +97,7 @@
         gxSet*      addSet ( char st, bool bStatic=false );        
         gxSet*      getCurrSet ()         {return getSet(m_curr_set);}   
         gxSet*      getSet (int set)      {return (set < m_sets.size()) ? &m_sets[set] : 0x0;}
+        float       getAspectCorrect()    {return m_sets[m_curr_set].aspect_correct; }
         void        clearSet (int set);
         void        clearSets ();
         void        expandSet ( gxSet* s, uchar typ, uchar prim, int64_t add_bytes );

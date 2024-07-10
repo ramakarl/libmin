@@ -356,11 +356,11 @@ bool strSplit ( std::string str, std::string sep, std::string& left, std::string
   f1 = str.find_first_of ( sep );
 
   while ( f1 != std::string::npos  ) {
-    list.push_back ( str.substr(0,f1) );
+    list.push_back ( strTrim(str.substr(0,f1)) );
     str = str.substr ( f1+1 );
     f1 = str.find_first_of ( sep );
   }
-  list.push_back ( str );
+  list.push_back ( strTrim(str) );
   return (int) list.size();
 }
 
@@ -398,17 +398,18 @@ std::string strParseOut ( std::string& str, std::string lsep, std::string rsep )
 }
 bool strParseOut ( std::string str, std::string lsep, std::string rsep, std::string& value, std::string& remain)
 {
-  size_t f1, f2;
+  size_t f1, fL, fR;
   value = "";
   remain = str;
 
   f1 = str.find_first_of ( lsep );              // find separators
   if ( f1 == std::string::npos) return false;
-  f2 = str.find_first_of ( rsep, f1 );
-  if ( f2 == std::string::npos ) return false;
+  fR = str.find_first_of ( rsep, f1 );
+  if ( fR == std::string::npos ) return false;
 
-  value = str.substr ( f1+1, f2-f1-1 );
-  remain = str.substr ( 0, f1 ) + str.substr ( f2+1 );  // keep left & right side
+  fL = f1 + lsep.length();
+  value = str.substr ( fL, fR-fL );
+  remain = str.substr ( 0, f1 ) + str.substr ( fR );  // keep left & right side
   return true;
 }
 

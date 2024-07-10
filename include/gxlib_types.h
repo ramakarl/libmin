@@ -94,6 +94,7 @@
         float       model[16];
         float       view[16];
         float       proj[16];
+        float       aspect_correct;
         Vec3F       lightpos, lightclr;
         Vec3F       diffclr, ambclr, specclr;
         Vec3F       cam_from, cam_to;

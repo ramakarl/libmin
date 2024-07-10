@@ -106,6 +106,13 @@ void glib::start2D ( int w, int h, Vec4F region, bool bStatic )
 	setview2D ( w, h );
 }
 
+void glib::setAspectCorrect(float a)
+{
+	gxSet* s = gx.getCurrSet();
+	if (s==0x0) return;
+	s->aspect_correct = a;
+}
+
 void glib::end2D ()
 {
 	// finish any remaining prims
@@ -212,13 +219,47 @@ void glib::drawCircle ( Vec2F a, float r, Vec4F clr  )
 	Vec2F pl, p, c;
 	pl = a + Vec2F(1 * r, 0);
 	for (int u=0; u <= 360; u += du ) {
-		p = a + Vec2F( gx.cos_table[u*100] * r, gx.sin_table[u*100] * r );		
+		p = a + Vec2F( gx.cos_table[u*100] * r, gx.sin_table[u*100] * r / gx.getAspectCorrect() );		
 		v->x = pl.x; v->y = pl.y; v->z = 0; vclr (v,clr); v++;
 		v->x = p.x ; v->y = p.y ; v->z = 0; vclr (v,clr); v++;
 		pl = p;
 	}		
-
 }
+
+void glib::drawCircleFill (Vec2F a, float r, Vec4F clr)
+{
+	int n = 0;
+	int du = 15;
+	int segs = (360/du)+1;
+	gxVert* v = gx.allocGeom2D(3 * segs + 4, PRIM_TRI);
+
+	// draw circle
+	Vec2F pl, p;	
+	pl = a + Vec2F(1 * r, 0);
+
+	// repeat first jump
+	v->x = a.x;		v->y = a.y; v->z = 0;		vclr(v, clr); v++;		n++;
+	
+	// first edge
+	v->x = a.x;		v->y = a.y; v->z = 0;		vclr(v, clr); v++;		n++;
+	v->x = pl.x; v->y = pl.y; v->z = 0; vclr(v, clr); v++;		n++;
+
+	for (int u = 0; u <= 360; u += du) {		// segs
+		p = a + Vec2F(gx.cos_table[u * 100] * r, gx.sin_table[u * 100] * r / gx.getAspectCorrect() );
+		
+		// 2x fan = rim pnt -> center -> out		
+		v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++;
+		v->x = a.x; v->y = a.y; v->z = 0;		vclr(v, clr); v++;
+		v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++;
+			n+=3;
+		pl = p;
+	}
+	// repeat last jump
+	v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++;
+
+	int cnt = 3*segs+2;
+}
+
 
 void glib::drawImg ( ImageX* img, Vec2F a, Vec2F b, Vec4F clr )
 {
@@ -259,6 +300,7 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	// text_kern = spacing between letters in world units
   // font.ascent = height of font in pixels
 
+	float asp_correct = gx.getAspectCorrect ();
 	float textDel = gx.m_text_hgt / font.ascent;	// world:font ratio
 	float textStartPy = textDel;										// start location in pixels
 
@@ -271,9 +313,9 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 		} else if ( ch >=0 && ch <= 128 ) {
 			gxGlyph& gly = font.glyphs[ ch ];
 			float pX = lX + gly.offX * textDel;
-			float pY = lY - gly.offY * textDel;
+			float pY = lY - (gly.offY * textDel / asp_correct);
 			float pW = gly.width * textDel;
-			float pH = gly.height * textDel;
+			float pH = gly.height * textDel / asp_correct;
 	
 			// GRP_TRITEX is a triangle strip!
 			// repeat first point (jump), zero alpha
