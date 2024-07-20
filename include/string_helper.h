@@ -71,7 +71,8 @@
 	
 	HELPAPI bool		strSplit ( std::string str, std::string sep, std::string& left, std::string& right );		// "left,right" --> left="left", right="right", str=unchanged
 	HELPAPI bool		strSplitLeft(std::string str, std::string sep, std::string& key, std::string& val);			// "left,right" --> key="left", val="right", str=unchanged
-	HELPAPI bool		strParseOut(std::string str, std::string lsep, std::string rsep, std::string& result, std::string& rest); // "data<1492> | time", <> --> result 1492, str="date | time"
+	HELPAPI bool		strParseOut(std::string str, std::string lsep, std::string rsep, std::string& value, std::string& remain); // "data<1492> | time", <> --> result 1492, str="date | time"
+	HELPAPI bool		strParseChars(std::string str, std::string lsep, std::string& value, std::string& remain);
 	HELPAPI bool		strParseKeyVal(std::string& str, uchar lsep, uchar rsep, std::string& key, std::string& val); // "obj<car>,more" --> key="obj", val="car", str="more"
 	HELPAPI bool		strFileSplit(std::string str, std::string& path, std::string& name, std::string& ext);
 	HELPAPI int			strSplitMultiple(std::string str, std::string sep, std::vector<std::string>& list);		// obj1,obj2,obj3.. list={ob1, obj2, obj3}

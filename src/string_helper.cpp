@@ -388,7 +388,9 @@ bool strFileSplit ( std::string str, std::string& path, std::string& name, std::
 
 // Parse out
 // - parse a value out of a string, keeping remainder (left & right) intact
-// e.g. "date=VEC4 | more" --> value "VEC4", str="date | more"
+// - this func CONSUMES (removes) both the left and right separators
+// e.g. "[MATERIAL] Basic" --> value "MATERIAL", remain="Basic"
+
 std::string strParseOut ( std::string& str, std::string lsep, std::string rsep )
 {
   std::string value, remain;
@@ -409,10 +411,31 @@ bool strParseOut ( std::string str, std::string lsep, std::string rsep, std::str
 
   fL = f1 + lsep.length();
   value = str.substr ( fL, fR-fL );
-  remain = str.substr ( 0, f1 ) + str.substr ( fR );  // keep left & right side
+  remain = str.substr ( 0, f1 ) + str.substr ( fR+1 );  // parse away the separators
   return true;
 }
 
+// Parse chars
+// - parse any number of alpha-numeric chars starting at lsep. 
+// - this func CONSUMES the left-separator. there is no rsep.
+// e.g. "EVAL(date=VEC4) | more" --> value "VEC4", remain="EVAL(date) | more"
+//
+bool strParseChars(std::string str, std::string lsep, std::string& value, std::string& remain)
+{
+  size_t f1, fL, fR;
+  value = "";
+  remain = str;
+
+  f1 = str.find_first_of(lsep);              // find separators
+  if (f1 == std::string::npos) return false;
+  fR = str.find_first_not_of ( "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789", f1+1 );
+  if (fR == std::string::npos) return false;
+
+  fL = f1 + lsep.length();
+  value = str.substr(fL, fR - fL);
+  remain = str.substr(0, f1) + str.substr(fR);    // parse away left sep
+  return true;
+}
 
 // Parse a list as a set of key-value arguments. Input becomes output right side. Return is arg value. Tag is arg tag.
 //   e.g. object:cat, name:felix -> str=name:felix, return=cat, tag=object
