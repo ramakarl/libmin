@@ -301,11 +301,10 @@ void Camera3D::SetMatrices (const float* view_mtx, const float* proj_mtx, Vec3F 
 void Camera3D::updateProj ()
 {
 	// construct projection matrix  --- MATCHES OpenGL's gluPerspective function (DO NOT MODIFY)
-	float sx = (float) tan ( mFov * DEGtoRAD/2.0f ) * mNear;
-	float sy = sx / mAspect;
+	float sy = (float) 1.0 / tan ( mFov * DEGtoRAD/2.0f );	
 	proj_matrix = 0.0f;
-	proj_matrix(0,0) = 2.0f*mNear / sx;				// matches OpenGL definition
-	proj_matrix(1,1) = 2.0f*mNear / sy;
+	proj_matrix(0,0) = sy / mAspect;				// matches OpenGL definition
+	proj_matrix(1,1) = sy;
 	proj_matrix(2,2) = -(mFar + mNear)/(mFar - mNear);			// C
 	proj_matrix(2,3) = -(2.0f*mFar * mNear)/(mFar - mNear);		// D
 	proj_matrix(3,2) = -1.0f;
