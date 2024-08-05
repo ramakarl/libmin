@@ -530,7 +530,7 @@
 
 		Vec4F &Random ()		{ x=float(rand())/RAND_MAX; y=float(rand())/RAND_MAX; z=float(rand())/RAND_MAX; w = 1;  return *this;}
 
-		VTYPE C(int i)				{return i <= 2 ? ((VTYPE*) &x)[i] : w; }  // component i
+		VTYPE C(int i)				{return ((VTYPE*) &x)[i]; }		// i-th component
 		VTYPE &X(void)				{return x;}
 		VTYPE &Y(void)				{return y;}
 		VTYPE &Z(void)				{return z;}
