@@ -14,7 +14,7 @@
     
     #include "gxlib.h"
     #include "gxlib_types.h"
-    #include "g2_obj.h"
+    #include "g2obj.h"
   
     namespace glib {
 

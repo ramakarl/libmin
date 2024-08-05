@@ -1,7 +1,7 @@
 
 #include "string_helper.h"
 #include "imagex.h"
-#include "g2_textbox.h"
+#include "g2textbox.h"
 #include "gxlib.h"
 
 using namespace glib;

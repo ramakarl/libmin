@@ -11,7 +11,7 @@
 #ifndef DEF_GI_TEXTBOX
     #define DEF_GI_TEXTBOX
     
-    #include "g2_obj.h"
+    #include "g2obj.h"
     #include "imagex.h"
   
     namespace glib {

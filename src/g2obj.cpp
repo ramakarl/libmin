@@ -2,7 +2,7 @@
 #include "string_helper.h"
 #include "imagex.h"
 
-#include "g2_obj.h"
+#include "g2obj.h"
 using namespace glib;
 
 

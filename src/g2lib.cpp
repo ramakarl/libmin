@@ -6,8 +6,8 @@
 #include "string_helper.h"
 
 #include "g2lib.h"
-#include "g2_grid.h"
-#include "g2_textbox.h"
+#include "g2grid.h"
+#include "g2textbox.h"
 
 
 using namespace glib;

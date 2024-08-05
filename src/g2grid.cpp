@@ -1,5 +1,5 @@
 
-#include "g2_grid.h"
+#include "g2grid.h"
 #include "gxlib.h"
 
 using namespace glib;
