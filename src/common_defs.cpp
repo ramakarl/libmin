@@ -492,11 +492,11 @@ void checkMem(xlong& total, xlong& used, xlong& app)
         glGetFloatv(GL_VIEWPORT, screen);
 
         glBindVertexArray(gTex.vbo[2]);                                // Select shader
-        checkGL("glBindVertexArray");
+        //checkGL("renderTexGL::glBindVertexArray");
 
         int s = 0;      // shader #
         glUseProgram(gTex.prog[s]);
-        checkGL("glUseProgram");
+        //checkGL("renderTexGL::glUseProgram");
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
@@ -506,21 +506,21 @@ void checkMem(xlong& total, xlong& used, xlong& app)
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, glid1);
         glUniform1i(gTex.utex1[s], 0);
-        checkGL("glBindTexture");
+        //checkGL("renderTexGL::glBindTexture");
 
         glBindBuffer(GL_ARRAY_BUFFER, gTex.vbo[0]);                     // Select VBO	
         glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(nvVertex), 0);
         glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)12);
         glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)24);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gTex.vbo[1]);
-        checkGL("glBindBuffer");
+        //checkGL("renderTexGL::glBindBuffer");
 
         int flags = inv1;
         glUniform1i(gTex.utexflags[s], flags);    // inversion flag
 
         glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, 1);
 
-        checkGL("renderTexGL");
+        //checkGL("renderTexGL::renderTexGL");
         glUseProgram(0);
         glDepthMask(GL_TRUE);
     }
@@ -532,11 +532,11 @@ void checkMem(xlong& total, xlong& used, xlong& app)
         glDepthMask(GL_FALSE);
 
         glBindVertexArray(gTex.vbo[2]);                                // Select shader
-        checkGL("glBindVertexArray");
+        //checkGL("compositeTexGL::glBindVertexArray");
 
         int s = 0;  // shader #
         glUseProgram(gTex.prog[s]);
-        checkGL("glUseProgram");
+        //checkGL("compositeTexGL::glUseProgram");
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
@@ -550,21 +550,21 @@ void checkMem(xlong& total, xlong& used, xlong& app)
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, glid2);
         glUniform1i(gTex.utex2[s], 1);
-        checkGL("glBindTexture");
+        //checkGL("compositeTexGL::glBindTexture");
 
         glBindBuffer(GL_ARRAY_BUFFER, gTex.vbo[0]);                     // Select VBO	
         glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(nvVertex), 0);
         glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)12);
         glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)24);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gTex.vbo[1]);
-        checkGL("glBindBuffer");
+        //checkGL("compositeTexGL::glBindBuffer");
 
         int flags = inv1 | (inv2 << 1) | 4;
         glUniform1i(gTex.utexflags[s], flags);    // inversion flag
 
         glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, 1);
 
-        checkGL("compositeTexGL");
+        //checkGL("compositeTexGL::compositeTexGL");
         glUseProgram(0);
         glDepthMask(GL_TRUE);
 
