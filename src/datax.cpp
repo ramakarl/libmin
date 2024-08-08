@@ -74,8 +74,20 @@ int DataX::AddBuffer ( int userid, std::string name, ushort stride, uint64_t max
 	// add to buffer list
 	int b = (int) mBuf.size();		
 	mBuf.push_back ( buf );
+	mName.push_back ( name );
 	mRef[ userid ] = b;
 	return b;
+}
+
+int DataX::FindBuffer(std::string name)
+{
+	// slow
+	for (int n = 0; n < mBuf.size(); n++) {
+		if (mName[n].compare(name) == 0) {
+			return mBuf[n].mRefID;
+		}
+	}
+	return -1;
 }
 
 // delete buffer from list
@@ -85,6 +97,7 @@ void DataX::DeleteBuffer(int i)
 	
 	// *NOTE*: For now mBuf[b] remains in mBuf list. Need to erase from list and fix mRef indexes	
 	mBuf[b].Clear ();
+  mName[b] = "DELETED";
 	
 	mRef[i] = BUNDEF;
 }

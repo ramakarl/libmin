@@ -138,6 +138,7 @@
 			int			GetBufSize ( int i )			{ int b=mRef[i]; return (b==BUNDEF) ? 0 : mBuf[b].mNum*mBuf[b].mStride; }		 			
 			char*		GetElem(int i, int ndx)			{ int b=mRef[i]; return (b==BUNDEF) ? 0 : mBuf[b].mCpu + ndx * mBuf[b].mStride; }
 			char*		GetElemFast(char* bufdata, int stride, int ndx)		{ return bufdata + ndx * stride; }
+			int			getUsage(int i)	 { int b=mRef[i]; return (b==BUNDEF) ? DT_NONE : mBuf[b].mUseType; }
 
 			// Element access
 			void		SetElem	     ( int i, int n, void* val )		{ int b=mRef[i]; if (b==BUNDEF) return; memcpy ( mBuf[b].mCpu + n*mBuf[b].mStride, val, mBuf[b].mStride); }
@@ -221,8 +222,10 @@
 
 		public:
 		
-			std::vector< DataPtr >	mBuf;				// list of buffers
-			int						mRef[REF_MAX];
+			int						mRef[REF_MAX];				// indirect indexing
+
+			std::vector< DataPtr >			mBuf;		// list of buffers
+			std::vector< std::string >	mName;	// buffer names			
 
 			#ifdef USE_CUDA
 			  // CUDA member vars

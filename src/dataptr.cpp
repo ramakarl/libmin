@@ -29,8 +29,28 @@
 	#include "common_cuda.h"
 #endif
 
-
 int DataPtr::mFBO = -1;
+
+int getTypeSize(uchar dtype)
+{
+  int sz = 0;
+  switch (dtype) {
+  case DT_UCHAR:    sz = sizeof(uchar); break;
+  case DT_UCHAR3:   sz = 3 * sizeof(uchar); break;
+  case DT_USHORT3:  sz = 3 * sizeof(ushort); break;
+  case DT_UCHAR4:   sz = 4 * sizeof(uchar); break;
+  case DT_USHORT:   sz = sizeof(ushort); break;
+  case DT_INT:      sz = sizeof(int); break;
+  case DT_UINT:     sz = sizeof(unsigned int); break;
+  case DT_UINT64:   sz = sizeof(xlong); break;
+  case DT_FLOAT:    sz = sizeof(float); break;
+  case DT_FLOAT4:   sz = 4 * sizeof(float); break;
+  default:
+    dbgprintf ( "*** ERROR: getTypeSize unknown type %d\n", int(dtype) );
+    assert(0);
+  };  
+  return sz;
+}
 
 DataPtr::~DataPtr()
 {
@@ -72,24 +92,6 @@ void DataPtr::Clear ()
   mCpu = 0;
   mGLID = -1;
   mNum = 0; mMax = 0; mSize = 0;
-}
-
-
-int DataPtr::getStride ( uchar dtype )
-{
-  int bpp = dtype;
-  switch (dtype) {
-  case DT_UCHAR:    bpp = 1; break;
-  case DT_UCHAR3:   bpp = 3; break;
-  case DT_USHORT3:  bpp = 6; break;
-  case DT_UCHAR4:   bpp = 4; break;
-  case DT_USHORT:   bpp = 2; break;
-  case DT_UINT:     bpp = 4; break;
-  case DT_UINT64:   bpp = 8; break;
-  case DT_FLOAT:    bpp = 4; break;
-  case DT_FLOAT4:   bpp = 16; break;
-  };
-  return bpp;
 }
 
 

@@ -35,6 +35,7 @@
 	#endif
 
 	#define DT_MISC			0
+	#define DT_NONE			0
 	#define DT_UCHAR		1		// 8-bit
 	#define DT_USHORT		2		// 16-bit,  1 chan @ 16-bit
 	#define DT_UCHAR3		3		// 24-bit,  3 chan @  8-bit
@@ -44,7 +45,7 @@
 	#define DT_UINT			6		// 32-bit,  1 chan @ 32-bit 
 	#define DT_FLOAT		7		// 32-bit,  1 chan @ 32-bit (float)
 
-	#define DT_USHORT3		8		//  48-bit, 3 chan @ 16-bit
+	#define DT_USHORT3	8		//  48-bit, 3 chan @ 16-bit
 	#define DT_UINT64		9		//  64-bit, 1 chan @ 64-bit
 	#define DT_FLOAT3		12		//  96-bit, 3 chan @ 32-bit (float)
 	#define DT_FLOAT4		16	    // 128-bit, 4 chan @ 32-bit (float)
@@ -57,6 +58,7 @@
 	#define DT_GLTEX		16	
 	#define DT_GLVBO		32
 
+	HELPAPI int getTypeSize(uchar dtype);
 
 	class HELPAPI DataPtr {
 	public:
@@ -85,7 +87,7 @@
 		void			Clear ();
 
 		// Data access
-		int				getStride ( uchar dtype );
+		int				getUsage ()		{ return mUseType; }				
 		uint64_t		getDataSz ( int cnt, int stride )	{ return (uint64_t) cnt * stride; }
 		int				getNum()	{ return mNum; }
 		int				getMax()	{ return mMax; }
