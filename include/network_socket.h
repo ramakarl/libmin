@@ -43,29 +43,46 @@
 		typedef int SOCKET;
     #endif
 
+	#ifdef BUILD_OPENSSL
+		#include <openssl/bio.h>					// MP: Same cross-platform ? Tentative: Yes
+		#include <openssl/ssl.h>
+		#include <openssl/err.h>
+	#endif
+
 	#include "event_system.h"
 
-	#define NET_ERR				-1
-	#define NET_CLI				0				// sides
-	#define	NET_SRV				1	
-	#define NET_TCP				0				// modes
-	#define NET_UDP				1	
-	#define NET_ANY				0				// types
-	#define NET_BROADCAST		1		
-	#define NET_SEARCH			2	
-	#define NET_CONNECT			3	
+	#define NET_ERR						-1
+	
+	#define NET_CLI						0 // sides
+	#define	NET_SRV						1	
+	
+	#define NET_TCP						0 // modes
+	#define NET_UDP						1	
+	
+	#define NET_SECURITY_UNDEF			0 // security types
+	#define NET_SECURITY_FAIL			1 
+	#define NET_SECURITY_PLAIN_TCP		2
+	#define NET_SECURITY_OPENSSL		4
+	#define NET_SECURITY_DTLS			8
+	
+	#define NTYPE_ANY					0 // types
+	#define NTYPE_BROADCAST				1		
+	#define NTYPE_SEARCH				2	
+	#define NTYPE_CONNECT				3	
 
-	#define NET_OFF				4				// stats
-	#define NET_ENABLE			5
-	#define NET_CONNECTED		6
-	#define NET_TERMINATED		7
+	#define STATE_NONE					0 // stats
+	#define STATE_START					1
+	#define STATE_SSL_HANDSHAKE			2
+	#define STATE_CONNECTED				3
+	#define STATE_FAILED				4
+	#define STATE_TERMINATED			5
 	
 
 	// Network Address Abstraction
 	struct HELPAPI NetAddr {
 	public:
         NetAddr ( int t, std::string n, netIP i, int p ) { type = t; name = n; ipL = i; convertIP(i); port = p;}
-		NetAddr ()  { type = NET_OFF; name = ""; ipL = 0; convertIP(0); port = 0; }
+		NetAddr ()  { type = STATE_NONE; name = ""; ipL = 0; convertIP(0); port = 0; }
 
 		void convertIP ( netIP i ) {
 #ifdef _WIN32
@@ -95,16 +112,32 @@
 
 	// Network Socket Abstraction
 	struct HELPAPI NetSock {
-		eventStr_t				sys;			// system
-		char					side;			// side (client, server)
-		char					mode;			// mode (TCP, UDP)		
-		char					status;			// stat (off, connected)
-		timeval					timeout;		
-		NetAddr					src;			// source socket (ip, port, name, sockID)		
-		NetAddr					dest;			// dest socket (ip, port, name, sockID)	
-		SOCKET					socket;			// hard socket
-		bool					blocking;		// is blocking
-		bool					broadcast;		// is broadcast
+		eventStr_t			sys;				// system
+		char				side;				// side (client, server)
+		char				mode;				// mode (TCP, UDP)		
+		char				state;				// stat (off, connected)
+		timeval				timeout;		
+		NetAddr				src;				// source socket (ip, port, name, sockID)		
+		NetAddr				dest;				// dest socket (ip, port, name, sockID)	
+		SOCKET				socket;				// hard socket
+		bool				blocking;			// is blocking
+		bool				broadcast;			// is broadcast
+		int 				security; 			// indicates the security level; e.g., OpenSSL
+		int 				reconnectLimit; 	// limits the number of reconnection attempts 
+		int 				reconnectBudget; 	// remaining allowed reconnect attempts
+		TimeX 				lastStateChange;    // for tracking when timeouts should occur
+		
+		char* txBuf;
+		int txBufLimit;
+		int txPktSize;
+		int txSoFar;
+		
+		std::string srvAddr;
+		int srvPort;
+		
+		SSL_CTX 				*ctx; 			// MP: Need to read up on these before commenting; Same cross-platform ? Tentative: Yes
+		SSL 					*ssl;			// MP:
+		BIO 					*bio;			// MP:
 	};
 
 

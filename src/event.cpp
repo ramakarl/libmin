@@ -425,22 +425,21 @@ char* Event::serialize ()
 	return serial_data;
 }
 
-void Event::deserialize (char* buf, int len )
+void Event::deserialize (char* buf, int serial_len )
 {
-	// NOTE: Incoming data includes the serialized event header
-	//  (so, we cannot use attachBuf to do this)
-	char* serial_data = mData - Event::staticSerializedHeaderSize();
-	int serial_len = len;		// incoming length is the actual buffer size from network (amount of data)
+	// NOTE: Incoming buffer includes serialized event header. Serial length is payload + header.	
+	const int hsz = Event::staticSerializedHeaderSize();
 
-	memcpy ( serial_data, buf, serial_len );
+	// Transfer payload into mData pointer
+	// mData is allocated with extra header space for serialization. See: new_event_data
+	memcpy ( mData - hsz, buf, serial_len );
 
-	// Transfer serialized header into member variables
-	char* header = (char*) this + Event::staticOffsetLenInfo();
-	memcpy ( header, serial_data, Event::staticSerializedHeaderSize() );
+	// Transfer serialized header into Event pointer (not the same as mData pointer)
+	memcpy ( (char*) this + Event::staticOffsetLenInfo(), buf, hsz );
 
-	mDataLen = len -  Event::staticSerializedHeaderSize();
-
-	mPos = (serial_data + Event::staticSerializedHeaderSize()) + mDataLen;
+	// Update payload length and read/write pos
+	mDataLen = serial_len - hsz;
+	mPos =		mData + mDataLen;
 }
 
 void Event::setTime ( unsigned long t )
