@@ -52,6 +52,7 @@ int getTypeSize(uchar dtype)
   return sz;
 }
 
+
 DataPtr::~DataPtr()
 {
 	// must be explicitly freed

@@ -136,8 +136,9 @@ public:
 	// Event processing
 	void netProcessEvents ( Event& e );
 	int netProcessQueue ( void );
-	void netResetRecvBuf ( );
-	void netResizeRecvBuf ( int len );
+	void netResetBufs ();
+	void netResetBuf ( char*& buf, char*& ptr, int& len);
+	void netExpandBuf ( char*& buf, char*& ptr, int& max, int& len, int new_max );
 	void netReceiveData ( int sock_i );
 	void netReceiveByInjectedBuf ( int sock_i, char* buf, int buflen );
 	void netDeserializeEvents ( int sock_i );
@@ -156,8 +157,7 @@ public:
 	bool		isServer ( )					{ return m_hostType == 's'; }
 	bool		isClient ( )					{ return m_hostType == 'c'; }
 	bool 		netIsQueueEmpty ( )		{ return m_eventQueue.size ( ) == 0; }
-	netIP		getHostIP ( )					{ return m_hostIp; }
-	int			getMaxPacketLen ( )		{	return m_maxPacketLen; }
+	netIP		getHostIP ( )					{ return m_hostIp; }	
 	EventPool*  getNetPool ( )		{ return m_eventPool; }
 	
 	NetSock*	getSock ( int sock_i )			{ return VALID_INDEX(sock_i) ? &m_socks[ sock_i ] : 0; }
@@ -202,7 +202,7 @@ private: // Functions
 	// Low level handling of sockets
 	void netStartSocketAPI ( );
 	void netSetHostname ( );
-	int netSocketAdd ( int sock_i );
+	int netSocketCreate ( int sock_i );
 	int netSocketBind ( int sock_i );	
 	int netSocketConnect ( int sock_i );
 	int netSocketListen ( int sock_i );
@@ -256,21 +256,6 @@ private: // State
 	// Event related
 	EventPool* m_eventPool; 
 	EventQueue m_eventQueue;
-
-	// Incoming event data
-	int	m_dataLen;
-	int	m_eventLen;
-	Event m_event; // Incoming event
-
-	// Network buffers
-	int m_packetLen;
-	int m_packetCounter;
-	char* m_packetPtr;
-	char m_packetBuf[ NET_BUFSIZE ];
-	char* m_recvPtr;
-	char* m_recvBuf;
-	int m_recvLen, m_recvMax;
-	int	m_maxPacketLen;
 	
 	// Debug and trace related
 	int	m_check;

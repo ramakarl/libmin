@@ -112,32 +112,51 @@
 
 	// Network Socket Abstraction
 	struct HELPAPI NetSock {
-		eventStr_t			sys;				// system
-		char				side;				// side (client, server)
-		char				mode;				// mode (TCP, UDP)		
-		char				state;				// stat (off, connected)
-		timeval				timeout;		
-		NetAddr				src;				// source socket (ip, port, name, sockID)		
-		NetAddr				dest;				// dest socket (ip, port, name, sockID)	
-		SOCKET				socket;				// hard socket
-		bool				blocking;			// is blocking
-		bool				broadcast;			// is broadcast
-		int 				security; 			// indicates the security level; e.g., OpenSSL
-		int 				reconnectLimit; 	// limits the number of reconnection attempts 
-		int 				reconnectBudget; 	// remaining allowed reconnect attempts
-		TimeX 				lastStateChange;    // for tracking when timeouts should occur
+		eventStr_t sys;					// system
+		char			side;					// side (client, server)
+		char			mode;					// mode (TCP, UDP)		
+		char			state;				// stat (off, connected)
+		timeval		timeout;		
+		NetAddr		src;					// source socket (ip, port, name, sockID)		
+		NetAddr		dest;					// dest socket (ip, port, name, sockID)	
+		SOCKET		socket;				// hard socket
+		bool			blocking;			// is blocking
+		bool			broadcast;		// is broadcast
+		int 			security; 		// indicates the security level; e.g., OpenSSL
+		int 			reconnectLimit;  // limits the number of reconnection attempts 
+		int 			reconnectBudget; // remaining allowed reconnect attempts
+		TimeX 		lastStateChange; // for tracking when timeouts should occur
 		
-		char* txBuf;
-		int txBufLimit;
-		int txPktSize;
-		int txSoFar;
+		// Outgoing buffers
+		char*			txBuf;					// transmit buffer (per socket)
+		char*			txPtr;				
+		int				txPktSize;
+		int				txLen;					// transmit so far
+		int				txMax;					// transmit max (expandable)
+
+		// Incoming buffers
+		char*			rxBuf;					// receive buffer (per socket)
+		char*			rxPtr;				
+		int				rxLen;					// recv so far
+		int				rxMax;					// recv max (expandable)		
+
+		// Incoming packets & event
+		int				eventLen;
+		Event			event;					// deserialized event	
+		char*			pktBuf;					// current packet
+		char*			pktPtr;					// packet offset
+		int				pktLen;
+		int				pktMax;
+		int				pktCounter;		
+
+		
 		
 		std::string srvAddr;
 		int srvPort;
 		
-		SSL_CTX 				*ctx; 			// MP: Need to read up on these before commenting; Same cross-platform ? Tentative: Yes
-		SSL 					*ssl;			// MP:
-		BIO 					*bio;			// MP:
+		SSL_CTX 	*ctx;			// MP: Need to read up on these before commenting; Same cross-platform ? Tentative: Yes
+		SSL 			*ssl;			// MP:
+		BIO 			*bio;			// MP:
 	};
 
 
