@@ -62,6 +62,7 @@
 	float strToDateF(std::string s, int mp, int mc, int dp, int dc, int yp, int yc)
 	{
 		// default format: mm-dd-yyyy
+		if (s.empty()) return DATE_NULL;
 		TimeX t;
 		return t.SetDateF(s, mp, mc, dp, dc, yp, yc);
 	}

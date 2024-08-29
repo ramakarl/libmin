@@ -170,6 +170,8 @@
 
 		#define NSEC_SCALAR		1
 
+		#define DATE_NULL		-10000.0f
+
 		class HELPAPI TimeX {
 		public:
 			TimeX ();

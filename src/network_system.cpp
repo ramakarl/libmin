@@ -774,7 +774,7 @@ void NetworkSystem::netServerCompleteConnection ( int sock_i )
 	e.attachInt ( sock_i );			// Connection ID (goes back to the client)
 	netSend ( e, sock_i );			// Send TCP connected event to client
 
-	netPrintf(PRINT_VERBOSE, "    Sent sOkT event to client." );
+	netPrintf(PRINT_VERBOSE, "  Sent sOkT event to client." );
 
 	// Send verify event to server
 	Event ue = new_event ( 120, 'app ', 'sOkT', 0, m_eventPool ); // Inform the user-app (server) of the event	
@@ -980,8 +980,6 @@ void NetworkSystem::netClientStart ( netPort cli_port, str srv_addr )
 {
 
 	TRACE_ENTER ( (__func__) );
-	
-	netPrintf ( PRINT_ERROR, "Just testing: REMOVE THIS" ); // TODO
 	
 	eventStr_t sys = 'net '; 
 	m_hostType = 'c'; // Network System is running in client mode
@@ -1307,9 +1305,11 @@ void NetworkSystem::netProcessEvents ( Event& e )
 			// Client has exited from this server.
 			int local_sock_i = e.getUInt ( ); // Socket to close
 			int remote_sock = e.getUInt ( ); // Remote socket
-			netIP cli_ip = m_socks[ local_sock_i ].dest.ipL;
-			netPrintf ( PRINT_VERBOSE_HS, "SRV: Client %s closed OK", getIPStr ( cli_ip ).c_str ( ) );
-			netManageTransmitError ( local_sock_i, "client closed ok");
+			if (!invalid_socket_index(local_sock_i)) {	
+				netIP cli_ip = m_socks[ local_sock_i ].dest.ipL;
+				netPrintf ( PRINT_VERBOSE_HS, "SRV: Client %s closed OK", getIPStr ( cli_ip ).c_str ( ) );
+				netManageTransmitError ( local_sock_i, "client closed ok");
+			}
 			netList ( );
 			break;
 		}
@@ -1651,7 +1651,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 	s.pktPtr = s.pktBuf;			// recv packet itself is atomic, start at beginning
 
 	while ( s.pktLen > 0 ) {
-		if ( s.rxLen == 0 && s.pktLen > header_sz ) { // Check for new or partial event
+		if ( s.rxLen == 0 && s.pktLen >= header_sz ) { // Check for new or partial event
 			
 			// Start of new event, retrieve total event length from encoded header
 			s.eventLen = *((int*)(s.pktPtr + Event::staticOffsetLenInfo())) + Event::staticSerializedHeaderSize ( );
@@ -1691,7 +1691,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 			s.pktPtr += s.pktLen;								// consume remaining buffer len bytes
 			s.pktLen = 0;
 
-			if (s.rxLen > header_sz && s.eventLen == 0 )  {
+			if (s.rxLen >= header_sz && s.eventLen == 0 )  {
 				s.eventLen = *((int*)(s.rxBuf + Event::staticOffsetLenInfo())) + Event::staticSerializedHeaderSize();				
 			}
 		}
@@ -2376,6 +2376,8 @@ bool NetworkSystem::netSocketIsConnected ( int sock_i )
 
 bool NetworkSystem::netSocketIsSelected ( fd_set* sockSet, int sock_i )
 {
+	if ( invalid_socket_index ( sock_i ) ) return false;
+
 	NetSock& s = m_socks[ sock_i ];
 	if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_SSL_HANDSHAKE ) { 
 		return FD_ISSET ( s.socket, sockSet );

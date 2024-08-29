@@ -564,6 +564,9 @@ bool Application::appStartWindow (void* arg1, void* arg2, void* arg3, void* arg4
     char title[1024];
     strcpy(title, m_title.c_str());
 
+    // Set console title
+    SetConsoleTitle ( title );
+
     //-- Create OS Window
     m_win->_hWnd = CreateWindowEx( styleEx, "MY_WINDOWS_CLASS",
         title, style, 0, 0, sx, sy, NULL, NULL, m_win->_hInstance, (LPVOID)NULL);

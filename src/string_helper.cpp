@@ -97,6 +97,7 @@ bool isFloat (std::string s) {
 
 float strToF (std::string s) {
   //return ::atof ( s.c_str() );
+  if (s.at(0)=='n') return std::numeric_limits<float>::quiet_NaN();
   std::istringstream str_stream ( s );
   float x;
   if (str_stream >> x) return x;    // this is the correct way to convert std::string to float, do not use atof
