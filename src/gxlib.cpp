@@ -343,24 +343,24 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	}
 }
 
-Vec2F glib::getTextPix (std::string msg, Vec4F view )
+bool glib::getTextDim (std::string msg, Vec4F view, Vec2F& px, Vec2F& sz )
 {
 	int len = (int) msg.size();
-	if (len == 0)	return Vec2F(0,0);
+	if (len == 0)	{	px.Set(0,0); sz.Set(0,0);	return false; }
 
 	// get current font
 	gxFont& font = gx.getCurrFont();	
 	float textDel = gx.m_text_hgt / font.ascent;		// glyph scale
 	
-	gxGlyph& gly = font.glyphs[ 'A' ];				// estimate width using fix char
-	Vec2F sz;
+	// world size of text
+	gxGlyph& gly = font.glyphs[ 'a' ];				// estimate width using fix char	
 	sz.x = len * (gly.advance + gx.m_text_kern) * textDel;
 	sz.y = font.ascent * textDel;
 
-	sz.x *= gx.m_Xres / (view.z - view.x);
-	sz.y *= gx.m_Yres / (view.w - view.y);
+	// world space to pixels
+	px = sz * Vec2F(gx.m_Xres / (view.z - view.x), gx.m_Yres / (view.w - view.y) );
 
-	return sz;
+	return true;
 }
 
 void glib::setTextPix(float hgt, Vec4F view)
