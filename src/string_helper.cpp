@@ -292,6 +292,7 @@ bool strGet ( const std::string& str, std::string lsep, std::string rsep, std::s
 }
 
 
+
 // SplitLeft
 //
 // WARNING, this skips over separators at the front of the string
@@ -709,24 +710,26 @@ std::string strRight ( std::string str, int n )
   return str.substr ( str.length()-n, n );
 }
 
-std::string strLeftOf ( std::string str, std::string sep )
+std::string strLeftOf ( std::string str, uchar sep )
 {
-  size_t f0 = str.find_first_of(sep);
-  if ( f0 == std::string::npos ) return str;
-  return str.substr(0, f0);
+  size_t f0;
+  f0 = str.find ( sep );
+  if ( f0 == std::string::npos) return str;
+  return str.substr(0, f0);  
 }
-std::string strMidOf ( std::string str, std::string sep )
+std::string strMidOf ( std::string str, uchar sep )
 {
-  size_t f0 = str.find_first_of(sep);
-  size_t f1 = str.find_last_of(sep);
+  size_t f0 = str.find (sep);
+  size_t f1 = str.rfind (sep);
   if ( f0 == std::string::npos || f1==std::string::npos) return "";
   return str.substr(f0+1, f1-f0-1);
 }
-std::string strRightOf ( std::string str, std::string sep )
+std::string strRightOf ( std::string str, uchar sep )
 {
-  size_t f0 = str.find_last_of(sep);
-  if ( f0 == std::string::npos ) return "";
-  return str.substr( f0 + sep.length() );
+  size_t f1;
+  f1 = str.rfind ( sep );
+  if ( f1 == std::string::npos) return str;
+  return str.substr(f1+1);  
 }
 
 int strExtract ( std::string& str, std::vector<std::string>& list )

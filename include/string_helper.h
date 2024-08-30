@@ -77,8 +77,7 @@
 	HELPAPI bool		strFileSplit(std::string str, std::string& path, std::string& name, std::string& ext);
 	HELPAPI int			strSplitMultiple(std::string str, std::string sep, std::vector<std::string>& list);		// obj1,obj2,obj3.. list={ob1, obj2, obj3}
 
-	//----------- String returns
-
+	//----------- String returns	
 	HELPAPI std::string strSplitLeft ( std::string& str, std::string sep );											// "left,right" --> return "left", str="right"
 	HELPAPI std::string strSplitRight ( std::string& str, std::string sep );										// "left,right" --> return "right", str="left"	
 	HELPAPI std::string strParseOut(std::string& str, std::string lsep, std::string rsep = " ");					// "data<1492> | time", <> --> return 1492, str="date | time"
@@ -106,9 +105,9 @@
 	HELPAPI std::string strTrim ( std::string str, std::string ch );
 	HELPAPI std::string strLeft ( std::string str, int n );
 	HELPAPI std::string strRight ( std::string str, int n );
-	HELPAPI std::string strLeftOf ( std::string str, std::string sep );
-	HELPAPI std::string strMidOf ( std::string str, std::string sep );
-	HELPAPI std::string strRightOf ( std::string str, std::string sep );
+	HELPAPI std::string strLeftOf ( std::string str, uchar sep );			// string left of separator
+	HELPAPI std::string strMidOf ( std::string str, uchar sep );
+	HELPAPI std::string strRightOf ( std::string str, uchar sep );
 	
 	// alphanumeric
 	HELPAPI bool strIsNum ( std::string str, float& f );

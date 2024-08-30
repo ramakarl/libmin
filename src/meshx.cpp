@@ -1126,27 +1126,27 @@ bool MeshX::LoadObj ( const char* fname, float scal )
 				bNeedNormals = false;
 				fargs.clear ();
 				strSplitMultiple ( strline, " \n", fargs);	
-				v[0] = strToI ( strLeftOf ( fargs[0], "/") )-1;
-				n[0] = strToI ( strRightOf( fargs[0], "/") )-1;
-				v[1] = strToI ( strLeftOf ( fargs[1], "/") )-1;
-				n[1] = strToI ( strRightOf( fargs[1], "/") )-1;
-				v[2] = strToI ( strLeftOf ( fargs[2], "/") )-1;
-				n[2] = strToI ( strRightOf( fargs[2], "/") )-1;
+				v[0] = strToI ( strLeftOf ( fargs[0], '/') )-1;
+				n[0] = strToI ( strRightOf( fargs[0], '/') )-1;
+				v[1] = strToI ( strLeftOf ( fargs[1], '/') )-1;
+				n[1] = strToI ( strRightOf( fargs[1], '/') )-1;
+				v[2] = strToI ( strLeftOf ( fargs[2], '/') )-1;
+				n[2] = strToI ( strRightOf( fargs[2], '/') )-1;
 				t[0] = -1; t[1] = -1; t[2] = -1;
 				
 			} else if (strline.find("/")!=std::string::npos) {	  // face line: f v/t/n v/t/n v/t/n
 				bNeedNormals = false;
 				fargs.clear ();
 				strSplitMultiple ( strline, " \n", fargs);	
-				v[0] = strToI ( strLeftOf ( fargs[0], "/") )-1;
-				t[0] = strToI ( strMidOf  ( fargs[0], "/") )-1;
-				n[0] = strToI ( strRightOf( fargs[0], "/") )-1;
-				v[1] = strToI ( strLeftOf ( fargs[1], "/") )-1;
-				t[1] = strToI ( strMidOf  ( fargs[1], "/") )-1;
-				n[1] = strToI ( strRightOf( fargs[1], "/") )-1;
-				v[2] = strToI ( strLeftOf ( fargs[2], "/") )-1;
-				t[2] = strToI ( strMidOf  ( fargs[2], "/") )-1;
-				n[2] = strToI ( strRightOf( fargs[2], "/") )-1;	
+				v[0] = strToI ( strLeftOf ( fargs[0], '/') )-1;
+				t[0] = strToI ( strMidOf  ( fargs[0], '/') )-1;
+				n[0] = strToI ( strRightOf( fargs[0], '/') )-1;
+				v[1] = strToI ( strLeftOf ( fargs[1], '/') )-1;
+				t[1] = strToI ( strMidOf  ( fargs[1], '/') )-1;
+				n[1] = strToI ( strRightOf( fargs[1], '/') )-1;
+				v[2] = strToI ( strLeftOf ( fargs[2], '/') )-1;
+				t[2] = strToI ( strMidOf  ( fargs[2], '/') )-1;
+				n[2] = strToI ( strRightOf( fargs[2], '/') )-1;	
 
 			} else {												// input line: f v v v
 
