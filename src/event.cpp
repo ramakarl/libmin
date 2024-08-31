@@ -19,6 +19,11 @@
 
 static char mbuf [ 16384 ];
 
+extern char* new_event_data ( size_t size, int& max, EventPool* pool, eventStr_t name, const char* msg=0 );
+extern void free_event_data ( char*& data, EventPool* pool, eventStr_t name, int cid, const char* msg=0 );
+extern void free_event ( Event& e, const char* msg=0 );
+extern void expand_event ( Event& e, size_t size );
+extern int event_alloc;
 
 eventStr_t strToName (std::string str )
 {
@@ -43,20 +48,45 @@ std::string nameToStr ( eventStr_t name )			// static function
 	return std::string ( buf );
 }
 
-Event::Event ()
+Event::Event () : Event ( 0, 0 )
 {
-	memcpy(mScope, "emem", 4); mScope[4]='\0';
+}
+
+Event::Event ( size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool, const char* msg  )
+{
+	mTimeStamp = 0;
 	mRefs = 0;
-	mTarget = 0;
-	mName = 0;
+	mTargetID = NULL_TARGET;
+	mTarget = targ;
+	mName = name;
 	mDataLen = 0;
-	mMax = 0;
-	bOwn = false;
-	bDestroy = false;
+	mCID = event_alloc;			// creation ID
+	
+	mData = new_event_data ( size, mMax, pool, name, msg );	  // payload allocation	
+	memset ( mData, 'E', mMax );
+	
+	mOwner = pool;
+	bOwn = true;					// event retains ownership
+	bDestroy = true;			
+	mPos = mData;
+}
+
+Event::Event ( eventStr_t target, eventStr_t name)
+{	
+	memcpy(mScope, "emem", 4); mScope[4]='\0';
+	mTimeStamp = 0;
+	mRefs = 0;
+	mTargetID = NULL_TARGET;
+	mTarget = target;
+	mName = name;
+	mDataLen = 0;
+	mMax = 0;	
 	mData = 0x0;
 	mPos = 0x0;	
 	mOwner = 0x0;
-	mConnection = -1;
+	mCID = -1;
+	bOwn = false;
+	bDestroy = false;
 
 	// check member variable structure (important!)
 	int headersz = (char*) &mData - (char*) &mDataLen;
@@ -66,66 +96,124 @@ Event::Event ()
 	}
 }
 
+void Event::copyEventVars ( Event* dst, const Event* src )
+{
+	// this is NOT a deep copy. the data pointed to by mData is NOT copied.
+	// only the member variables reference to data are transferred.	
+	dst->mName = src->mName;
+	dst->mTarget = src->mTarget;
+	dst->mCID = src->mCID;
+	dst->mTimeStamp = src->mTimeStamp;	
+	dst->mRefs = src->mRefs;
+	dst->mSrcSock = src->mSrcSock;
+	dst->mTargetID = src->mTargetID;		
+	dst->mData = src->mData;
+	dst->mMax = src->mMax;	
+	dst->bOwn = src->bOwn;	
+	dst->bDestroy = src->bDestroy;
+	dst->mDataLen = src->mDataLen;
+	dst->mOwner = src->mOwner;
+	dst->mPos = mData;	
+	for (int n=0; n < 5; n++)
+		dst->mScope[n] = src->mScope[n];	
+}
+
+// called on return of func. eg. return ( evt );
 Event::Event ( const Event& src )
 {
-	copyEventVars ( this, &src );
+	copyEventVars ( this, &src );			
+	mData = src.mData;
+	bOwn = true;
+	bDestroy = true;
+}
+
+// called on direct assignment. eg. Event e = new_event (..)
+Event& Event::operator= ( Event& src )
+{
+	acquire ( src );		// transfer ownership	
+	return *this;
+}
+
+Event& Event::operator= ( Event* src )
+{
+	acquire ( *src );		// transfer ownership
+	return *this;
+}
+
+void Event::expand ( int size)
+{
+	expand_event ( *this, (size_t) size );
+}
+
+void Event::clear ()
+{
+	if ( mData != 0x0 ) {
+		memset ( mData, 'C', mMax );
+	} else {
+		mData = new_event_data ( mMax, mMax, mOwner, mName, "clear" );
+	}
+	mPos = 0;	
+}
+
+Event::~Event ()
+{
+	// only free if owned and destroyed
+	if ( bOwn && bDestroy && mData != 0x0 ) {
+		free_event_data ( mData, mOwner, mName, mCID, "~event" );		
+	}
+	// now out of scope
+	mData = 0x0;
+	mPos = 0;	
 	bOwn = false;
 	bDestroy = false;
 }
 
-extern void delete_event ( Event& e );
-
-Event::~Event ()
+// trigger free at next opportunity
+void Event::consume()
 {
-	delete_event ( *this );
+	bDestroy = true;
+}
+// persist data across func boundaries
+void Event::persist ()
+{
+	bDestroy = false;
 }
 
-
-
-void Event::copyEventVars ( Event* dst, const Event* src )
+void Event::copy ( Event& src )
 {
-	// this is NOT a deep copy. the data pointed to by mData is NOT copied.
-	// only the member variables reference to data are transferred.
-	dst->mDataLen = src->mDataLen;
-	dst->mName = src->mName;
-	dst->mTarget = src->mTarget;
-	dst->mConnection = src->mConnection;
-	dst->mTimeStamp = src->mTimeStamp;
-	dst->mData = src->mData;
-	dst->mRefs = src->mRefs;
-	dst->mSrcSock = src->mSrcSock;
-	dst->mTargetID = src->mTargetID;
-	dst->mMax = src->mMax;
-	dst->mOwner = src->mOwner;
-	dst->bOwn = src->bOwn;
-	dst->bDestroy = src->bDestroy;
-	for (int n=0; n < 5; n++)
-		dst->mScope[n] = src->mScope[n];
-	dst->mPos = src->mPos;
+	// deep copy
+	copyEventVars ( this, &src );
+	expand ( src.mDataLen );
+	memcpy ( mData, src.mData, src.mDataLen );
+	mDataLen = src.mDataLen;
+	mPos = mData;	
 }
 
-Event& Event::operator= ( const Event* src )
-{
-	copyEventVars ( this, src );	// dst.mData = src.mData. NOT a deep copy of payload		
-	bOwn = false;					// dest ownership
-	return *this;
-}
-// use this to pass Events between functions
-// - Events in local scope are returned using copy operator
-Event& Event::operator= ( const Event& src )
-{
-	copyEventVars ( this, &src );	// dst.mData = src.mData. NOT a deep copy of payload		
-	bOwn = false;					// dest ownership
-	return *this;
-}
-
+// acquire 
+// - there can be only one owner of event data at a time
+// - this func efficiently transfers ownership to another event (not a deep copy)
 void Event::acquire ( Event& src)
 {
-	copyEventVars ( this, &src );	// NOT a deep copy
-	bOwn = true;					// dest becomes new owner
-	src.bOwn = false;				// src no longer owner
-}
+	// any prior data on dest event is discarded
+	if ( bOwn && mData != 0x0 ) {
+		free_event_data ( mData, mOwner, mName, mCID, "~acq" );
+		mData = 0x0;
+	}	
+	// transfer memory ptrs
+	copyEventVars ( this, &src );		
 
+	// dest becomes new owner	(given the right to expand/reallocate)
+	mData = src.mData;
+	bOwn = true;		
+
+	// src must be detached from data (to avoid bad pointers)
+	src.mData = 0x0;
+	src.mPos = 0; 
+	src.mMax = 0;
+	src.mDataLen = 0;
+	src.bOwn = false;
+	src.bDestroy = false;
+}
 
 void Event::attachInt ( int i)
 {
@@ -345,7 +433,7 @@ bool Event::getBool ()
 
 std::string Event::getStr ()
 {
-	if ( mPos >= getData() + mDataLen ) return "EVENT OVERFLOW";
+	if ( mPos-mData >= mDataLen ) return "EVENT READ OVERFLOW";
 	int i = getInt ();
 	if ( i > mDataLen ) {
 		dbgprintf ("ERROR: Event string length is corrupt.\n");
@@ -363,7 +451,7 @@ std::string Event::getStr ()
 
 void Event::getStr (char* str)
 {
-	if ( mPos >= getData() + mDataLen ) {strcpy(str, "EVENT OVERFLOW"); return; }
+	if ( mPos-mData >= mDataLen ) {strcpy(str, "EVENT READ OVERFLOW"); return; }
 	int i = getInt ();
 	if ( i > 0 ) {
 		strncpy ( str, mPos, i ); str[i] = '\0';
@@ -427,6 +515,8 @@ char* Event::serialize ()
 
 void Event::deserialize (char* buf, int serial_len )
 {
+	int cid = mCID;		// save cid
+
 	// NOTE: Incoming buffer includes serialized event header. Serial length is payload + header.	
 	const int hsz = Event::staticSerializedHeaderSize();
 
@@ -440,17 +530,12 @@ void Event::deserialize (char* buf, int serial_len )
 	// Update payload length and read/write pos
 	mDataLen = serial_len - hsz;
 	mPos =		mData + mDataLen;
+
+	mCID = cid;			// restore cid
 }
 
 void Event::setTime ( unsigned long t )
 {
 	mTimeStamp.SetSJT ( t );
-}
-
-extern void expand_event ( Event& e, size_t size );
-
-void Event::expand ( int size)
-{
-	expand_event ( *this, (size_t) size );
 }
 

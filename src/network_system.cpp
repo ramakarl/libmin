@@ -418,6 +418,8 @@ NetworkSystem::NetworkSystem ( const char* trace_file_name )
 	m_check = 0;
 	m_indentCount = 0;
 	
+	m_eventPool = 0x0;			// default heap (not accelerated)
+
 
 	netPrintf(PRINT_VERBOSE, "SERIALIZED HEADER SIZE: %d\n", Event::staticSerializedHeaderSize());
 	
@@ -777,7 +779,7 @@ void NetworkSystem::netServerCompleteConnection ( int sock_i )
 	netPrintf(PRINT_VERBOSE, "  Sent sOkT event to client." );
 
 	// Send verify event to server
-	Event ue = new_event ( 120, 'app ', 'sOkT', 0, m_eventPool ); // Inform the user-app (server) of the event	
+	Event ue ( 120, 'app ', 'sOkT', 0, m_eventPool, "netSrvCompl" ); // Inform the user-app (server) of the event	
 	ue.attachInt ( sock_i );
 	ue.attachInt ( -1 ); // cli_sock not known
 	ue.startRead ( );
@@ -1220,19 +1222,19 @@ int NetworkSystem::netCloseConnection ( int sock_i )
 	NetSock& s = m_socks[ sock_i ];
 	if ( s.side == NET_CLI ) {		
 
-		Event e = netMakeEvent ( 'cEXT', 'net ' );
-		e.attachUInt ( m_socks [ sock_i ].dest.sock );
-		e.attachUInt ( sock_i ); 
-		netSend ( e );
+		Event ce = netMakeEvent ( 'cEXT', 'net ' );
+		ce.attachUInt ( m_socks [ sock_i ].dest.sock );
+		ce.attachUInt ( sock_i ); 
+		netSend ( ce );
 		netProcessQueue ( ); 	
 
 	} else { 
 
 		int dest_sock = s.dest.sock;
-		Event e = netMakeEvent ( 'sEXT', 'net ' );
-		e.attachUInt ( s.dest.sock ); 
-		e.attachUInt ( sock_i ); 
-		netSend ( e );
+		Event se = netMakeEvent ( 'sEXT', 'net ' );
+		se.attachUInt ( s.dest.sock ); 
+		se.attachUInt ( sock_i ); 
+		netSend ( se );
 		netProcessQueue ( );		
 	}
 	netManageTransmitError ( sock_i, "closed" ); // Terminate local socket	 
@@ -1294,11 +1296,13 @@ void NetworkSystem::netProcessEvents ( Event& e )
 			netPrintf(PRINT_VERBOSE, "SUCCESS %s. Client %s:%d (sock %d), To Server: %s:%d (sock %d)", ssl ? "OpenSSL" : "TCP", getIPStr(cli_ip).c_str(), cli_port, cli_sock, getIPStr(srv_ip).c_str(), srv_port, srv_sock);
 			netList();
 
-			Event e = new_event ( 120, 'app ', 'sOkT', 0, m_eventPool ); // Inform the user-app (client) of the event
-			e.attachInt ( srv_sock );
-			e.attachInt ( cli_sock );		
-			e.startRead ( );
-			(*m_userEventCallback) ( e, this ); // Send to application			
+			Event ce ( 120, 'app ', 'sOkT', 0, m_eventPool, "netProc" ); // Inform the user-app (client) of the event
+			ce.attachInt ( srv_sock );
+			ce.attachInt ( cli_sock );		
+			ce.startRead ( );
+
+			(*m_userEventCallback) ( ce, this ); // Send to application			
+
 			break;
 		} 
 		case 'cEXT': { 
@@ -1533,15 +1537,15 @@ int NetworkSystem::netDeleteSocket ( int sock_i, int force )
 	// Inform app of socket removal
 	if ( wasConnected ) {
 		if ( m_hostType == 's' ) {
-			Event e = new_event ( 120, 'app ', 'cFIN', 0, m_eventPool );
-			e.attachInt ( sock_i );
-			e.startRead ( );
-			(*m_userEventCallback) (e, this); // Send to application
+			Event se = new_event ( 120, 'app ', 'cFIN', 0, m_eventPool );
+			se.attachInt ( sock_i );
+			se.startRead ( );
+			(*m_userEventCallback) (se, this); // Send to application
 		} else {
-			Event e = new_event ( 120, 'app ', 'sFIN', 0, m_eventPool );
-			e.attachInt ( sock_i );
-			e.startRead ( );
-			(*m_userEventCallback) (e, this); // Send to application
+			Event ce = new_event ( 120, 'app ', 'sFIN', 0, m_eventPool );
+			ce.attachInt ( sock_i );
+			ce.startRead ( );
+			(*m_userEventCallback) (ce, this); // Send to application
 		}
 	}
 
@@ -1599,11 +1603,13 @@ int NetworkSystem::netProcessQueue ( void )
 	}
 	int iOk = 0; // Handle incoming events on queue
 	while ( m_eventQueue.size ( ) > 0 ) {
-		Event e = m_eventQueue.front ( );
+		Event e;
+		e = m_eventQueue.front ( );
 		e.startRead ( );
-		iOk += netEventCallback ( e ); // Count each user event handled ok
-		m_eventQueue.pop ( ); // Pop causes event & payload deletion!
-		e.bOwn = false;
+		e.persist ();	
+		iOk += netEventCallback ( e );		// count each user event handled ok		
+		m_eventQueue.pop ( );							// causes destructor to be called		
+		e.consume ();
 	}
 	// TRACE_EXIT ( (__func__) );
 	return iOk;
@@ -1658,16 +1664,16 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 
 			if ( s.pktLen >= s.eventLen ) {
 				// Create event; no name/target. will be set during deserialize		
-				s.event = new_event ( s.eventLen - Event::staticSerializedHeaderSize ( ), 0, 0, 0, m_eventPool );				
+				eventStr_t name = *(eventStr_t*) (s.pktPtr + Event::staticOffsetLenInfo() + 4);
+				s.event = new_event ( s.eventLen - Event::staticSerializedHeaderSize ( ), 'app ', name, 0, m_eventPool, "netRecv" );
 				s.event.rescope ( "nets" );									// belongs to network now
 				s.event.setSrcSock ( sock_i );								// tag event /w socket
 				s.event.setSrcIP( m_socks[ sock_i ].src.ipL );				// recover sender address from socket
-
-				// Deserialize directly from input buffer (for performance)
+				
+				// Deserialize directly from input buffer (for performance)				
 				s.event.deserialize ( s.pktPtr, s.eventLen );		// deserialize					
-				netQueueEvent ( s.event );								// queue & delete				
-				netPrintf ( PRINT_FLOW, "RX %d bytes, %s", s.eventLen, s.event.getNameStr ( ).c_str ( ) );
-				delete_event ( s.event );				
+				netQueueEvent ( s.event );								// queue event (consumed later)
+				netPrintf ( PRINT_FLOW, "RX %d bytes, %s", s.eventLen, s.event.getNameStr ( ).c_str ( ) );				
 
 				s.pktLen -= s.eventLen;								// consume event size in bytes
 				s.pktPtr += s.eventLen;
@@ -1699,16 +1705,16 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 		// Check for possibly multiple complete events on recv buffer
 		while ( s.rxLen >= s.eventLen && s.eventLen > 0 ) {
 			// Create event; no name/target. will be set during deserialize	
-			s.event = new_event ( s.eventLen - Event::staticSerializedHeaderSize ( ), 0, 0, 0, m_eventPool );
-			s.event.rescope ( "nets" );								// belongs to network now
-			s.event.setSrcSock ( sock_i );							// tag event /w socket
-			s.event.setSrcIP ( m_socks[ sock_i ].src.ipL );			// recover sender address from socket
+			eventStr_t name = *(eventStr_t*) (s.pktPtr + Event::staticOffsetLenInfo() + 4);
+			s.event = new_event ( s.eventLen - Event::staticSerializedHeaderSize ( ), 'net ', name, 0, m_eventPool, "netRecv" );
+			s.event.rescope ( "nets" );							// belongs to network now
+			s.event.setSrcSock ( sock_i );					// tag event /w socket
+			s.event.setSrcIP ( m_socks[ sock_i ].src.ipL );		// recover sender address from socket
 			
 			// Deserialize event from recv buf			
-			s.event.deserialize ( s.rxBuf, s.eventLen );			// deserialize			
-			netQueueEvent ( s.event );								// queue & delete				
-			netPrintf ( PRINT_FLOW, "RX %d bytes, %s", s.eventLen, s.event.getNameStr ( ).c_str ( ) );
-			delete_event ( s.event );			
+			s.event.deserialize ( s.rxBuf, s.eventLen );	// deserialize			
+			netQueueEvent ( s.event );							// queue event (consumed later)
+			netPrintf ( PRINT_FLOW, "RX %d bytes, %s", s.eventLen, s.event.getNameStr ( ).c_str ( ) );						
 			
 			// Reduce recv buffer
 			s.rxLen -= s.eventLen;							// consume event bytes in recv buffer
@@ -1797,7 +1803,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 			m_eventLen = 0;
 		
 			netQueueEvent(m_event);						
-			delete_event(m_event);
+			free_event(m_event);
 		}
 		else { // Partial event..
 			if (!bDeserial) { // Not start of event, attach more data				
@@ -1882,25 +1888,26 @@ void NetworkSystem::netQueueEvent ( Event& e )
 {
 	TRACE_ENTER ( (__func__) );
 	Event eq;
-	eq = e;						// eq now owns the data
+	eq.acquire ( e );				// eq now owns the data
+	eq.persist ();					// persist beyond scope of this func
 	eq.rescope ( "nets" );		
 
 	m_eventQueue.push ( eq );	// data payload is owned by queued event
 
-	eq.bOwn = false;			// local ref no longer owns payload
-	e.bOwn = false;				// source ref no longer owns payload
 	TRACE_EXIT ( (__func__) );
 }
 
 Event NetworkSystem::netMakeEvent ( eventStr_t name, eventStr_t sys )
 {
 	TRACE_ENTER ( (__func__) );
-	Event e = new_event ( 120, sys, name, 0, m_eventPool  );
+	Event e = new_event ( 120, sys, name, 0, m_eventPool, "netMake"  );	
 	e.setSrcIP ( m_hostIp );	// default to local IP if protocol doesn't transmit sender
 	e.setTarget ( 'net ' );		// all network configure events have a 'net ' target name
 	e.setName ( name );
-	e.startWrite ();
-	e.bOwn = false;				// dont kill on destructor
+	e.startWrite ();	
+	
+	e.persist ();				// persist until sent
+
 	TRACE_EXIT ( (__func__) );
 	return e;
 }
@@ -2091,6 +2098,7 @@ void NetworkSystem::netSendResidualEvent ( int sock_i )
 bool NetworkSystem::netSend ( Event& e, int sock_i )
 {
 	TRACE_ENTER ( (__func__) );
+
 	if ( sock_i == -1 ) { // Caller wishes to send on any outgoing socket
 		sock_i = netFindOutgoingSocket ( true );
 		if ( sock_i == -1 ) { 
@@ -2110,7 +2118,8 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 		return false;
 	}
 
-	e.serialize ( ); // Prepare serialized buffer
+	e.serialize (); // Prepare serialized buffer
+	e.consume ();
 	char* buf = e.getSerializedData ( );
 	int event_len = e.getSerializedLength ( );
 	netPrintf ( PRINT_FLOW, "TX %d bytes, %s", e.getSerializedLength ( ), e.getNameStr ( ).c_str ( ) );
@@ -2118,21 +2127,29 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 	NetSock& s = m_socks[ sock_i ];
 	if ( m_socks[ sock_i ].mode == NET_TCP ) { // Send over socket
 		if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_SSL_HANDSHAKE ) {
+
 			result = send ( s.socket, buf, event_len, 0 ); // TCP/IP
-			if ( result > 0 && result != event_len ) {				
-				netExpandBuf (s.txBuf, s.txPtr, s.txMax, s.txLen, event_len + 1);
-				s.txLen = result;
-				s.txPktSize = result;
-				memcpy ( s.txBuf, buf, result );
-				s.txBuf[ event_len ] = '\0';
-				netPrintf ( PRINT_FLOW, "1 Partial TX: %d < %d", result, event_len) ;
-				TRACE_EXIT ( (__func__) );
-				return true;
-			} 
-			if ( result == event_len ) {
+
+			if ( result > 0 ) {			
+				// bytes sent
+				if ( result == event_len ) {
+					// full event sent					
+				} else {
+					// partial event sent, transmit more later
+					netExpandBuf (s.txBuf, s.txPtr, s.txMax, s.txLen, event_len + 1);
+					s.txLen = result;
+					s.txPktSize = result;
+					memcpy ( s.txBuf, buf, result );
+					s.txBuf[ event_len ] = '\0';
+					netPrintf ( PRINT_FLOW, "1 Partial TX: %d < %d", result, event_len) ;					
+				}
+				// delete the event (consume it)
+				free_event ( e, "netSend" );
+				// done
 				TRACE_EXIT ( (__func__) );
 				return true;
 			}
+			
 		} else {
 			#ifdef BUILD_OPENSSL
 				
@@ -2147,44 +2164,52 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 				}
 				
 				result = SSL_write ( s.ssl, buf, event_len );
-				if ( result <= 0 ) {	
+
+				if ( result > 0 ) {
+					// bytes sent
+					if ( result == event_len ) {
+						// full event sent
+					} else if ( result < event_len ) {	
+						// partial event sent, transmit more later
+						netExpandBuf (s.txBuf, s.txPtr, s.txMax, s.txLen, event_len + 1);
+						s.txLen = result;
+						s.txPktSize = result;
+						memcpy ( s.txBuf, buf, result );
+						// s.txBuf[ event_len ] = '\0';					
+						netPrintf ( PRINT_VERBOSE, "1 Partial TX: %d < %d", result, event_len);					
+						std::cin.get();						
+					}	else {
+						netPrintf(PRINT_ERROR, "Unexpected TX: %d > %d", result, event_len );
+						exit(-77);
+					}
+					// consume event
+					free_event ( e, "netSend" );
+					TRACE_EXIT ( (__func__) );
+					return true;
+
+				} else {
+					// no bytes sent. check why.
 					if ( netNonFatalErrorSSL ( sock_i, result ) ) { 
 						str msg = netGetErrorStringSSL ( result, s.ssl );
 						s.txLen = 0;
 						netPrintf ( PRINT_ERROR, "Non fatal SSL error: Return: %d: %s", result, msg.c_str ( ) );
 						TRACE_EXIT ( (__func__) );
-						return false;
-						return SSL_ERROR_WANT_WRITE;
+						return false;						
 					} else {
 						str msg = netGetErrorStringSSL ( result, s.ssl );
 						netPrintf ( PRINT_ERROR, "1 Failed ssl write (2): Return: %d: %s", result, msg.c_str ( ) );
 					}
-				} else if ( result < event_len ) {					
-					netExpandBuf (s.txBuf, s.txPtr, s.txMax, s.txLen, event_len + 1);
-					s.txLen = result;
-					s.txPktSize = result;
-					memcpy ( s.txBuf, buf, result );
-					// s.txBuf[ event_len ] = '\0';					
-					netPrintf ( PRINT_VERBOSE, "1 Partial TX: %d < %d", result, event_len);					
-					std::cin.get();
-					TRACE_EXIT ( (__func__) );
-					return true;
-				}	else if ( result > event_len ) {
-					netPrintf(PRINT_ERROR, "Unexpected TX: %d > %d", result, event_len );
-					exit(-77);
-				}
+				} 
 			#endif
 		}  
 	} else {
 		int addr_size = sizeof( m_socks[ sock_i ].dest.addr );
 		result = sendto ( s.socket, buf, event_len, 0, (sockaddr*) &s.dest.addr, addr_size ); // UDP
 	}
-	if ( result <= 0 ) {
-		TRACE_EXIT ( (__func__) );
-		return false;
-	}
+	
+	// if we got here, send failed
 	TRACE_EXIT ( (__func__) );
-	return CXSocketBlockError ( ) || netCheckError ( result, sock_i ); // Check connection
+	return false;	
 }
 
 // create a transport socket

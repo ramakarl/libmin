@@ -45,14 +45,19 @@
 
 	// Event
 	struct HELPAPI CACHE_ALIGNED Event {
-	public:
-		Event ();		
+	public:		
+		Event ( );		
+		Event ( size_t, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool, const char* msg=0  );		
+		Event ( eventStr_t target, eventStr_t name );		
 		Event ( const Event& src );
-		Event& operator= ( const Event* op );	// assignment (not acquire)
-		Event& operator= ( const Event& op );		
+		Event& operator= ( Event* op );	
+		Event& operator= ( Event& op );		
 		~Event ();
 		void copyEventVars ( Event* dst, const Event* src );
-		void acquire ( Event& esrc);			// acquire - transfer of ownership
+		void acquire ( Event& esrc);		// acquire - transfer of ownership
+		void copy ( Event& src );				
+		void consume ();
+		void persist ();
 
 		// Event Accessors
 		std::string			getNameStr ();
@@ -76,6 +81,7 @@
 		// Data Access
 		void				startRead ();
 		void				startWrite ();
+		void				clear ();
 		void				expand ( int s );
 		char*				serialize ();
 		void				deserialize ( char* buf, int len );		
@@ -83,7 +89,7 @@
 		//int				getEventLenOffs ()			{ return int((char*) &mDataLen - (char*) &mTarget); }
 		char*				getData ()					{ return mData; }
 		char*				getPos()					{ return mPos; }
-		unsigned long		getPosInt()					{ return mPos - mData; }
+		unsigned long	 getPosInt()					{ return mPos - mData; }
 		char*				getEndPos ()				{ return getData() + mMax; }
 		bool				isEnd ()					{ return mPos >= getData() + mDataLen;  }
 		bool				isEmpty ()					{ return mData == 0x0; }
@@ -98,9 +104,7 @@
 		inline void			setPos (char* pos )			{ mPos = pos; }
 		inline timeStamp_t	getTime ()					{ return mTimeStamp; }
 		inline void			setTime ( timeStamp_t t )	{ mTimeStamp = t; }
-		void				setTime ( unsigned long t );
-		inline void			setConnection ( unsigned short id ) { mConnection = id; }
-		inline ushort		getConnection ()			{ return mConnection; }
+		void				setTime ( unsigned long t );		
 		inline void			setSrcIP ( netIP ip )		{ mSrcIP = ip; }
 		inline void			setSrcSock ( netSock s )	{ mSrcSock = s; }
 		inline netIP		getSrcIP ()					{ return mSrcIP; }
@@ -153,26 +157,26 @@
 
 		// Serialized members
 		// Header:														Offset	Bytes
-		int				mDataLen;			// Event length				32+ 0	4			// <-- offsetDataLen (!)
-		eventStr_t		mName;				// Event name				32+ 4	4
-		eventStr_t		mTarget;			// Event target system		32+ 8	4
-		int				mConnection;		// Event connection			32+ 12	4
-		timeStamp_t		mTimeStamp;			// Event time stamp			32+ 16	8
-		//																56      24 byte		// <-- offsetHeader (!)
+		int						mDataLen;			// Event length					32+ 0	4			// <-- offsetDataLen (!)
+		eventStr_t		mName;				// Event name						32+ 4	4
+		eventStr_t		mTarget;			// Event target system	32+ 8	4
+		int						mCID;					// Event creation ID		32+ 12	4
+		timeStamp_t		mTimeStamp;		// Event time stamp			32+ 16	8
+		//																									56      24 bytes		// <-- offsetHeader (!)
 		// Data payload is pre-pended with serialized members
-		char*			mData;				// Data payload (elsewhere in memory)
+		char*					mData;				// Data payload (elsewhere in memory)
 
 		// Non-serialized members
-		ushort			mRefs;				// Ref counting				(max: 65535)
-		ushort			mSrcSock;			// Source Socket			(max: 65535)
-		netIP			mSrcIP;				// Source IP
-		sysID_t			mTargetID;			// Target ID
-		int				mMax;				// Data max
+		ushort				mRefs;				// Ref counting				(max: 65535)
+		ushort				mSrcSock;			// Source Socket			(max: 65535)
+		netIP					mSrcIP;				// Source IP
+		sysID_t				mTargetID;		// Target ID
+		int						mMax;					// Data max
 		EventPool*		mOwner;				// Memory pool owner
-		bool			bOwn;				// Owner info
-		bool			bDestroy;			// Destroy
-		char			mScope[5];			// Scope info
-		char*			mPos;				// Data pos
+		bool					bOwn;					// Owner info
+		bool					bDestroy;			// Destroy
+		char					mScope[5];		// Scope info
+		char*					mPos;					// Data pos
 	};
 
 

@@ -31,17 +31,18 @@
 	#include "event.h"
 
 	// Static buffer (temporary)
-	static char mbuf [ 16384 ];
+	static char mbuf [ 16384 ];	
 
 	#define EVENT_LEN_OFFSET		20
 
 	// Event memory management [required]
-	HELPAPI char* new_event_data ( size_t size, int& max, EventPool* pool );
-	HELPAPI Event new_event ( size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool );
-	HELPAPI void  expand_event ( Event& e, size_t size );
-	HELPAPI void  delete_event	(Event& e);			// aka. free_event
-	HELPAPI void  free_event_data ( char* data, EventPool* pool );
-
+	HELPAPI char* new_event_data ( size_t size, int& max, EventPool* pool, eventStr_t name, const char* msg=0 );
+	HELPAPI void free_event_data ( char*& data, EventPool* pool, eventStr_t name, int cid, const char* msg=0 );
+	HELPAPI Event new_event ( size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool, const char* msg=0 );
+	HELPAPI void free_event ( Event& e, const char* msg=0 );
+	HELPAPI void expand_event ( Event& e, size_t size );	
+	HELPAPI void check_event_mem ();
+	
 	// Event queue - maintains a queue of events
 	class HELPAPI EventQueue {
 	public:
@@ -51,8 +52,8 @@
 		void push ( Event& e );
 		void push_back (Event& e );
 		void pop ();		
-		inline Event front ()	 { return mList.front(); }
-		inline Event back ()	 { return mList.back(); }
+		Event& front ()	 { return mList.front(); }
+		Event& back ()	 { return mList.back(); }
 		int size ()				 { return (int) mList.size(); }
 
 		//-- debugging

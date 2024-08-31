@@ -197,6 +197,7 @@ std::string iToStr ( int i )
   ss << i;
   return ss.str();
 }
+//-- note: may be incorrect. check on floats /w many digits
 std::string fToStr ( float f )
 {
   std::ostringstream ss;

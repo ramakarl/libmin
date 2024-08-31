@@ -100,7 +100,6 @@ bool CImageFormatTiff::Load (char *filename, ImageX* img )
 	fseek ( m_Tif, 0, SEEK_SET );	
 
 	m_Buf = new_event ( 16384, 'app ', 'tiff', 0, 0x0 );
-
 	m_Buf.attachFromFile (m_Tif, sz);
 	m_Buf.startRead ();
 

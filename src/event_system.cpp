@@ -22,10 +22,19 @@
 #include <cmath>
 #include <stdio.h>
 
+// #define DEBUG_EVENT_MEM
+
+int event_alloc = 0;
+int event_free = 0;
+#ifdef DEBUG_EVENT_MEM
+	typedef std::vector<std::string>	vecStr_t;
+	vecStr_t event_track;
+#endif
+
 //	void assign( eventPtr src, bool v )	{ e = src.e; memcpy(scope,src.scope,4); bOwn = v; }
 //	void rescope( char* s )				{ memcpy(scope,s,4); }
 
-char* new_event_data ( size_t size, int& max, EventPool* pool )
+char* new_event_data ( size_t size, int& max, EventPool* pool, eventStr_t name, const char* msg )
 {
 	char* data;
 
@@ -35,8 +44,24 @@ char* new_event_data ( size_t size, int& max, EventPool* pool )
 
 	// allocate payload
 	if ( size > MAX_POOL_SIZE || pool==0x0 ) {
+		
 		// standard allocation
 		data = (char*) malloc ( size );
+
+		// event memory debugging
+		#ifdef DEBUG_EVENT_MEM	
+			if (msg==0) {
+				bool stop1=true;	// breakpoint here see call stack for empty msg
+			}
+			if (nameToStr(name).empty()) {
+				bool stop2=true;
+			}
+			std::string tag = std::to_string(event_alloc) + ":" + nameToStr(name); // + "> " + std::string(msg)
+			event_track.push_back ( tag );
+			
+			event_alloc++;
+			printf ( "%p: +%s, %d/%d, %s\n", data, tag.c_str(), event_alloc, event_free, msg );			
+		#endif
 		if ( data==0 ) {
 			dbgprintf ("ERROR: Unable to allocate large event.\n");
 			exit(-2);
@@ -54,9 +79,9 @@ char* new_event_data ( size_t size, int& max, EventPool* pool )
 	return data + Event::staticSerializedHeaderSize();
 }
 
-Event new_event (size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool )
+Event new_event (  size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool, const char* msg )
 {
-	// create event
+	// create event	
 	Event p;
 	p.mTimeStamp = 0;
 	p.mRefs = 0;
@@ -64,66 +89,94 @@ Event new_event (size_t size, eventStr_t targ, eventStr_t name, eventStr_t state
 	p.mTarget = targ;
 	p.mName = name;
 	p.mDataLen = 0;
-	p.mMax = 0;	
-	
-	// provide room for serialized header
-	p.mData = new_event_data ( size, p.mMax, pool );	// payload allocation
-	p.bOwn = true;
-	p.bDestroy = false;			// no kill on local destructor
+	p.mCID = event_alloc;			// creation ID
 
-	p.mPos = p.getData();	
+	p.mData = new_event_data ( size, p.mMax, pool, name, msg );	  // payload allocation	
+	memset ( p.mData, '0', p.mMax );
+	
+	p.bOwn = true;					// event retains ownership
+	p.bDestroy = false;			// don't kill temp event data. see return.
+	p.mPos = p.mData;
 
 	return p;
 }
 
-void expand_event (Event& p, size_t size)
+void free_event ( Event& p, const char* msg )
 {
-	EventPool* pool = p.mOwner;
-	char* old_data = p.mData;
+	if ( p.bOwn && p.mData != 0x0 ) {
+		free_event_data ( p.mData, p.mOwner, p.mName, p.mCID, msg );
+		p.mData = 0x0;
+	}
+	p.bOwn = false;
+	p.bDestroy = false;
+}
+
+void expand_event (Event& p, size_t new_size)
+{
+	EventPool* pool = p.mOwner;	
 	int old_pos = p.getPos() - p.getData();
-	char* new_data;
-	int new_max;
+	char* new_data = p.mData;
+	int new_max = p.mMax;
 
-	// allocate new data
-	new_data = new_event_data ( size, new_max, pool );
+	if ( p.mData == 0x0 ) {
+		// new buffer needed
+		new_data = new_event_data ( new_size, new_max, pool, p.mName, "exp" );
 
-	// copy old payload data into new data
-	memcpy ( new_data, old_data, p.mDataLen );		// will overwrite the event pool var
+	} else if ( new_size > p.mMax ) {
+		// copy to new buffer
+		new_data = new_event_data ( new_size, new_max, pool, p.mName, "exp" );
+		memcpy ( new_data, p.mData, p.mDataLen );		// will overwrite the event pool var
+		// free old payload memory
+		free_event_data ( p.mData, pool, p.mName, p.mCID, "exp" );
+	}
 
 	// update event
 	p.mMax = new_max;
 	p.mData = new_data;
 	p.mPos = new_data + old_pos;
-
-	// free old payload memory
-	free_event_data ( old_data, pool );
 }
 
-void free_event_data ( char* data, EventPool* pool )
+void free_event_data ( char*& data, EventPool* pool, eventStr_t name, int cid, const char* msg )
 {
-	if ( data==0x0) return;		// nothing to free
+	if ( data == 0x0 ) return;		// nothing to free
 
 	// adjust back to the original allocation pointer
 	data -= Event::staticSerializedHeaderSize();
 
 	if ( pool == 0x0 ) {
+
+		// event memory debugging
+		#ifdef DEBUG_EVENT_MEM			
+			std::string tag = std::to_string( cid ) + ":" + nameToStr(name);		
+			vecStr_t::iterator it = std::find ( event_track.begin(), event_track.end(), tag );
+			if ( it != event_track.end() ) {
+				event_track.erase ( it );		// remove from list
+			}
+			event_free++;
+			printf ( "%p: -%s, %d/%d, %s\n", data, tag.c_str(), event_alloc, event_free, msg );					
+		#endif
+		
+		// free event data
 		free ( data );
+
 	} else {
 		#ifdef BUILD_EVENT_POOLING
 			pool->freeItem ( data );
 		#endif
-	}
+	}	
+
+	data = 0x0;
 }
 
-void delete_event (Event& p)
+void check_event_mem ()
 {
-	if ( p.bOwn && p.bDestroy && p.mData != 0x0 ) 
-		free_event_data ( p.mData, p.mOwner );
-
-	p.mPos = 0;
-	p.mData = 0;
-	p.bOwn = false;
-	p.bDestroy = true;
+	#ifdef DEBUG_EVENT_MEM
+		printf ( "----- unfreed events\n" );	
+		for (int i=0; i < event_track.size(); i++) {
+			printf ( " %s\n", event_track[i].c_str() );
+		}
+		printf ( "-----\n" );
+	#endif
 }
 
 //---------------------------------------------- Event Queue
