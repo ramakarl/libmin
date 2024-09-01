@@ -142,7 +142,7 @@
 
 		// Incoming packets & event
 		int				eventLen;
-		Event			event;					// deserialized event	
+		Event*		event;					// deserialized event	
 		char*			pktBuf;					// current packet
 		char*			pktPtr;					// packet offset
 		int				pktLen;

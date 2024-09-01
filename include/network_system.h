@@ -142,7 +142,7 @@ public:
 	void netReceiveData ( int sock_i );
 	void netReceiveByInjectedBuf ( int sock_i, char* buf, int buflen );
 	void netDeserializeEvents ( int sock_i );
-	Event netMakeEvent ( eventStr_t name, eventStr_t sys );	
+	void netMakeEvent ( Event& e, eventStr_t name, eventStr_t sys );	
 	bool netSend ( Event& e, int sock=-1 );
 	bool netSendLiteral ( str str_lit, int sock_i );
 	void netQueueEvent ( Event& e ); // Place incoming event on recv queue
@@ -156,7 +156,7 @@ public:
 	str			getHostName ( )				{ return m_hostName; }
 	bool		isServer ( )					{ return m_hostType == 's'; }
 	bool		isClient ( )					{ return m_hostType == 'c'; }
-	bool 		netIsQueueEmpty ( )		{ return m_eventQueue.size ( ) == 0; }
+	bool 		netIsQueueEmpty ( )		{ return m_eventQueue.getSize ( ) == 0; }
 	netIP		getHostIP ( )					{ return m_hostIp; }	
 	EventPool*  getNetPool ( )		{ return m_eventPool; }
 	

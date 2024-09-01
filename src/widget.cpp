@@ -425,23 +425,28 @@ bool Widgets::OnKeyboard ( int key )
 void Widgets::PushEvent ( eventStr_t name, int w, int k)
 {
 	// push event to OUT queue (back to app)
-	Event e = new_event ( 128, 'app ', name, 0, mPool );
+	Event e ( 128, 'app ', name, 0, mPool );
 	e.attachInt ( w );
 	e.attachInt ( k );
 	e.bOwn = false;
-	mOutEvents.push ( e );
+	mOutEvents.Push ( &e );
 }
 
 bool Widgets::hasEvents ()
 {
-	return ( mOutEvents.size() > 0 );
+	return ( mOutEvents.getSize() > 0 );
 }
 Event Widgets::getNextEvent()
 {
-	Event e = mOutEvents.front ();
-	e.bOwn = true;	
-	mOutEvents.pop();
+	Event* ptr;
+	mOutEvents.PopFront ( ptr );
+
+	Event e;
+	e.acquire ( *ptr );	
 	e.startRead();
+
+	delete ptr;
+
 	return e;
 }
 

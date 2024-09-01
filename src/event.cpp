@@ -24,6 +24,9 @@ extern void free_event_data ( char*& data, EventPool* pool, eventStr_t name, int
 extern void free_event ( Event& e, const char* msg=0 );
 extern void expand_event ( Event& e, size_t size );
 extern int event_alloc;
+#ifdef DEBUG_EVENT_MEM
+	extern void emem_rename ( Event& e, eventStr_t oldname, eventStr_t newname, const char* msg );
+#endif
 
 eventStr_t strToName (std::string str )
 {
@@ -60,8 +63,8 @@ Event::Event ( size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, 
 	mTarget = targ;
 	mName = name;
 	mDataLen = 0;
-	mCID = event_alloc;			// creation ID
 	
+	mCID = event_alloc;			// creation ID	
 	mData = new_event_data ( size, mMax, pool, name, msg );	  // payload allocation	
 	memset ( mData, 'E', mMax );
 	
@@ -85,8 +88,8 @@ Event::Event ( eventStr_t target, eventStr_t name)
 	mPos = 0x0;	
 	mOwner = 0x0;
 	mCID = -1;
-	bOwn = false;
-	bDestroy = false;
+	bOwn = true;
+	bDestroy = true;
 
 	// check member variable structure (important!)
 	int headersz = (char*) &mData - (char*) &mDataLen;
@@ -118,13 +121,24 @@ void Event::copyEventVars ( Event* dst, const Event* src )
 		dst->mScope[n] = src->mScope[n];	
 }
 
-// called on return of func. eg. return ( evt );
+#ifdef DEBUG_EVENT_MEM
+	#include <assert.h>
+#endif
+
+// Event const copy constructor does a deep copy
+//  (unable to acquire the source event data by modifying src ownership)
 Event::Event ( const Event& src )
 {
-	copyEventVars ( this, &src );			
-	mData = src.mData;
-	bOwn = true;
-	bDestroy = true;
+	#ifdef DEBUG_EVENT_MEM
+		printf ("WARN: Event const copy cannot acquire source event.\n" );			
+	#endif
+
+	copy ( src );
+}
+
+Event::Event ( Event& src )
+{
+	acquire ( src );		// transfer ownership	
 }
 
 // called on direct assignment. eg. Event e = new_event (..)
@@ -147,9 +161,13 @@ void Event::expand ( int size)
 
 void Event::clear ()
 {
+	
 	if ( mData != 0x0 ) {
+		// reuse data if possible
 		memset ( mData, 'C', mMax );
 	} else {
+		// new data
+		mCID = event_alloc;	
 		mData = new_event_data ( mMax, mMax, mOwner, mName, "clear" );
 	}
 	mPos = 0;	
@@ -179,14 +197,30 @@ void Event::persist ()
 	bDestroy = false;
 }
 
-void Event::copy ( Event& src )
+void Event::copy ( const Event& src )
 {
+	// don't copy self
+	if (this == &src) return;
+
+	// any prior data on dest event is discarded
+	if ( bOwn && mData != 0x0 ) {
+		free_event_data ( mData, mOwner, mName, mCID, "~acq" );
+		mData = 0x0;
+	}	
+	// copy vars
+	copyEventVars ( this, &src );	
+
+	// alloc new mem (always on copy)
+	mCID = event_alloc;	
+	mData = new_event_data ( mMax, mMax, mOwner, mName, "copy" );
+
 	// deep copy
-	copyEventVars ( this, &src );
-	expand ( src.mDataLen );
 	memcpy ( mData, src.mData, src.mDataLen );
 	mDataLen = src.mDataLen;
-	mPos = mData;	
+	mPos = mData;
+
+	bOwn = true;
+	bDestroy = true;
 }
 
 // acquire 
@@ -214,6 +248,15 @@ void Event::acquire ( Event& src)
 	src.bOwn = false;
 	src.bDestroy = false;
 }
+
+void Event::setName ( eventStr_t new_name, const char* new_msg )
+{	
+	#ifdef DEBUG_EVENT_MEM
+		emem_rename ( *this, mName, new_name, new_msg );
+	#endif
+	mName = new_name; 
+}
+
 
 void Event::attachInt ( int i)
 {

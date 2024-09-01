@@ -19,10 +19,12 @@
 #ifndef DEF_EVENT_H
 	#define DEF_EVENT_H
 
-    #include "common_defs.h"
+   #include "common_defs.h"
 	#include "vec.h"
 	#include "timex.h"
 	#include <string>
+
+	// #define DEBUG_EVENT_MEM
 
 	#define NULL_TARGET		65535
 	#define ID(y)		( (const xlong) *( (const xlong*) y ) )		// for 64-bit names, but not a const expression
@@ -49,26 +51,28 @@
 		Event ( );		
 		Event ( size_t, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool, const char* msg=0  );		
 		Event ( eventStr_t target, eventStr_t name );		
+		Event ( Event& src );
 		Event ( const Event& src );
 		Event& operator= ( Event* op );	
 		Event& operator= ( Event& op );		
 		~Event ();
 		void copyEventVars ( Event* dst, const Event* src );
 		void acquire ( Event& esrc);		// acquire - transfer of ownership
-		void copy ( Event& src );				
+		void copy ( const Event& src );				
 		void consume ();
 		void persist ();
 
 		// Event Accessors
 		std::string			getNameStr ();
 		std::string			getSysStr ();
+
 		inline eventStr_t	getName ()			{ return mName; }
 		inline eventStr_t	getTarget ()		{ return mTarget; }
 		inline sysID_t		getTargetID ()		{ return mTargetID; }
 		inline timeStamp_t	getTimeStamp()		{ return mTimeStamp; }
 		inline EventPool*	getPool()			{ return mOwner; }
-		inline void			set ( eventStr_t targ, eventStr_t name ) { mTarget = targ; mName = name; }
-		inline void			setName ( eventStr_t x )		{ mName = x; }
+		void						setName ( eventStr_t new_name, const char* new_msg = 0x0 );	
+		inline void			set ( eventStr_t targ, eventStr_t name ) { mTarget = targ; mName = name; }		
 		inline void			setTarget ( eventStr_t x )		{ mTarget = x; }
 		inline void			setTargetID ( sysID_t t )		{ mTargetID = t; }
 		inline void			setTimeStamp ( timeStamp_t t )	{ mTimeStamp = t; }

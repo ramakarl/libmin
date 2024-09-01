@@ -22,13 +22,10 @@
 #include <cmath>
 #include <stdio.h>
 
-// #define DEBUG_EVENT_MEM
-
 int event_alloc = 0;
 int event_free = 0;
 #ifdef DEBUG_EVENT_MEM
-	typedef std::vector<std::string>	vecStr_t;
-	vecStr_t event_track;
+	vecTrack_t event_tracks;
 #endif
 
 //	void assign( eventPtr src, bool v )	{ e = src.e; memcpy(scope,src.scope,4); bOwn = v; }
@@ -47,25 +44,17 @@ char* new_event_data ( size_t size, int& max, EventPool* pool, eventStr_t name, 
 		
 		// standard allocation
 		data = (char*) malloc ( size );
-
-		// event memory debugging
-		#ifdef DEBUG_EVENT_MEM	
-			if (msg==0) {
-				bool stop1=true;	// breakpoint here see call stack for empty msg
-			}
-			if (nameToStr(name).empty()) {
-				bool stop2=true;
-			}
-			std::string tag = std::to_string(event_alloc) + ":" + nameToStr(name); // + "> " + std::string(msg)
-			event_track.push_back ( tag );
-			
-			event_alloc++;
-			printf ( "%p: +%s, %d/%d, %s\n", data, tag.c_str(), event_alloc, event_free, msg );			
-		#endif
 		if ( data==0 ) {
 			dbgprintf ("ERROR: Unable to allocate large event.\n");
 			exit(-2);
 		}
+
+		// event memory debugging
+		#ifdef DEBUG_EVENT_MEM
+			emem_track_alloc ( data, event_alloc, name, msg );
+		#endif
+		event_alloc++;		
+		
 	} else {
 		#ifdef BUILD_EVENT_POOLING
 			// optional Event Pooling
@@ -79,10 +68,14 @@ char* new_event_data ( size_t size, int& max, EventPool* pool, eventStr_t name, 
 	return data + Event::staticSerializedHeaderSize();
 }
 
-Event new_event (  size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool, const char* msg )
+void new_event ( Event& p, size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool, const char* msg )
 {
-	// create event	
-	Event p;
+	// close out old mem tag
+	#ifdef DEBUG_EVENT_MEM	
+		emem_track_free ( p.mData, p.mCID, p.mName, msg );
+	#endif
+	
+	// reuse event p
 	p.mTimeStamp = 0;
 	p.mRefs = 0;
 	p.mTargetID = NULL_TARGET;
@@ -90,15 +83,16 @@ Event new_event (  size_t size, eventStr_t targ, eventStr_t name, eventStr_t sta
 	p.mName = name;
 	p.mDataLen = 0;
 	p.mCID = event_alloc;			// creation ID
-
-	p.mData = new_event_data ( size, p.mMax, pool, name, msg );	  // payload allocation	
-	memset ( p.mData, '0', p.mMax );
 	
-	p.bOwn = true;					// event retains ownership
-	p.bDestroy = false;			// don't kill temp event data. see return.
-	p.mPos = p.mData;
+	// reuse payload
+	if (p.mData == 0x0 || size > p.mMax ) {
+		p.mData = new_event_data ( size, p.mMax, pool, name, msg );	  // payload allocation			
+	}
+	memset ( p.mData, '0', p.mMax );
 
-	return p;
+	p.bOwn = true;					// event retains ownership
+	p.bDestroy = true;			// default to kill on local func out of scope
+	p.mPos = p.mData;
 }
 
 void free_event ( Event& p, const char* msg )
@@ -146,14 +140,9 @@ void free_event_data ( char*& data, EventPool* pool, eventStr_t name, int cid, c
 	if ( pool == 0x0 ) {
 
 		// event memory debugging
+		event_free++;		
 		#ifdef DEBUG_EVENT_MEM			
-			std::string tag = std::to_string( cid ) + ":" + nameToStr(name);		
-			vecStr_t::iterator it = std::find ( event_track.begin(), event_track.end(), tag );
-			if ( it != event_track.end() ) {
-				event_track.erase ( it );		// remove from list
-			}
-			event_free++;
-			printf ( "%p: -%s, %d/%d, %s\n", data, tag.c_str(), event_alloc, event_free, msg );					
+			emem_track_free ( data, cid, name, msg );
 		#endif
 		
 		// free event data
@@ -168,16 +157,53 @@ void free_event_data ( char*& data, EventPool* pool, eventStr_t name, int cid, c
 	data = 0x0;
 }
 
-void check_event_mem ()
-{
-	#ifdef DEBUG_EVENT_MEM
-		printf ( "----- unfreed events\n" );	
-		for (int i=0; i < event_track.size(); i++) {
-			printf ( " %s\n", event_track[i].c_str() );
+//------------------ event memory debugging
+//
+#ifdef DEBUG_EVENT_MEM
+	void emem_track_alloc ( char* data, int cid, eventStr_t name, const char* msg ) 
+	{
+		if (msg==0) {
+			bool stop1=true;		// breakpoint here to see call stack for empty msg (calling func)
 		}
-		printf ( "-----\n" );
-	#endif
-}
+		if (nameToStr(name).empty()) {
+			bool stop2=true;		// breakpoint here to see call stak for unnamed events
+		}
+		std::string tag = std::to_string(cid) + ":" + nameToStr(name);
+		event_tracks.push_back ( eventTrack(tag,msg) );
+		printf ( "%p: +%s, %d/%d +%d, %s\n", data, tag.c_str(), event_alloc, event_free, event_alloc-event_free, msg );			
+	}
+
+	void emem_track_free ( char* data, int cid, eventStr_t name, const char* msg ) 
+	{
+		std::string tag = std::to_string( cid ) + ":" + nameToStr(name);
+		int found = -1;
+		for (int i=0; i < event_tracks.size(); i++) {
+			if (event_tracks[i].tag == tag ) {found = i; break;}		// only match tag part		
+		}
+		if ( found >= 0 ) {
+			event_tracks.erase ( event_tracks.begin() + found );		// remove from list
+		}
+		printf ( "%p: -%s, %d/%d +%d, %s\n", data, tag.c_str(), event_alloc, event_free, event_alloc-event_free, msg );					
+	}
+
+	void emem_rename ( Event& e, eventStr_t oldname, eventStr_t newname, const char* msg )
+	{
+		emem_track_free ( e.mData, e.mCID, oldname, msg );
+		emem_track_alloc ( e.mData, e.mCID, newname, msg );
+	}
+
+	void emem_check ()
+	{
+		#ifdef DEBUG_EVENT_MEM
+			printf ( "----- unfreed events\n" );	
+			for (int i=0; i < event_tracks.size(); i++) {
+				printf ( " %s, %s\n", event_tracks[i].tag.c_str(), event_tracks[i].msg.c_str() );
+			}
+			printf ( "-----\n" );
+		#endif
+	}
+#endif
+
 
 //---------------------------------------------- Event Queue
 
@@ -191,17 +217,23 @@ void EventQueue::startTrace ( char* fn )
 {
 	mTraceFile = fopen ( fn, "w+t" );
 }
-void EventQueue::push ( Event& e )
+// safe pull of front event 
+// (event acquire, does not call const copy)
+void EventQueue::PopFront ( Event*& dest )
 {
-	e.incRefs ();				// Added to queue. Increment ref count.
-	mList.push ( e );
-
-	//	trace ();
+	dest = mList.front ();			// get first element
+	mList.pop ();								// pop from list
 }
 
-void EventQueue::push_back ( Event& e )
+void EventQueue::Push ( Event* e )
 {
-	std::queue < Event >	q;
+	e->incRefs ();				// Added to queue. Increment ref count.
+	mList.push ( e );
+}
+
+void EventQueue::Push_back ( Event* e )
+{
+	std::queue < Event* >	q;
 
 	while ( mList.size() > 0 ) {
 		q.push ( mList.front() );
@@ -217,25 +249,20 @@ void EventQueue::push_back ( Event& e )
 EventQueue& EventQueue::operator= ( EventQueue &op )
 {
 	Event e;
-	while ( op.size() > 0 ) {
+	while ( op.getSize() > 0 ) {
 		e = op.mList.front();
-		mList.push ( e );
+		mList.push ( &e );
 		op.mList.pop();
 	}
 	return *this;
 }
 
-void EventQueue::clear ()
+void EventQueue::Clear ()
 {
 	while ( mList.size() > 0 )
-		pop ();
+		mList.pop ();
 }
 
-void EventQueue::pop ()
-{
-	if (mList.size()==0) return;
-	mList.pop ();		// pop causes event & payload deletion!
-}
 
 void EventQueue::trace ()
 {
@@ -257,7 +284,7 @@ void EventQueue::trace ()
 	fflush ( mTraceFile );
 	while (!temp.empty() ) {
 		e = temp.front ();
-		mList.push ( e );
+		mList.push ( &e );
 		temp.pop ();
 	}
 }

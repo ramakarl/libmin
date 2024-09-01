@@ -99,7 +99,7 @@ bool CImageFormatTiff::Load (char *filename, ImageX* img )
 	uint64_t sz = ftell ( m_Tif );
 	fseek ( m_Tif, 0, SEEK_SET );	
 
-	m_Buf = new_event ( 16384, 'app ', 'tiff', 0, 0x0 );
+	new_event ( m_Buf, 16384, 'app ', 'tiff', 0, 0x0 );
 	m_Buf.attachFromFile (m_Tif, sz);
 	m_Buf.startRead ();
 
@@ -935,7 +935,7 @@ bool CImageFormatTiff::Save (char *filename, ImageX* img )
 	m_yres = m_pImg->GetHeight();
 	m_bpp = m_pImg->GetBitsPerPix ();
 	
-	m_Buf = new_event ( 16384, 'app ', 'tiff', 0, 0x0 );
+	new_event ( m_Buf, 16384, 'app ', 'tiff', 0, 0x0 );
 
 	m_Buf.startWrite ();
 	m_Buf.attachUShort ( TIFF_BYTEORDER );

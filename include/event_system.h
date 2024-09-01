@@ -37,24 +37,35 @@
 
 	// Event memory management [required]
 	HELPAPI char* new_event_data ( size_t size, int& max, EventPool* pool, eventStr_t name, const char* msg=0 );
-	HELPAPI void free_event_data ( char*& data, EventPool* pool, eventStr_t name, int cid, const char* msg=0 );
-	HELPAPI Event new_event ( size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool, const char* msg=0 );
+	HELPAPI void free_event_data ( char*& data, EventPool* pool, eventStr_t name, int cid, const char* msg=0 );	
+	HELPAPI void new_event ( Event& e, size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool, const char* msg=0 );
 	HELPAPI void free_event ( Event& e, const char* msg=0 );
 	HELPAPI void expand_event ( Event& e, size_t size );	
-	HELPAPI void check_event_mem ();
+	
+	// event memory debugging
+	#ifdef DEBUG_EVENT_MEM
+		struct eventTrack {		
+			eventTrack( std::string t, const char* m) {tag=t; msg = (m==0x0) ? "" : std::string(m);}
+			std::string tag;
+			std::string msg;
+		};
+		typedef std::vector<eventTrack>	vecTrack_t;		
+		HELPAPI void emem_check ();
+		HELPAPI void emem_track_alloc ( char* data, int cid, eventStr_t name, const char* msg );
+		HELPAPI void emem_track_free  ( char* data, int cid, eventStr_t name, const char* msg  );
+		HELPAPI void emem_rename ( Event& e, eventStr_t oldname, eventStr_t newname, const char* msg );
+	#endif
 	
 	// Event queue - maintains a queue of events
 	class HELPAPI EventQueue {
 	public:
 		EventQueue ();
 		
-		void clear ();
-		void push ( Event& e );
-		void push_back (Event& e );
-		void pop ();		
-		Event& front ()	 { return mList.front(); }
-		Event& back ()	 { return mList.back(); }
-		int size ()				 { return (int) mList.size(); }
+		void Clear ();
+		void Push ( Event* e );
+		void Push_back ( Event* e );		
+		void PopFront ( Event*& dest );		
+		int getSize ()				 { return (int) mList.size(); }
 
 		//-- debugging
 		void startTrace ( char* fn );
@@ -62,7 +73,7 @@
 		EventQueue& operator= ( EventQueue &op );
 
 	private:
-		std::queue < Event >		mList;		
+		std::queue < Event* >		mList;		
 		FILE*						mTraceFile;
 	};
 
