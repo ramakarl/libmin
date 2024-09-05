@@ -71,8 +71,10 @@ char* new_event_data ( size_t size, int& max, EventPool* pool, eventStr_t name, 
 void new_event ( Event& p, size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool, const char* msg )
 {
 	// close out old mem tag
-	#ifdef DEBUG_EVENT_MEM	
-		emem_track_free ( p.mData, p.mCID, p.mName, msg );
+	#ifdef DEBUG_EVENT_MEM
+		if (p.mData != 0x0 ) {
+			emem_track_free ( p.mData, p.mCID, p.mName, msg );
+		}
 	#endif
 	
 	// reuse event p
@@ -141,7 +143,7 @@ void free_event_data ( char*& data, EventPool* pool, eventStr_t name, int cid, c
 
 		// event memory debugging
 		event_free++;		
-		#ifdef DEBUG_EVENT_MEM			
+		#ifdef DEBUG_EVENT_MEM	
 			emem_track_free ( data, cid, name, msg );
 		#endif
 		
@@ -188,6 +190,7 @@ void free_event_data ( char*& data, EventPool* pool, eventStr_t name, int cid, c
 
 	void emem_rename ( Event& e, eventStr_t oldname, eventStr_t newname, const char* msg )
 	{
+		if (e.mData == 0x0 ) return;
 		emem_track_free ( e.mData, e.mCID, oldname, msg );
 		emem_track_alloc ( e.mData, e.mCID, newname, msg );
 	}

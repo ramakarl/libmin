@@ -89,7 +89,8 @@ void glib::start2D ( int w, int h, bool bStatic )
 	gx.m_curr_num = 0;
 	
 	gxSet* set = gx.addSet ( '2', bStatic );	
-	set->clip_region.Set ( 0, 0, w, h );
+	set->clip_region.Set ( 0, 0, w, h );		// default clip
+	set->aspect_correct = 1.0;							// default text aspect
 
 	setview2D ( w, h );
 }
@@ -102,6 +103,7 @@ void glib::start2D ( int w, int h, Vec4F region, bool bStatic )
 	
 	gxSet* set = gx.addSet ( '2', bStatic );	
 	set->clip_region = region;
+	set->aspect_correct = 1.0;
 
 	setview2D ( w, h );
 }

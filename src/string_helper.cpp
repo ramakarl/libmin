@@ -618,6 +618,12 @@ Vec4F strToVec4(std::string str, uchar sep)
   strToVec(str, '<', sep, '>', vec, 4);
   return v;
 }
+std::string vecToStr ( Vec4F v )
+{
+  char buf[1024];  
+  sprintf ( buf, "<%f,%f,%f,%f>", v.x, v.y, v.z, v.w );
+  return std::string(buf);
+}
 
 
 std::string wsToStr ( const std::wstring& str )

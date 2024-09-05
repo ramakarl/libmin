@@ -55,7 +55,7 @@
 	HELPAPI std::string cToStr ( char c );
 	HELPAPI std::string iToStr ( int i );
 	HELPAPI std::string fToStr ( float f );
-	HELPAPI std::string xlToStr ( uint64_t v );
+	HELPAPI std::string xlToStr ( uint64_t v );	
 	HELPAPI objType strToType ( std::string str );
 	HELPAPI std::string typeToStr ( objType t );
 	HELPAPI std::string wsToStr ( const std::wstring& str );
@@ -66,6 +66,7 @@
 	HELPAPI bool strToVec4(std::string& str, uchar lsep, uchar insep, uchar rsep, float* vec);
 	HELPAPI Vec3F strToVec3(std::string str, uchar sep);
 	HELPAPI Vec4F strToVec4(std::string str, uchar sep);	
+	HELPAPI std::string vecToStr ( Vec4F v );
 
 	//----------- Boolean returns
 	
