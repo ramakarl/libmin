@@ -305,14 +305,18 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	float asp_correct = gx.getAspectCorrect ();
 	float textDel = gx.m_text_hgt / font.ascent;	// world:font ratio
 	float textStartPy = textDel;										// start location in pixels
+	int cused = 0;
 
 	for (; c < len; c++ ) {
 		ch = msg.at(c);
 		if ( ch == '\n' ) {
+			// line return
 			lX = lLinePosX;
 			lLinePosY += gx.m_text_hgt;
 			lY = lLinePosY;
-		} else if ( ch >=0 && ch <= 128 ) {
+		
+		} else if ( ch >= 0 && ch <= 128 ) {
+			// printable character
 			gxGlyph& gly = font.glyphs[ ch ];
 			float pX = lX + gly.offX * textDel;
 			float pY = lY - (gly.offY * textDel / asp_correct);
@@ -334,13 +338,18 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	
 			lX += (gly.advance + gx.m_text_kern) * textDel;
 			lY += 0;			
+			cused++;
+
 		}	else if ( ch=='\0' ) {
+			// end of line
 			break;
 		}
+		// note: unicode/extended chars will not be used
 	}
 
+
 	// clear remainder of VBO entries
-	for (int n=c; n < len; n++ ) {
+	for (int n = cused; n < len; n++ ) {
 		memset ( v, 0, 6*sizeof(gxVert) ); v += 6;				
 	}
 }
