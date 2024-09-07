@@ -101,7 +101,7 @@ Event::Event ( eventStr_t target, eventStr_t name)
 
 void Event::copyEventVars ( Event* dst, const Event* src )
 {
-	// this is NOT a deep copy. the data pointed to by mData is NOT copied.
+	// this is NOT a deep copy. the data pointed to by mData is NOT copied here.
 	// only the member variables reference to data are transferred.	
 	dst->mName = src->mName;
 	dst->mTarget = src->mTarget;
@@ -109,14 +109,17 @@ void Event::copyEventVars ( Event* dst, const Event* src )
 	dst->mTimeStamp = src->mTimeStamp;	
 	dst->mRefs = src->mRefs;
 	dst->mSrcSock = src->mSrcSock;
-	dst->mTargetID = src->mTargetID;		
-	dst->mData = src->mData;
+	dst->mTargetID = src->mTargetID;			
 	dst->mMax = src->mMax;	
 	dst->bOwn = src->bOwn;	
 	dst->bDestroy = src->bDestroy;
 	dst->mDataLen = src->mDataLen;
-	dst->mOwner = src->mOwner;
+	
+	// data transfer of ownership
+	dst->mOwner = src->mOwner;				
+	dst->mData = src->mData;
 	dst->mPos = mData;	
+
 	for (int n=0; n < 5; n++)
 		dst->mScope[n] = src->mScope[n];	
 }
@@ -202,7 +205,7 @@ void Event::copy ( const Event& src )
 	// don't copy self
 	if (this == &src) return;
 
-	// any prior data on dest event is discarded
+	// any prior data on this event is discarded
 	if ( bOwn && mData != 0x0 ) {
 		free_event_data ( mData, mOwner, mName, mCID, "~acq" );
 		mData = 0x0;
