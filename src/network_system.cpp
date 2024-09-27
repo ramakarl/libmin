@@ -313,32 +313,29 @@ inline void NetworkSystem::CXSocketUpdateAddr ( int sock_i, bool src )
 	TRACE_ENTER ( (__func__) );
 	NetSock& s = m_socks [ sock_i ];	   
 	int optval = 0, ret;
-	unsigned long ioval = ( s.blocking ? 0 : 1 ); // 0 = blocking, 1 = non-blocking
-	#ifdef _WIN32 // Windows
-		int case_key = ( src ) ? s.src.type : s.dest.type;
-		switch ( case_key ) {
-			case NTYPE_BROADCAST:	s.src.ip.S_un.S_addr = htonl( INADDR_BROADCAST ); 	optval = 1;	break;
-			case NTYPE_ANY:			s.src.ip.S_un.S_addr = htonl( INADDR_ANY ); 		optval = 0;	break;
-			case NTYPE_CONNECT:		s.src.ip.S_un.S_addr = s.src.ipL; 					optval = 0; break;
+	int ntype = (src) ? s.src.type : s.dest.type;
+	
+	#ifdef _WIN32 // Windows		
+		switch (ntype) {
+			case NTYPE_BROADCAST:		s.src.ip.S_un.S_addr = htonl( INADDR_BROADCAST ); optval = 1;	break;
+			case NTYPE_LISTEN:			s.src.ip.S_un.S_addr = s.src.ipL;									optval = 0; break;
+			case NTYPE_ANY:					s.src.ip.S_un.S_addr = htonl( INADDR_ANY ); 			optval = 0;	break;
+			case NTYPE_CONNECT:			s.src.ip.S_un.S_addr = s.src.ipL; 								optval = 0; break;
 		};
-		if ( s.src.type != STATE_NONE ) {
-			if ( s.broadcast ) {
-				ret = setsockopt ( s.socket, SOL_SOCKET, SO_BROADCAST,  (const char*) &optval, sizeof ( optval ) );	
-			}
-			ioctlsocket ( s.socket, FIONBIO, &ioval ); // FIONBIO = non-blocking mode		
+		if ( s.src.type != STATE_NONE ) {			
+			ret = setsockopt ( s.socket, SOL_SOCKET, SO_BROADCAST,  (const char*) &optval, sizeof ( optval ) );				
+			CXSocketMakeBlock (sock_i, s.blocking );			
 		}
-	#else // Linux and others
-		int case_key = ( src ) ? s.mode : s.dest.type;
-		switch ( case_key ) {
-			case NTYPE_BROADCAST: 	s.src.ip.s_addr = htonl( INADDR_BROADCAST );		optval = 1; break;
-			case NTYPE_ANY:			s.src.ip.s_addr = htonl( INADDR_ANY ); 				optval = 0;	break;
-			case NTYPE_CONNECT:		s.src.ip.s_addr = s.src.ipL; 						optval = 0;	break;
+	#else // Linux and others		
+		switch (ntype) {
+			case NTYPE_BROADCAST: 	s.src.ip.s_addr = htonl( INADDR_BROADCAST );	optval = 1; break;			
+			case NTYPE_LISTEN:			s.src.ip.s_addr = s.src.ipL;									optval = 0; break;
+			case NTYPE_ANY:					s.src.ip.s_addr = htonl( INADDR_ANY ); 				optval = 0;	break;			
+			case NTYPE_CONNECT:			s.src.ip.s_addr = s.src.ipL; 									optval = 0;	break;
 		}
 		if ( s.src.type != STATE_NONE ) {
-			ret = setsockopt ( s.socket, SOL_SOCKET, SO_BROADCAST,  (const char*) &optval, sizeof ( optval ) );
-			//if ( ret < 0 ) netPrintf ( PRINT_ERROR, "Cannot set socket opt" );
-			ret = ioctl ( s.socket, FIONBIO, &ioval );
-			//if ( ret < 0 ) netPrintf ( PRINT_ERROR, "Cannot set socket ctrl" );
+			ret = setsockopt ( s.socket, SOL_SOCKET, SO_BROADCAST,  (const char*) &optval, sizeof ( optval ) );			
+			CXSocketMakeBlock(sock_i, s.blocking );			
 		}
 	#endif
 	
@@ -674,8 +671,9 @@ bool NetworkSystem::netServerStart ( netPort srv_port, int security )
 	
 	// Get host name (this machine)
 	m_hostType = 's';
-	netIP srv_anyip = inet_addr ( "0.0.0.0" );	
-	NetAddr addr1 ( NTYPE_ANY, m_hostName, srv_anyip, srv_port );
+	netIP server_ip = getHostIP();
+	str		server_name = getHostName();
+	NetAddr addr1 ( NTYPE_LISTEN, server_name, server_ip, srv_port );
 	NetAddr addr2 ( NTYPE_BROADCAST, "", 0, srv_port );
 	int srv_sock_i = netAddSocket ( NET_SRV, NET_TCP, STATE_START, false, addr1, addr2 ), ret;
 	const char reuse = 1;
@@ -768,7 +766,7 @@ void NetworkSystem::netServerAcceptClient ( int sock_i )
 void NetworkSystem::netServerCompleteConnection ( int sock_i )
 {
 	TRACE_ENTER ( (__func__) );
-	int srv_sock_svc = netFindSocket ( NET_SRV, NET_TCP, NTYPE_ANY );
+	int srv_sock_svc = netFindSocket ( NET_SRV, NET_TCP, NTYPE_LISTEN );
 	if ( srv_sock_svc == -1 ) {
 	   netPrintf ( PRINT_ERROR_HS, "Unable to find server listen socket" );
 	}
@@ -839,8 +837,8 @@ void NetworkSystem::netServerProcessIO ( )
 				#ifdef BUILD_OPENSSL
 					netServerAcceptSSL(sock_i);								// SSL accept, has SSL_HANDSHAKE. (NTYPE_CONNECT because TCP accept completed)
 				#endif
-			} else if (s.src.type == NTYPE_ANY) {			
-				netServerAcceptClient(sock_i);						// TCP accept, has NTYPE_ANY
+			} else if (s.src.type == NTYPE_LISTEN) {			
+				netServerAcceptClient(sock_i);						// TCP accept, has NTYPE_LISTEN
 			} else {
 				// connection-oriented socket. do recv.				
 				netReceiveData(sock_i);
@@ -1950,7 +1948,7 @@ int NetworkSystem::netFindSocket ( int side, int mode, int type )
 {
 	TRACE_ENTER ( (__func__) );
 	for ( int n = 0; n < m_socks.size ( ); n++ ) { // Find socket by mode & type
-		if ( m_socks[ n ].mode == mode && m_socks[ n ].side == side && m_socks[ n ].src.type==type ) {
+		if ( m_socks[ n ].mode == mode && m_socks[ n ].side == side && m_socks[ n ].src.type==type || type==NTYPE_ANY) {
 			TRACE_EXIT ( (__func__) );
 			return n;
 		}

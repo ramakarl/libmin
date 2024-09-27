@@ -60,15 +60,17 @@
 	#define NET_UDP						1	
 	
 	#define NET_SECURITY_UNDEF			0 // security types
-	#define NET_SECURITY_FAIL			1 
-	#define NET_SECURITY_PLAIN_TCP		2
+	#define NET_SECURITY_FAIL				1 
+	#define NET_SECURITY_PLAIN_TCP	2
 	#define NET_SECURITY_OPENSSL		4
-	#define NET_SECURITY_DTLS			8
+	#define NET_SECURITY_DTLS				8
 	
-	#define NTYPE_ANY					0 // types
-	#define NTYPE_BROADCAST				1		
-	#define NTYPE_SEARCH				2	
-	#define NTYPE_CONNECT				3	
+	// connection types
+	#define NTYPE_ANY						0					// localhost, any interface
+	#define NTYPE_LISTEN				1					// specific IP, listen mode
+	#define NTYPE_BROADCAST			2		
+	#define NTYPE_SEARCH				3	
+	#define NTYPE_CONNECT				4					// specific IP, connect mode
 
 	#define STATE_NONE					0 // stats
 	#define STATE_START					1
