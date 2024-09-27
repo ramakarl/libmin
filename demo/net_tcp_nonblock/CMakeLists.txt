@@ -18,45 +18,20 @@ get_filename_component ( LIBMIN_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../" REALPA
 list( APPEND CMAKE_MODULE_PATH "${LIBMIN_ROOT}/cmake" )
 list( APPEND CMAKE_PREFIX_PATH "${LIBMIN_ROOT}/cmake" )
 
-#####################################################################################
-# Include LIBMIN
-#
-find_package(Libmin QUIET)
-
-if (NOT LIBMIN_FOUND)
-
-  Message ( FATAL_ERROR "
-  This project requires libmin. 
-  Set LIBMIN_ROOT to the libmin repository path for /libmin/cmake.
-  " )
-
-else()
-  add_definitions(-DUSE_LIBMIN)  
-  include_directories(${LIBMIN_INC_DIR})
-  include_directories(${LIBRARIES_INC_DIR})  
-
-  if (DEFINED ${BUILD_LIBMIN_STATIC})
-    add_definitions(-DLIBMIN_STATIC) 
-    file(GLOB LIBMIN_SRC "${LIBMIN_SRC_DIR}/*.cpp" )
-    file(GLOB LIBMIN_INC "${LIBMIN_INC_DIR}/*.h" )
-    LIST( APPEND LIBMIN_SOURCE_FILES ${LIBMIN_SRC} ${LIBMIN_INC} )
-    message ( STATUS "  ---> Using LIBMIN (static)")
-  else()    
-    LIST( APPEND LIBRARIES_OPTIMIZED "${LIBMIN_LIB_DIR}/${LIBMIN_REL}")
-    LIST( APPEND LIBRARIES_DEBUG "${LIBMIN_LIB_DIR}/${LIBMIN_DEBUG}")	     
-    _EXPANDLIST( OUTPUT PACKAGE_DLLS SOURCE ${LIBMIN_LIB_DIR} FILES ${LIBMIN_DLLS} )
-    message ( STATUS "  ---> Using LIBMIN")
-  endif() 
-endif()
 
 #####################################################################################
 # Options
 
-_REQUIRE_LIBEXT()
+# sockets library
+#
+if (UNIX)
+  find_library(WS2_32_lib ws2_32)
+  if (WS2_32_LIB) 
+    target_link_libraries(${PROJNAME} ${WS2_32_LIB})
+    target_link_libraries(${PROJNAME} libc)
+  endif()
+endif()
 
-# _REQUIRE_OPENSSL (true)
-
-# _REQUIRE_BCRYPT (true)
 
 #--- symbols in release mode
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi" CACHE STRING "" FORCE)
@@ -101,28 +76,24 @@ set_target_properties( ${PROJNAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFI
 #####################################################################################
 # Additional Libraries
 #
-_LINK ( PROJECT ${PROJNAME} OPT ${LIBRARIES_OPTIMIZED} DEBUG ${LIBRARIES_DEBUG} PLATFORM ${PLATFORM_LIBRARIES} )
+target_link_libraries ( ${PROJNAME} ${LIBRARIES_OPTIMIZED} ${LIBRARIES_DEBUG} )
 
 #####################################################################################
 # Windows specific
 #
-_MSVC_PROPERTIES()
-source_group("Source Files" FILES ${MAIN_FILES} ${COMMON_SOURCE_FILES} ${PACKAGE_SOURCE_FILES})
-source_group( CUDA FILES ${CUDA_FILES})
+if (WIN32)
+	_MSVC_PROPERTIES()
+	source_group("Source Files" FILES ${MAIN_FILES} ${COMMON_SOURCE_FILES} ${PACKAGE_SOURCE_FILES})
+	source_group( CUDA FILES ${CUDA_FILES})
+endif()
 
 #####################################################################################
 # Install Binaries
 #
 #
-_DEFAULT_INSTALL_PATH()
 
 # assets folder
 file (COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION ${CMAKE_INSTALL_PREFIX} )
-
-if (WIN32) 
-  _INSTALL ( FILES ${PACKAGE_DLLS} DESTINATION ${CMAKE_INSTALL_PREFIX} )		# DLLs
-  install ( FILES $<TARGET_PDB_FILE:${PROJNAME}> DESTINATION ${CMAKE_INSTALL_PREFIX} OPTIONAL )   # PDB
-endif()
 
 install ( FILES ${INSTALL_LIST} DESTINATION ${CMAKE_INSTALL_PREFIX} )		# exe
 

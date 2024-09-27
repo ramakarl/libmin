@@ -7,26 +7,29 @@
 	#include <conio.h>
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
-	#define CX_SOCKET					SOCKET
-	#define CX_SOCK_ERROR			SOCKET_ERROR
+	#define CX_SOCKET		SOCKET
+	#define CX_SOCK_ERROR		(SOCKET_ERROR+1)	// to allow: result < SOCK_ERROR
+	#define CX_INVALID_SOCK		(INVALID_SOCKET+1)
 	#define CX_WOULD_BLOCK		WSAEWOULDBLOCK
-	#define CX_INVALID_SOCK		INVALID_SOCKET
 	#define	sockLen						int
 #elif __linux__
 	#include <cstring>
+	#include <stdarg.h>		// for va_start/va_end
 	#include <stdio.h>
 	#include <sys/socket.h>
 	#include <net/if.h>
 	#include <netinet/in.h>
 	#include <netinet/tcp.h> 
+	#include <arpa/inet.h>
+	#include <netdb.h>		// for addrinfo
 	#include <errno.h>    
 	#include <fcntl.h>
 	#include <unistd.h>
-	#define CX_SOCKET					int
-	#define CX_SOCK_ERROR			0	
+	#define CX_SOCKET		int
+	#define CX_SOCK_ERROR		0			// check: result < SOCK_ERROR
 	#define CX_INVALID_SOCK		0
 	#define CX_WOULD_BLOCK		EWOULDBLOCK	
-	#define	sockLen						socklen_t
+	#define	sockLen			socklen_t
 #endif   
 
 bool get_arg(int argc, char** argv, const char* chk_arg, std::string& val)
@@ -56,6 +59,18 @@ int getLastError()
 		return WSAGetLastError(); // windows get last error
 	#else
 		return errno;
+	#endif
+
+}
+int setSockBlockMode (CX_SOCKET sock, bool block)
+{
+	#ifdef _WIN32
+	  int mode = (block) ? 0 : 1;
+	  return ioctlsocket(sock, FIONBIO, &mode)
+	#else
+	  int mode = fcntl(sock, F_GETFL);
+	  if (block) mode &= ~O_NONBLOCK; else mode |= O_NONBLOCK;
+  	  return fcntl(sock, F_SETFL, mode);
 	#endif
 }
 
@@ -89,6 +104,15 @@ std::string getErrorMsg(int& error_id)
 		std::string error_str = std::string(error_buf);
 	#endif		
 	return error_str;
+}
+bool sockOkWouldBlock ()
+{
+	#ifdef _WIN32
+		return (getLastError()==WSAEWOULDBLOCK);
+	#else
+		// Ubuntu notes: EWOULDBLOCK=11, EAGAIN=11, EINPROGRESS=115, EALREADY=114, EISCONN=106		
+		return (errno==EWOULDBLOCK || errno==EAGAIN || errno==EINPROGRESS || errno==EALREADY || errno==EISCONN);
+	#endif
 }
 
 std::string errorf(const char* fmt_raw, ...)
@@ -160,7 +184,7 @@ int main ( int argc, char* argv [] )
 	// Server TCP/IP Non-blocking 
 	if (bServer) {      
 		// Create server listening socket
-		if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == CX_INVALID_SOCK) {
+		if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) <= CX_INVALID_SOCK) {
 			errorf ( "Socket creation failed. " );
 			cleanup( serverSock );
 			return 1;
@@ -171,22 +195,22 @@ int main ( int argc, char* argv [] )
 		serverAddr.sin_port = htons(serverPort);
 
 		// Set socket options
-		char opt = 1;
+		int opt = 1;
 		if (setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
 			errorf( "Server setsockopt failed.");
 			return 1;
 		}
 
 		// Bind socket to address
-		if (bind(serverSock, (struct sockaddr*) &serverAddr, sizeof(serverAddr)) <= CX_SOCK_ERROR) {
+		if (bind(serverSock, (struct sockaddr*) &serverAddr, sizeof(serverAddr)) < CX_SOCK_ERROR) {
 			errorf( "Server bind failed.");			
 			cleanup( serverSock );
 			return 1;
 		}	else { std::cerr << "Server bind to address ok." << std::endl; }
 
 		// Listen for connections
-		if (listen(serverSock, 3) <= CX_SOCK_ERROR) {
-			errorf("Server listen failed.");			
+		if (listen(serverSock, 3) < CX_SOCK_ERROR) {
+			errorf("Server listen failed.");		
 			cleanup(serverSock);
 			return 1;
 		}	else { 
@@ -194,8 +218,8 @@ int main ( int argc, char* argv [] )
 		}
 
 		// Set server socket to non-blocking mode
-		if (ioctlsocket(serverSock, FIONBIO, &mode) <= CX_SOCK_ERROR) {
-			errorf("Server ioctlsocket failed.");			
+		if (setSockBlockMode (serverSock, false) < CX_SOCK_ERROR) {
+			errorf("Server set block mode failed.");			
 			cleanup(serverSock);
 			return 1;
 		}
@@ -206,7 +230,7 @@ int main ( int argc, char* argv [] )
 	// Client TCP/IP Non-blocking 
 	if (bClient) {
 		// Create socket
-		if ((clientSock = socket(AF_INET, SOCK_STREAM, 0)) == CX_INVALID_SOCK) {
+		if ((clientSock = socket(AF_INET, SOCK_STREAM, 0)) < CX_INVALID_SOCK) {
 			errorf( "Client socket create failed. ");			
 			cleanup(serverSock);
 			return 1;
@@ -229,11 +253,10 @@ int main ( int argc, char* argv [] )
 		cliSrvAddr.sin_family = AF_INET;				
 		cliSrvAddr.sin_port = htons(serverPort);
 		cliSrvAddr.sin_addr.s_addr = inet_addr(ipstr);		// resolved server IP address
-		printf ( "Client contacting %s:%d\n", ipstr, serverPort );
 
 		// Set client socket to non-blocking mode
-		if (ioctlsocket(clientSock, FIONBIO, &mode) <= CX_SOCK_ERROR) {
-			errorf( "Client ioctlsocket failed.");						
+		if (setSockBlockMode(clientSock, false) < CX_SOCK_ERROR) {
+			errorf( "Client set block mode failed.");						
 			cleanup(clientSock);
 			return 1;
 		}		 
@@ -248,8 +271,8 @@ int main ( int argc, char* argv [] )
 			if (!srvConnected) {
 				// server not yet connected
 				srvCliSock = accept(serverSock, (struct sockaddr*)& srvCliAddr, &srvCliAddrSize);
-				if (srvCliSock == CX_INVALID_SOCK) {
-					if (getLastError() == CX_WOULD_BLOCK) {
+				if (srvCliSock < CX_INVALID_SOCK) {					
+					if ( sockOkWouldBlock() ) {
 						// std::cout << "Server waiting for client." << std::endl;
 						setLastError(0);
 					} else {
@@ -273,7 +296,8 @@ int main ( int argc, char* argv [] )
 						printf( "%d ", int(numbers[n]));
 					}
 					printf ("\n");
-					srvSent = true;					
+					srvSent = true;		
+					if (!bClient) done = true;		// no client, we're done.			
 				}
 				setLastError(0);
 			}				
@@ -285,37 +309,48 @@ int main ( int argc, char* argv [] )
 			if (!cliConnected) {
 				
 				// client not connected				
-				if (++cliTimer > 10000) {
+				if (++cliTimer > 1000) {
 
-					cliTimer = 0;
-					// check for complete connection using select
-					fd_set writefds;
-					FD_ZERO(&writefds);
-					FD_SET(clientSock, &writefds);
-					timeval timeout;
-					timeout.tv_sec = 0;
-					timeout.tv_usec = 200;
-					ret = select(0, NULL, &writefds, NULL, &timeout);
-					if (ret > 0 && FD_ISSET(clientSock, &writefds)) {
-						std::cout << "Client connected ok!" << std::endl;
-						cliConnected = true;
-					} else {
-						// try connect again
-						ret = connect( clientSock, (struct sockaddr*)&cliSrvAddr, sizeof(cliSrvAddr) );
-						if (ret == CX_SOCK_ERROR) {
-							if (getLastError() == CX_WOULD_BLOCK) {
-								// connection in progress. wait for it.
-								std::cout << "Client connecting to server..." << std::endl;
-								setLastError(0);						
-							}	else {
-								errorf( "Client connect failed.");
-								cleanup(clientSock);
-								return 1;
+					cliTimer = 0;					
+					// try connect again
+					printf ( "Client contacting %s:%d\n", serverIP.c_str(), serverPort );
+					ret = connect( clientSock, (struct sockaddr*) &cliSrvAddr, sizeof(cliSrvAddr) );
+					if (ret < CX_SOCK_ERROR) {
+						if ( sockOkWouldBlock() ) {
+							// connection in progress. wait for it.
+							// check for complete connection using select
+							fd_set writefds;
+							FD_ZERO(&writefds);
+							FD_SET(clientSock, &writefds);
+							timeval timeout;
+							timeout.tv_sec = 0;
+							timeout.tv_usec = 500;
+							ret = select ( clientSock+1, NULL, &writefds, NULL, &timeout);
+							if (ret > 0 && FD_ISSET(clientSock, &writefds)) {
+								//#ifdef _WIN32
+								  std::cout << "Client connected ok!" << std::endl;
+								  cliConnected = true;
+								/*#else
+								  int so_error; 
+		  						  socklen_t len = sizeof(so_error);
+		  						  if (getsockopt(clientSock, SOL_SOCKET, SO_ERROR, &so_error, &len) < 0 ) {
+		 							errorf ( "Client socket select error.\n" );
+								  } else {
+									std::cout << "Client connected ok!" << std::endl;
+									cliConnected = true;
+								  }
+								#endif */
 							}
+							setLastError(0);
+						} else {
+							errorf( "Client connect failed.");
+							cleanup(clientSock);
+							return 1;
 						}
 					}
+					
 				}
-			}	else {
+			 } else {
 				// client connected
 				// receive data
 				char cli_numbers[10];				
