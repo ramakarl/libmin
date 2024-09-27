@@ -13,11 +13,13 @@
 	#define CX_INVALID_SOCK		INVALID_SOCKET
 	#define	sockLen						int
 #elif __linux__
+	#include <cstring>
 	#include <stdio.h>
 	#include <sys/socket.h>
 	#include <net/if.h>
 	#include <netinet/in.h>
 	#include <netinet/tcp.h> 
+	#include <errno.h>    
 	#include <fcntl.h>
 	#include <unistd.h>
 	#define CX_SOCKET					int
