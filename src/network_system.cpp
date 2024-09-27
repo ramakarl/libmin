@@ -328,7 +328,7 @@ inline void NetworkSystem::CXSocketUpdateAddr ( int sock_i, bool src )
 	}		
 	
 	// set connection blocking mode
-	CXSocketMakeBlock(s.socket, s.blocking);
+	CXSocketMakeBlock( s.socket, s.blocking );
 
 	if ( src ) {
 		// set src side of this connection		
@@ -339,8 +339,7 @@ inline void NetworkSystem::CXSocketUpdateAddr ( int sock_i, bool src )
 		memset ( s.src.addr.sin_zero, 0, sizeof ( s.src.addr.sin_zero ) );		
 
 	} else {
-		// set dest side of this connection
-		CXSocketMakeBlock(s.dest.sock, s.blocking);			// cross-platform
+		// set dest side of this connection		
 		s.dest.setIP( ip );
 		s.dest.addr.sin_family = AF_INET;
 		s.dest.addr.sin_port = htons ( s.dest.port );
@@ -2541,7 +2540,7 @@ str NetworkSystem::netPrintf ( int flag, const char* fmt_raw, ... )
 			int error_id = 0;			// request last err
 			str error_str = CXGetErrorMsg ( error_id );
 			str delim = tag +  "=================================================\n";
-			msg = delim + tag + str("ERROR: ") + msg + ":" + error_str + delim;
+			msg = delim + tag + str("ERROR: ") + msg + ": " + error_str + "\n" + delim;
 			dbgprintf ( msg.c_str ( ) );
 			break;
 	}
