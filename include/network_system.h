@@ -117,7 +117,7 @@ public:
 	bool netSetPathToCertFile ( str path );
 	
 	// Server API
-	void netServerStart ( netPort srv_port, int security = NET_SECURITY_UNDEF );
+	bool netServerStart ( netPort srv_port, int security = NET_SECURITY_UNDEF );
 	void netServerAcceptClient ( int sock_i );
 	void netServerCheckConnectionHandshakes ( );
 	void netServerProcessIO ( );
@@ -154,11 +154,14 @@ public:
 	// Accessors
 	TimeX		getSysTime ( )				{ return TimeX::GetSystemNSec ( ); }
 	str			getHostName ( )				{ return m_hostName; }
+	netIP		getHostIP()						{ return m_hostIp; }
+	str			getHostIPStr()				{ return getIPStr(m_hostIp); }
 	bool		isServer ( )					{ return m_hostType == 's'; }
 	bool		isClient ( )					{ return m_hostType == 'c'; }
 	bool 		netIsQueueEmpty ( )		{ return m_eventQueue.getSize ( ) == 0; }
-	netIP		getHostIP ( )					{ return m_hostIp; }	
-	EventPool*  getNetPool ( )		{ return m_eventPool; }
+	
+	EventPool*  getNetPool ( )		{ return m_eventPool; }		
+	
 	
 	NetSock*	getSock ( int sock_i )			{ return VALID_INDEX(sock_i) ? &m_socks[ sock_i ] : 0; }
 	str			getSockIP ( int sock_i )		{ return VALID_INDEX(sock_i) ? getIPStr ( m_socks[ sock_i ].dest.ipL ) : ""; }
