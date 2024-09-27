@@ -7,26 +7,16 @@
 	#include <conio.h>
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
+	#define CX_SOCKET				SOCKET
+	#define CX_SOCK_ERROR		SOCKET_ERROR
 #elif __linux__
 	#include <stdio.h>
-	#include <sys/ioctl.h>
-	#include <termios.h>
-	int _kbhit ( ) 
-	{
-		static const int STDIN = 0;
-		static bool kbinit = false;
-		if ( !kbinit ) {
-			termios term;
-			tcgetattr(STDIN, &term);
-			term.c_lflag &= ~ICANON;
-			tcsetattr ( STDIN, TCSANOW, &term );
-			setbuf ( stdin, NULL );
-			kbinit = true;
-		}
-		int bytes;
-		ioctl ( STDIN, FIONREAD, &bytes );
-		return bytes;
-	}
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+	#include <fcntl.h>
+	#include <unistd.h>
+	#define CS_SOCKET				int
+	#define CX_SOCK_ERROR		0	
 #endif   
 
 bool get_arg(int argc, char** argv, const char* chk_arg, std::string& val)
@@ -56,6 +46,15 @@ int getLastError()
 		return WSAGetLastError(); // windows get last error
 	#else
 		return errno;
+	#endif
+}
+
+void cleanup(CX_SOCKET s)
+{
+	#ifdef _WIN32
+		if (s != 0) {	closesocket(s);	} else { WSACleanup(); }
+ 	#else
+		if (s != 0) { close(s);	}
 	#endif
 }
 
@@ -153,7 +152,7 @@ int main ( int argc, char* argv [] )
 		// Create server listening socket
 		if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
 			errorf ( "Socket creation failed. " );
-			WSACleanup();
+			cleanup( serverSock );
 			return 1;
 		}	else { std::cerr << "Server created socket." << std::endl; }
 		// Setup address
@@ -169,18 +168,16 @@ int main ( int argc, char* argv [] )
 		}
 
 		// Bind socket to address
-		if (bind(serverSock, (struct sockaddr*) &serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-			errorf( "Server bind failed.");
-			closesocket(serverSock );
-			WSACleanup();
+		if (bind(serverSock, (struct sockaddr*) &serverAddr, sizeof(serverAddr)) <= CX_SOCK_ERROR) {
+			errorf( "Server bind failed.");			
+			cleanup( serverSock );
 			return 1;
 		}	else { std::cerr << "Server bind to address ok." << std::endl; }
 
 		// Listen for connections
 		if (listen(serverSock, 3) == SOCKET_ERROR) {
-			errorf("Server listen failed.");
-			closesocket(serverSock);
-			WSACleanup();
+			errorf("Server listen failed.");			
+			cleanup(serverSock);
 			return 1;
 		}	else { 
 			printf ( "Server listening on %s:%d\n", serverIP.c_str(), serverPort );
@@ -189,8 +186,7 @@ int main ( int argc, char* argv [] )
 		// Set server socket to non-blocking mode
 		if (ioctlsocket(serverSock, FIONBIO, &mode) == SOCKET_ERROR) {
 			errorf("Server ioctlsocket failed.");			
-			closesocket(serverSock);
-			WSACleanup();
+			cleanup(serverSock);
 			return 1;
 		}
 		std::cout << "Server waiting for connections..." << std::endl;
@@ -202,7 +198,7 @@ int main ( int argc, char* argv [] )
 		// Create socket
 		if ((clientSock = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
 			errorf( "Client socket create failed. ");			
-			WSACleanup();
+			cleanup(serverSock);
 			return 1;
 		}
 		// Client set server address
@@ -227,9 +223,8 @@ int main ( int argc, char* argv [] )
 
 		// Set client socket to non-blocking mode
 		if (ioctlsocket(clientSock, FIONBIO, &mode) == SOCKET_ERROR) {
-			errorf( "Client ioctlsocket failed.");			
-			closesocket(clientSock);
-			WSACleanup();
+			errorf( "Client ioctlsocket failed.");						
+			cleanup(clientSock);
 			return 1;
 		}		 
 	}
@@ -304,7 +299,7 @@ int main ( int argc, char* argv [] )
 								setLastError(0);						
 							}	else {
 								errorf( "Client connect failed.");
-								closesocket(clientSock);								
+								cleanup(clientSock);
 								return 1;
 							}
 						}
@@ -339,9 +334,7 @@ int main ( int argc, char* argv [] )
 		}
 	}
 
-	closesocket(srvCliSock);
-	closesocket(clientSock);	
-	closesocket(serverSock);
+	cleanup(0);	
 
 	return 1;
 }
