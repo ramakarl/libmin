@@ -1,11 +1,9 @@
 
 #include <string>
-#include <common_defs.h>
-#include <string_helper.h>
-
-#pragma comment(lib, "Ws2_32.lib")
+#include <iostream>
 
 #ifdef _WIN32
+	#pragma comment(lib, "Ws2_32.lib")
 	#include <conio.h>
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
@@ -86,8 +84,7 @@ std::string errorf(const char* fmt_raw, ...)
 int main ( int argc, char* argv [] )
 {	
 	int ret;
-	addSearchPath(ASSET_PATH);
-
+	
 	int serverPort = 10020;
 	std::string serverIP = "127.0.0.1";
 
