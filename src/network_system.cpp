@@ -314,37 +314,34 @@ inline void NetworkSystem::CXSocketUpdateAddr ( int sock_i, bool src )
 	NetSock& s = m_socks [ sock_i ];	   
 	int optval = 0, ret;
 	int ntype = (src) ? s.src.type : s.dest.type;
+
+	// determine IP to use
+	netIP ip;	
+	switch (ntype) {
+	case NTYPE_BROADCAST:		ip = htonl(INADDR_BROADCAST); optval = 1;	break;
+	case NTYPE_LISTEN:			ip = s.src.ipL;								optval = 0; break;
+	case NTYPE_ANY:					ip = htonl(INADDR_ANY); 			optval = 0;	break;
+	case NTYPE_CONNECT:			ip = s.src.ipL; 							optval = 0; break;
+	};
+	if ( s.src.type != STATE_NONE ) {			
+		ret = setsockopt ( s.socket, SOL_SOCKET, SO_BROADCAST,  (const char*) &optval, sizeof ( optval ) );							
+	}		
 	
-	#ifdef _WIN32 // Windows		
-		switch (ntype) {
-			case NTYPE_BROADCAST:		s.src.ip.S_un.S_addr = htonl( INADDR_BROADCAST ); optval = 1;	break;
-			case NTYPE_LISTEN:			s.src.ip.S_un.S_addr = s.src.ipL;									optval = 0; break;
-			case NTYPE_ANY:					s.src.ip.S_un.S_addr = htonl( INADDR_ANY ); 			optval = 0;	break;
-			case NTYPE_CONNECT:			s.src.ip.S_un.S_addr = s.src.ipL; 								optval = 0; break;
-		};
-		if ( s.src.type != STATE_NONE ) {			
-			ret = setsockopt ( s.socket, SOL_SOCKET, SO_BROADCAST,  (const char*) &optval, sizeof ( optval ) );				
-			CXSocketMakeBlock (sock_i, s.blocking );			
-		}
-	#else // Linux and others		
-		switch (ntype) {
-			case NTYPE_BROADCAST: 	s.src.ip.s_addr = htonl( INADDR_BROADCAST );	optval = 1; break;			
-			case NTYPE_LISTEN:			s.src.ip.s_addr = s.src.ipL;									optval = 0; break;
-			case NTYPE_ANY:					s.src.ip.s_addr = htonl( INADDR_ANY ); 				optval = 0;	break;			
-			case NTYPE_CONNECT:			s.src.ip.s_addr = s.src.ipL; 									optval = 0;	break;
-		}
-		if ( s.src.type != STATE_NONE ) {
-			ret = setsockopt ( s.socket, SOL_SOCKET, SO_BROADCAST,  (const char*) &optval, sizeof ( optval ) );			
-			CXSocketMakeBlock(sock_i, s.blocking );			
-		}
-	#endif
-	
+	// set connection blocking mode
+	CXSocketMakeBlock(s.socket, s.blocking);
+
 	if ( src ) {
+		// set src side of this connection		
+		s.src.setIP ( ip );															// cross-platform
 		s.src.addr.sin_family = AF_INET;
 		s.src.addr.sin_port = htons ( s.src.port );
 		s.src.addr.sin_addr = s.src.ip;
 		memset ( s.src.addr.sin_zero, 0, sizeof ( s.src.addr.sin_zero ) );		
+
 	} else {
+		// set dest side of this connection
+		CXSocketMakeBlock(s.dest.sock, s.blocking);			// cross-platform
+		s.dest.setIP( ip );
 		s.dest.addr.sin_family = AF_INET;
 		s.dest.addr.sin_port = htons ( s.dest.port );
 		s.dest.addr.sin_addr = s.dest.ip;
@@ -995,11 +992,11 @@ void NetworkSystem::netClientStart ( netPort cli_port, str srv_addr )
 	TRACE_ENTER ( (__func__) );
 	
 	eventStr_t sys = 'net '; 
-	m_hostType = 'c'; // Network System is running in client mode
+	m_hostType = 'c';																	// Network System is running in client mode
 	netPrintf ( PRINT_VERBOSE, "Start Client:" );
 
-	struct HELPAPI NetAddr netAddr = NetAddr ( ); // Start a TCP listen socket on Client
-	netAddr.convertIP ( ntohl ( inet_addr ( srv_addr.c_str ( ) ) ) );
+	struct HELPAPI NetAddr netAddr = NetAddr ( );			// Start a TCP default socket on Client (for reference)
+	netAddr.setIP ( ntohl ( inet_addr ( srv_addr.c_str ( ) ) ) );
 	netAddr.ipL = inet_addr ( srv_addr.c_str ( ) );
 	netAddSocket ( NET_CLI, NET_TCP, STATE_NONE, false, NetAddr ( NTYPE_ANY, m_hostName, m_hostIp, cli_port ), netAddr );
 
@@ -1053,15 +1050,17 @@ netIP NetworkSystem::netResolveServerIP ( str srv_name, netPort srv_port )
 int NetworkSystem::netFindOrCreateSocket (str srv_name, netPort srv_port, netIP srv_ip, bool block )
 {
 	int cli_sock_i;
-	str cli_name;
+	str cli_name = "";
 	netPort cli_port;
 	netIP cli_ip;
 
 	// Find source socket service by type
 	int cli_sock_svc_i = netFindSocket(NET_CLI, NET_TCP, NTYPE_ANY); // Find a local TCP socket service
-	cli_name = m_socks[cli_sock_svc_i].src.name;
-	cli_port = m_socks[cli_sock_svc_i].src.port;
-	cli_ip = m_hostIp;
+	if (cli_sock_svc_i != -1) {
+		cli_name = m_socks[cli_sock_svc_i].src.name;
+		cli_port = m_socks[cli_sock_svc_i].src.port;
+		cli_ip = m_hostIp;
+	}
 
 	// Find socket to specific server & port (only one per client)
 	NetAddr srv_addr = NetAddr(NTYPE_CONNECT, srv_name, srv_ip, srv_port); 
@@ -1185,20 +1184,20 @@ void NetworkSystem::netClientProcessIO ( )
 	fd_set sockWriteSet;
 	int rcv_events = netSocketSelect ( &sockReadSet, &sockWriteSet );
 	NET_PERF_PUSH ( "findsocks" );
-	for ( int sock_i = 0; sock_i < (int) m_socks.size ( ); sock_i++ ) { 
+	for ( int sock_i = 0; sock_i < (int) m_socks.size ( ); sock_i++ ) { 		
 		if ( netSocketIsSelected ( &sockReadSet, sock_i ) ) {
 			NetSock& s = m_socks[ sock_i ];
 			if ( s.security & NET_SECURITY_OPENSSL && s.state == STATE_SSL_HANDSHAKE ) {
 				#ifdef BUILD_OPENSSL
 					netClientConnectSSL ( sock_i ); // This call is LESS important than the other
 				#endif		
-			}
+			}						
 			netReceiveData(sock_i);
 		}
 		if ( netSocketIsSelected ( &sockWriteSet, sock_i ) ) {
 			netSendResidualEvent( sock_i );
 		}
-	}
+	}	
 	NET_PERF_POP ( );
 	TRACE_EXIT ( (__func__) );
 }
@@ -1369,7 +1368,7 @@ int NetworkSystem::netAddSocket ( int side, int mode, int state, bool block, Net
 	s.timeout.tv_sec = 0; 
 	s.timeout.tv_usec = 0;
 	s.blocking = block;
-	s.broadcast = 1;
+	s.broadcast = 0;
 	s.security = m_security; 
 	s.reconnectBudget = s.reconnectLimit = m_reconnectLimit;  
 
@@ -1948,7 +1947,7 @@ int NetworkSystem::netFindSocket ( int side, int mode, int type )
 {
 	TRACE_ENTER ( (__func__) );
 	for ( int n = 0; n < m_socks.size ( ); n++ ) { // Find socket by mode & type
-		if ( m_socks[ n ].mode == mode && m_socks[ n ].side == side && m_socks[ n ].src.type==type || type==NTYPE_ANY) {
+		if ( m_socks[ n ].mode == mode && m_socks[ n ].side == side && (m_socks[ n ].src.type==type || type==NTYPE_ANY) ) {
 			TRACE_EXIT ( (__func__) );
 			return n;
 		}

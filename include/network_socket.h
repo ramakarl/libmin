@@ -83,10 +83,10 @@
 	// Network Address Abstraction
 	struct HELPAPI NetAddr {
 	public:
-        NetAddr ( int t, std::string n, netIP i, int p ) { type = t; name = n; ipL = i; convertIP(i); port = p;}
-		NetAddr ()  { type = STATE_NONE; name = ""; ipL = 0; convertIP(0); port = 0; }
+        NetAddr ( int t, std::string n, netIP i, int p ) { type = t; name = n; ipL = i; setIP(i); port = p;}
+		NetAddr ()  { type = STATE_NONE; name = ""; ipL = 0; setIP(0); port = 0; }
 
-		void convertIP ( netIP i ) {
+		void setIP ( netIP i ) {
 #ifdef _WIN32
 			ip.S_un.S_addr = i;
 #elif __ANDROID__
