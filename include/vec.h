@@ -130,8 +130,7 @@
 		 Vec2F (const Vec3F &op);
 		 Vec2F (const Vec4F &op);
 
-		 Vec2F &Set (const float xa, const float ya);
-		 
+		 Vec2F &Set (const float xa, const float ya);		 
 
 		 Vec2F &operator= (const Vec2I &op);
 		 Vec2F &operator= (const Vec2F &op);

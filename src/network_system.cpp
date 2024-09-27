@@ -412,7 +412,7 @@ NetworkSystem::NetworkSystem ( const char* trace_file_name )
 	m_pathCertDir = str("");
 	m_pathCertFile = str("");
 	
-	m_printVerbose = true;
+	m_printVerbose = false;
 	m_printFlow = false;
 	m_trace = 0;
 	m_check = 0;
@@ -667,13 +667,14 @@ void NetworkSystem::netServerAcceptSSL ( int sock_i )
 // -> GENERAL SERVER <-
 //----------------------------------------------------------------------------------------------------------------------
 
-void NetworkSystem::netServerStart ( netPort srv_port, int security )
+bool NetworkSystem::netServerStart ( netPort srv_port, int security )
 {
 	TRACE_ENTER ( (__func__) );
 	netPrintf ( PRINT_VERBOSE, "Start Server:" );
-	m_hostType = 's';
-	netIP srv_anyip = inet_addr ( "0.0.0.0" );
 	
+	// Get host name (this machine)
+	m_hostType = 's';
+	netIP srv_anyip = inet_addr ( "0.0.0.0" );	
 	NetAddr addr1 ( NTYPE_ANY, m_hostName, srv_anyip, srv_port );
 	NetAddr addr2 ( NTYPE_BROADCAST, "", 0, srv_port );
 	int srv_sock_i = netAddSocket ( NET_SRV, NET_TCP, STATE_START, false, addr1, addr2 ), ret;
@@ -681,19 +682,25 @@ void NetworkSystem::netServerStart ( netPort srv_port, int security )
 	NetSock& s = m_socks[ srv_sock_i ];
 	if ( ( ret = setsockopt ( s.socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof ( int ) ) ) < 0 ) {	
 		netPrintf ( PRINT_ERROR, "Failed at SO_REUSEADDR; Return: %d", ret );
+		return false;
 	}
 	if ( security != NET_SECURITY_UNDEF ) {
 		m_socks[ srv_sock_i ].security = security;
 	}
 	
-	netSocketBind ( srv_sock_i );
+	// Bind & Listen
+	netSocketBind ( srv_sock_i );			// NOTE: MUST CHECK FOR BIND FAIL (indicates port blocked)
+
 	netSocketListen ( srv_sock_i );	
+
 	if ( security == NET_SECURITY_UNDEF ) {
 		if ( ( m_security > NET_SECURITY_PLAIN_TCP ) && ( m_security & NET_SECURITY_PLAIN_TCP ) ) {
 			netServerStart ( --srv_port, NET_SECURITY_PLAIN_TCP );
 		}
 	}
 	TRACE_EXIT ( (__func__) );
+
+	return true;
 }
 
 void NetworkSystem::netServerAcceptClient ( int sock_i )
@@ -2043,7 +2050,7 @@ void NetworkSystem::netSetHostname ()
 {
 	TRACE_ENTER ( (__func__) );
 	CXSetHostname ( );
-	netPrintf ( PRINT_VERBOSE, "  Local Host: %s, %s", m_hostName.c_str ( ), getIPStr ( m_hostIp ).c_str ( ) );
+	netPrintf ( PRINT_VERBOSE, "  Local Host: %s, %s:%s", m_hostName.c_str ( ), getIPStr ( m_hostIp ).c_str ( ) );
 	TRACE_EXIT ( (__func__) );
 }
 
