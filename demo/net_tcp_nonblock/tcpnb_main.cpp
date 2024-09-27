@@ -7,16 +7,20 @@
 	#include <conio.h>
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
-	#define CX_SOCKET				SOCKET
-	#define CX_SOCK_ERROR		SOCKET_ERROR
+	#define CX_SOCKET					SOCKET
+	#define CX_SOCK_ERROR			SOCKET_ERROR
+	#define CX_WOULD_BLOCK		WSAEWOULDBLOCK
+	#define CX_INVALID_SOCK		INVALID_SOCKET
 #elif __linux__
 	#include <stdio.h>
 	#include <sys/socket.h>
 	#include <netinet/in.h>
 	#include <fcntl.h>
 	#include <unistd.h>
-	#define CS_SOCKET				int
-	#define CX_SOCK_ERROR		0	
+	#define CX_SOCKET					int
+	#define CX_SOCK_ERROR			0	
+	#define CX_INVALID_SOCK		0
+	#define CX_WOULD_BLOCK		EWOULDBLOCK	
 #endif   
 
 bool get_arg(int argc, char** argv, const char* chk_arg, std::string& val)
@@ -49,7 +53,7 @@ int getLastError()
 	#endif
 }
 
-void cleanup(CX_SOCKET s)
+void cleanup (CX_SOCKET s)
 {
 	#ifdef _WIN32
 		if (s != 0) {	closesocket(s);	} else { WSACleanup(); }
@@ -150,7 +154,7 @@ int main ( int argc, char* argv [] )
 	// Server TCP/IP Non-blocking 
 	if (bServer) {      
 		// Create server listening socket
-		if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+		if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == CX_INVALID_SOCK) {
 			errorf ( "Socket creation failed. " );
 			cleanup( serverSock );
 			return 1;
@@ -175,7 +179,7 @@ int main ( int argc, char* argv [] )
 		}	else { std::cerr << "Server bind to address ok." << std::endl; }
 
 		// Listen for connections
-		if (listen(serverSock, 3) == SOCKET_ERROR) {
+		if (listen(serverSock, 3) <= CX_SOCK_ERROR) {
 			errorf("Server listen failed.");			
 			cleanup(serverSock);
 			return 1;
@@ -184,7 +188,7 @@ int main ( int argc, char* argv [] )
 		}
 
 		// Set server socket to non-blocking mode
-		if (ioctlsocket(serverSock, FIONBIO, &mode) == SOCKET_ERROR) {
+		if (ioctlsocket(serverSock, FIONBIO, &mode) <= CX_SOCK_ERROR) {
 			errorf("Server ioctlsocket failed.");			
 			cleanup(serverSock);
 			return 1;
@@ -196,7 +200,7 @@ int main ( int argc, char* argv [] )
 	// Client TCP/IP Non-blocking 
 	if (bClient) {
 		// Create socket
-		if ((clientSock = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+		if ((clientSock = socket(AF_INET, SOCK_STREAM, 0)) == CX_INVALID_SOCK) {
 			errorf( "Client socket create failed. ");			
 			cleanup(serverSock);
 			return 1;
@@ -222,7 +226,7 @@ int main ( int argc, char* argv [] )
 		printf ( "Client contacting %s:%d\n", ipstr, serverPort );
 
 		// Set client socket to non-blocking mode
-		if (ioctlsocket(clientSock, FIONBIO, &mode) == SOCKET_ERROR) {
+		if (ioctlsocket(clientSock, FIONBIO, &mode) <= SOCKET_ERROR) {
 			errorf( "Client ioctlsocket failed.");						
 			cleanup(clientSock);
 			return 1;
@@ -238,8 +242,8 @@ int main ( int argc, char* argv [] )
 			if (!srvConnected) {
 				// server not yet connected
 				srvCliSock = accept(serverSock, (struct sockaddr*)& srvCliAddr, &srvCliAddrSize);
-				if (srvCliSock == INVALID_SOCKET) {
-					if (getLastError() == WSAEWOULDBLOCK) {
+				if (srvCliSock == CX_INVALID_SOCK) {
+					if (getLastError() == CX_WOULD_BLOCK) {
 						// std::cout << "Server waiting for client." << std::endl;
 						setLastError(0);
 					} else {
