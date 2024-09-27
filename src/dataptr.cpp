@@ -239,6 +239,7 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
 
 bool DataPtr::Map()
 {
+  #ifdef USE_CUDA
     if ( mUseFlags & DT_CUINTEROP) { 
 
       if ( mUseFlags & DT_GLVBO) {
@@ -276,11 +277,13 @@ bool DataPtr::Map()
         return true;
       }
     }
-    return false;
+  #endif
+  return false;
 }
 
 bool DataPtr::Unmap()
 {
+  #ifdef USA_CUDA
     if ( mUseFlags& DT_CUINTEROP ) {
       if ( mUseFlags & DT_GLVBO ) {
         cuCheck(cuGraphicsUnmapResources(1, &mGrsc, 0), "DataPtr::Unmap", "cuGraphicsUnmapResrc", "", false);
@@ -295,7 +298,8 @@ bool DataPtr::Unmap()
         return true;
       }
     }
-    return false;
+  #endif            
+  return false;
 }
 
 
