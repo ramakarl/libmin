@@ -8,9 +8,7 @@
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
 	#define CX_SOCKET		SOCKET
-	#define CX_SOCK_ERROR		(SOCKET_ERROR+1)	// to allow: result < SOCK_ERROR
-	#define CX_INVALID_SOCK		(INVALID_SOCKET+1)
-	#define CX_WOULD_BLOCK		WSAEWOULDBLOCK
+	#define CX_SOCK_ERROR			(SOCKET_ERROR+1)		// to allow: result < SOCK_ERROR
 	#define	sockLen						int
 #elif __linux__
 	#include <cstring>
@@ -25,10 +23,8 @@
 	#include <errno.h>    
 	#include <fcntl.h>
 	#include <unistd.h>
-	#define CX_SOCKET		int
-	#define CX_SOCK_ERROR		0			// check: result < SOCK_ERROR
-	#define CX_INVALID_SOCK		0
-	#define CX_WOULD_BLOCK		EWOULDBLOCK	
+	#define CX_SOCKET					int
+	#define CX_SOCK_ERROR			0			// check: result < SOCK_ERROR
 	#define	sockLen			socklen_t
 #endif   
 
@@ -65,12 +61,22 @@ int getLastError()
 int setSockBlockMode (CX_SOCKET sock, bool block)
 {
 	#ifdef _WIN32
-	  int mode = (block) ? 0 : 1;
-	  return ioctlsocket(sock, FIONBIO, &mode)
+	  u_long mode = (block) ? 0 : 1;
+	  return ioctlsocket(sock, FIONBIO, &mode);
 	#else
 	  int mode = fcntl(sock, F_GETFL);
 	  if (block) mode &= ~O_NONBLOCK; else mode |= O_NONBLOCK;
   	  return fcntl(sock, F_SETFL, mode);
+	#endif
+}
+bool isSockValid (CX_SOCKET sock)
+{
+	// SOCKET is unsigned on windows. Windows checks for INVALID_SOCKET, a very large unsigned int
+  // Linux checks for -1 (signed). See Windows & Linux accept function, return value.
+	#ifdef _WIN32
+		return sock != INVALID_SOCKET;	
+	#else
+		return sock != -1;
 	#endif
 }
 
@@ -184,7 +190,8 @@ int main ( int argc, char* argv [] )
 	// Server TCP/IP Non-blocking 
 	if (bServer) {      
 		// Create server listening socket
-		if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) <= CX_INVALID_SOCK) {
+		serverSock = socket(AF_INET, SOCK_STREAM, 0);
+		if ( !isSockValid(serverSock) ) {
 			errorf ( "Socket creation failed. " );
 			cleanup( serverSock );
 			return 1;
@@ -195,8 +202,12 @@ int main ( int argc, char* argv [] )
 		serverAddr.sin_port = htons(serverPort);
 
 		// Set socket options
-		int opt = 1;
-		if (setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+		#ifdef _WIN32
+			char opt = 1;
+		#else	
+			int opt = 1;
+		#endif	
+		if ( setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) ) {
 			errorf( "Server setsockopt failed.");
 			return 1;
 		}
@@ -230,7 +241,8 @@ int main ( int argc, char* argv [] )
 	// Client TCP/IP Non-blocking 
 	if (bClient) {
 		// Create socket
-		if ((clientSock = socket(AF_INET, SOCK_STREAM, 0)) < CX_INVALID_SOCK) {
+		clientSock = socket(AF_INET, SOCK_STREAM, 0);
+		if ( !isSockValid(serverSock) ) {		
 			errorf( "Client socket create failed. ");			
 			cleanup(serverSock);
 			return 1;
@@ -270,8 +282,8 @@ int main ( int argc, char* argv [] )
 		if (bServer) {
 			if (!srvConnected) {
 				// server not yet connected
-				srvCliSock = accept(serverSock, (struct sockaddr*)& srvCliAddr, &srvCliAddrSize);
-				if (srvCliSock < CX_INVALID_SOCK) {					
+				srvCliSock = accept(serverSock, (struct sockaddr*)& srvCliAddr, &srvCliAddrSize);			
+				if ( !isSockValid(srvCliSock) ) {					
 					if ( sockOkWouldBlock() ) {
 						// std::cout << "Server waiting for client." << std::endl;
 						setLastError(0);

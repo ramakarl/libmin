@@ -82,7 +82,6 @@ target_link_libraries ( ${PROJNAME} ${LIBRARIES_OPTIMIZED} ${LIBRARIES_DEBUG} )
 # Windows specific
 #
 if (WIN32)
-	_MSVC_PROPERTIES()
 	source_group("Source Files" FILES ${MAIN_FILES} ${COMMON_SOURCE_FILES} ${PACKAGE_SOURCE_FILES})
 	source_group( CUDA FILES ${CUDA_FILES})
 endif()
