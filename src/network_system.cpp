@@ -1048,17 +1048,16 @@ netIP NetworkSystem::netResolveServerIP ( str srv_name, netPort srv_port )
 
 int NetworkSystem::netFindOrCreateSocket (str srv_name, netPort srv_port, netIP srv_ip, bool block )
 {
-	int cli_sock_i;
+	int cli_sock_i;	
 	str cli_name = "";
-	netPort cli_port;
-	netIP cli_ip;
+	netIP cli_ip = m_hostIp;
+
+	netPort cli_port = srv_port + 1;			// client port
 
 	// Find source socket service by type
 	int cli_sock_svc_i = netFindSocket(NET_CLI, NET_TCP, NTYPE_ANY); // Find a local TCP socket service
 	if (cli_sock_svc_i != -1) {
-		cli_name = m_socks[cli_sock_svc_i].src.name;
-		cli_port = m_socks[cli_sock_svc_i].src.port;
-		cli_ip = m_hostIp;
+		cli_name = m_socks[cli_sock_svc_i].src.name;				
 	}
 
 	// Find socket to specific server & port (only one per client)
