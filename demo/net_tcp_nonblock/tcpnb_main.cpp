@@ -11,16 +11,20 @@
 	#define CX_SOCK_ERROR			SOCKET_ERROR
 	#define CX_WOULD_BLOCK		WSAEWOULDBLOCK
 	#define CX_INVALID_SOCK		INVALID_SOCKET
+	#define	sockLen						int
 #elif __linux__
 	#include <stdio.h>
 	#include <sys/socket.h>
+	#include <net/if.h>
 	#include <netinet/in.h>
+	#include <netinet/tcp.h> 
 	#include <fcntl.h>
 	#include <unistd.h>
 	#define CX_SOCKET					int
 	#define CX_SOCK_ERROR			0	
 	#define CX_INVALID_SOCK		0
 	#define CX_WOULD_BLOCK		EWOULDBLOCK	
+	#define	sockLen						socklen_t
 #endif   
 
 bool get_arg(int argc, char** argv, const char* chk_arg, std::string& val)
@@ -116,7 +120,7 @@ int main ( int argc, char* argv [] )
 		int serverSock, srvCliSock;
 	#endif
 	struct sockaddr_in serverAddr, srvCliAddr;
-	int srvCliAddrSize = sizeof(srvCliAddr);
+	sockLen srvCliAddrSize = sizeof(srvCliAddr);
 	bool srvConnected = false;
 	bool srvSent = false;
 
@@ -226,7 +230,7 @@ int main ( int argc, char* argv [] )
 		printf ( "Client contacting %s:%d\n", ipstr, serverPort );
 
 		// Set client socket to non-blocking mode
-		if (ioctlsocket(clientSock, FIONBIO, &mode) <= SOCKET_ERROR) {
+		if (ioctlsocket(clientSock, FIONBIO, &mode) <= CX_SOCK_ERROR) {
 			errorf( "Client ioctlsocket failed.");						
 			cleanup(clientSock);
 			return 1;
@@ -296,8 +300,8 @@ int main ( int argc, char* argv [] )
 					} else {
 						// try connect again
 						ret = connect( clientSock, (struct sockaddr*)&cliSrvAddr, sizeof(cliSrvAddr) );
-						if (ret == SOCKET_ERROR) {
-							if (getLastError() == WSAEWOULDBLOCK) {
+						if (ret == CX_SOCK_ERROR) {
+							if (getLastError() == CX_WOULD_BLOCK) {
 								// connection in progress. wait for it.
 								std::cout << "Client connecting to server..." << std::endl;
 								setLastError(0);						
