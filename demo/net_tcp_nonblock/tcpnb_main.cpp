@@ -41,6 +41,24 @@ bool get_arg(int argc, char** argv, const char* chk_arg, std::string& val)
   return false;
 }
 
+void setLastError(int i) 
+{
+	#ifdef _WIN32
+		WSASetLastError(i);
+	#else
+		errno = 0;
+	#endif
+}
+
+int getLastError()
+{
+	#ifdef _WIN32 // get error on windows
+		return WSAGetLastError(); // windows get last error
+	#else
+		return errno;
+	#endif
+}
+
 std::string getErrorMsg(int& error_id)
 {	
 	#ifdef _WIN32 // get error on windows
@@ -73,7 +91,7 @@ std::string errorf(const char* fmt_raw, ...)
 	vsnprintf(buffer, sizeof(buffer), fmt_raw, args);
 	va_end(args);	
   // complete error message
-	int errcode = WSAGetLastError();
+	int errcode = getLastError();
 	std::string msg = "=== ERROR: " + std::string(buffer) + "\nCode " +std::to_string(errcode)+ ": " + getErrorMsg(errcode) + "\n";
 	printf (msg.c_str() );	
 	return msg;
@@ -89,14 +107,22 @@ int main ( int argc, char* argv [] )
 	std::string serverIP = "127.0.0.1";
 
 	// Server state
-	SOCKET serverSock, srvCliSock;
+	#ifdef _WIN32
+		SOCKET serverSock, srvCliSock;
+	#else
+		int serverSock, srvCliSock;
+	#endif
 	struct sockaddr_in serverAddr, srvCliAddr;
 	int srvCliAddrSize = sizeof(srvCliAddr);
 	bool srvConnected = false;
 	bool srvSent = false;
 
 	// Client state
-	SOCKET clientSock;
+	#ifdef _WIN32
+		SOCKET clientSock;
+	#else	
+		int clientSock;
+	#endif
 	struct sockaddr_in cliSrvAddr;
 	bool cliConnected = false;
 	int cliTimer = 0;
@@ -134,6 +160,13 @@ int main ( int argc, char* argv [] )
 		serverAddr.sin_family = AF_INET;
 		serverAddr.sin_addr.s_addr = INADDR_ANY;
 		serverAddr.sin_port = htons(serverPort);
+
+		// Set socket options
+		char opt = 1;
+		if (setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+			errorf( "Server setsockopt failed.");
+			return 1;
+		}
 
 		// Bind socket to address
 		if (bind(serverSock, (struct sockaddr*) &serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
@@ -211,9 +244,9 @@ int main ( int argc, char* argv [] )
 				// server not yet connected
 				srvCliSock = accept(serverSock, (struct sockaddr*)& srvCliAddr, &srvCliAddrSize);
 				if (srvCliSock == INVALID_SOCKET) {
-					if (WSAGetLastError() == WSAEWOULDBLOCK) {
+					if (getLastError() == WSAEWOULDBLOCK) {
 						// std::cout << "Server waiting for client." << std::endl;
-						WSASetLastError(0);
+						setLastError(0);
 					} else {
 						errorf("Server accept failed.");
 						return 1;
@@ -221,7 +254,7 @@ int main ( int argc, char* argv [] )
 				} else {
 					std::cout << "Server connected to client!" << std::endl;
 					srvConnected = true;
-					WSASetLastError(0);
+					setLastError(0);
 				}	
 			} else {
 				// server is connected				
@@ -237,7 +270,7 @@ int main ( int argc, char* argv [] )
 					printf ("\n");
 					srvSent = true;					
 				}
-				WSASetLastError(0);
+				setLastError(0);
 			}				
 		}
 
@@ -265,14 +298,13 @@ int main ( int argc, char* argv [] )
 						// try connect again
 						ret = connect( clientSock, (struct sockaddr*)&cliSrvAddr, sizeof(cliSrvAddr) );
 						if (ret == SOCKET_ERROR) {
-							if (WSAGetLastError() == WSAEWOULDBLOCK) {
+							if (getLastError() == WSAEWOULDBLOCK) {
 								// connection in progress. wait for it.
 								std::cout << "Client connecting to server..." << std::endl;
-								WSASetLastError(0);						
+								setLastError(0);						
 							}	else {
 								errorf( "Client connect failed.");
-								closesocket(clientSock);
-								WSACleanup();
+								closesocket(clientSock);								
 								return 1;
 							}
 						}
@@ -297,11 +329,11 @@ int main ( int argc, char* argv [] )
 					printf("Client done.\n ");
 					done = true;
 				}
-				WSASetLastError(0);
+				setLastError(0);
 			}
 		}
 
-		if (WSAGetLastError() != 0) {
+		if (getLastError() != 0) {
 			errorf( "Network error.");
 			break;
 		}
