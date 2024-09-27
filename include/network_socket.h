@@ -154,9 +154,11 @@
 		std::string srvAddr;
 		int srvPort;
 		
-		SSL_CTX 	*ctx;			// MP: Need to read up on these before commenting; Same cross-platform ? Tentative: Yes
-		SSL 			*ssl;			// MP:
-		BIO 			*bio;			// MP:
+		#ifdef BUILD_OPENSSL
+			SSL_CTX 	*ctx;			// MP: Need to read up on these before commenting; Same cross-platform ? Tentative: Yes
+			SSL 			*ssl;			// MP:
+			BIO 			*bio;			// MP:
+		#endif	
 	};
 
 

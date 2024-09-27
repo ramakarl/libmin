@@ -712,7 +712,9 @@ void NetworkSystem::netServerAcceptClient ( int sock_i )
 
 	// Start of handshake
 	if (security_level & NET_SECURITY_OPENSSL) {
-		netPrintf(PRINT_VERBOSE, "HANDSHAKE OpenSSL: %s", OPENSSL_VERSION_TEXT); // Openssl version 
+		#ifdef BUILD_OPENSSL
+			netPrintf(PRINT_VERBOSE, "HANDSHAKE OpenSSL: %s", OPENSSL_VERSION_TEXT); // Openssl version 
+		#endif	
 	} else {
 		netPrintf(PRINT_VERBOSE, "HANDSHAKE TCP/IP");
 	}
@@ -744,10 +746,12 @@ void NetworkSystem::netServerAcceptClient ( int sock_i )
 
 	// OpenSSL handshake or TCP complete
 	if ( s.security & NET_SECURITY_OPENSSL ) {		
-		netServerSetupHandshakeSSL ( cli_sock_i );
-		if ( s.security & NET_SECURITY_FAIL ) {
-			netManageHandshakeError ( sock_i, "SSL handshake failed");
-		}
+		#ifdef BUILD_OPENSSL
+			netServerSetupHandshakeSSL ( cli_sock_i );
+			if ( s.security & NET_SECURITY_FAIL ) {
+				netManageHandshakeError ( sock_i, "SSL handshake failed");
+			}
+		#endif	
 	}	else if ( s.security & NET_SECURITY_PLAIN_TCP ) { 		
 		netServerCompleteConnection ( cli_sock_i );
 	}
@@ -825,7 +829,9 @@ void NetworkSystem::netServerProcessIO ( )
 		if ( netSocketIsSelected ( &sockReadSet, sock_i ) ) {
 			
 			if (s.state == STATE_SSL_HANDSHAKE) {
-				netServerAcceptSSL(sock_i);								// SSL accept, has SSL_HANDSHAKE. (NTYPE_CONNECT because TCP accept completed)
+				#ifdef BUILD_OPENSSL
+					netServerAcceptSSL(sock_i);								// SSL accept, has SSL_HANDSHAKE. (NTYPE_CONNECT because TCP accept completed)
+				#endif
 			} else if (s.src.type == NTYPE_ANY) {			
 				netServerAcceptClient(sock_i);						// TCP accept, has NTYPE_ANY
 			} else {
@@ -1107,7 +1113,9 @@ int NetworkSystem::netClientConnectToServer ( str srv_name, netPort srv_port, bo
 
 	// Start of handshake
 	if (s.security & NET_SECURITY_OPENSSL) {
-		netPrintf(PRINT_VERBOSE, "HANDSHAKE OpenSSL: %s", OPENSSL_VERSION_TEXT);
+		#ifdef BUILD_OPENSSL
+			netPrintf(PRINT_VERBOSE, "HANDSHAKE OpenSSL: %s", OPENSSL_VERSION_TEXT);
+		#endif	
 	} else {
 		netPrintf(PRINT_VERBOSE, "HANDSHAKE TCP/IP");
 	}	
@@ -1121,12 +1129,14 @@ int NetworkSystem::netClientConnectToServer ( str srv_name, netPort srv_port, bo
 	} 
 
 	// OpenSSL handshake
-	if ( s.security & NET_SECURITY_OPENSSL ) { 		
-		netClientSetupHandshakeSSL ( cli_sock_i );			// state may change to STATE_SSL_HANDSHAKE
-		if ( s.security & NET_SECURITY_FAIL ) {	
-			netManageHandshakeError ( cli_sock_i, "SSL handshake failed" );
+	#ifdef BUILD_OPENSSL
+		if ( s.security & NET_SECURITY_OPENSSL ) { 				
+			netClientSetupHandshakeSSL ( cli_sock_i );			// state may change to STATE_SSL_HANDSHAKE
+			if ( s.security & NET_SECURITY_FAIL ) {	
+				netManageHandshakeError ( cli_sock_i, "SSL handshake failed" );
+			}
 		}
-	}
+	#endif	
 
 	TRACE_EXIT ( (__func__) );
 	return cli_sock_i; // Return socket for this connection
@@ -1150,7 +1160,9 @@ void NetworkSystem::netClientCheckConnectionHandshakes ( )
 				}
 			}
 			if ( (s.security & NET_SECURITY_OPENSSL) && s.state == STATE_SSL_HANDSHAKE ) {
-				netClientConnectSSL ( sock_i ); // This call is MORE important than the other
+				#ifdef BUILD_OPENSSL
+					netClientConnectSSL ( sock_i ); // This call is MORE important than the other
+				#endif		
 			}
 			else if ( ( s.state == STATE_NONE ) && s.reconnectBudget > 0 ) {	
 				s.reconnectBudget--;
@@ -1172,7 +1184,9 @@ void NetworkSystem::netClientProcessIO ( )
 		if ( netSocketIsSelected ( &sockReadSet, sock_i ) ) {
 			NetSock& s = m_socks[ sock_i ];
 			if ( s.security & NET_SECURITY_OPENSSL && s.state == STATE_SSL_HANDSHAKE ) {
-				netClientConnectSSL ( sock_i ); // This call is LESS important than the other
+				#ifdef BUILD_OPENSSL
+					netClientConnectSSL ( sock_i ); // This call is LESS important than the other
+				#endif		
 			}
 			netReceiveData(sock_i);
 		}
@@ -1354,9 +1368,11 @@ int NetworkSystem::netAddSocket ( int side, int mode, int state, bool block, Net
 	s.security = m_security; 
 	s.reconnectBudget = s.reconnectLimit = m_reconnectLimit;  
 
-	s.ctx = 0;
-	s.ssl = 0;
-	s.bio = 0;
+	#ifdef BUILD_OPENSSL
+		s.ctx = 0;
+		s.ssl = 0;
+		s.bio = 0;
+	#endif
 
 	// inital packet buf
 	s.pktMax = 32767;		// fixed size
@@ -1404,10 +1420,13 @@ void NetworkSystem::netSocketReuse ( int sock_i )
 	s.lastStateChange.SetTimeNSec();			
 
 	// free old SSL context
-	if (s.ctx != 0) {
-		netFreeSSL( sock_i );
-		netPrintf(PRINT_VERBOSE, "    Freeing old socket context (2)");
-	}
+	#ifdef BUILD_OPENSSL
+		if (s.ctx != 0) {
+			netFreeSSL( sock_i );
+			netPrintf(PRINT_VERBOSE, "    Freeing old socket context (2)");
+		}
+	#endif	
+
 	// close the socket
 	CXSocketClose( s.socket );
 	s.socket = 0;
