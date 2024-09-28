@@ -14,10 +14,10 @@
     #include <winsock2.h>			// Winsock Ver 2.0
 		#include <ws2tcpip.h>
 		#pragma comment( lib, "ws2_32.lib")
-		#define CX_SOCKET					SOCKET
-		#define CX_SOCKLEN				int		
-		#define CX_SOCKOPT				char
-		#define CX_SOCK_ERROR			SOCKET_ERROR
+		#define CX_SOCKET		SOCKET
+		#define CX_SOCKLEN		int		
+		#define CX_SOCKOPT		char
+		#define CX_SOCK_ERROR		SOCKET_ERROR
 		#define CX_INVALID_SOCK		INVALID_SOCKET
 
 	#elif __ANDROID__
@@ -31,10 +31,10 @@
 		#include <fcntl.h>
 		#include <errno.h>
 		#include <sys/ioctl.h>
-		#define CX_SOCKET					int
-		#define CX_SOCKLEN				socklen_t		
-		#define CX_SOCKOPT				int		
-		#define CX_SOCK_ERROR			-1		
+		#define CX_SOCKET		int
+		#define CX_SOCKLEN		socklen_t		
+		#define CX_SOCKOPT		int		
+		#define CX_SOCK_ERROR		-1		
 		#define CX_INVALID_SOCK		-1
 
   #elif __linux__
@@ -48,10 +48,10 @@
 		#include <fcntl.h>
 		#include <errno.h>
 		#include <sys/ioctl.h>
-		#define CX_SOCKET					int
-		#define CX_SOCKLEN				socklen_t		
-		#define CX_SOCKOPT				int		
-		#define CX_SOCK_ERROR			0										// check: result < SOCK_ERROR
+		#define CX_SOCKET		int
+		#define CX_SOCKLEN		socklen_t		
+		#define CX_SOCKOPT		int		
+		#define CX_SOCK_ERROR		-1		// check: result < SOCK_ERROR
 		#define CX_INVALID_SOCK		-1
   #endif
 
