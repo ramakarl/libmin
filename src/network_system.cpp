@@ -822,7 +822,10 @@ void NetworkSystem::netServerProcessIO ( )
 	NET_PERF_PUSH ( "findsocks" );
 	for ( int sock_i = 0; sock_i < (int) m_socks.size ( ); sock_i++ ) { 
 		NetSock& s = m_socks[ sock_i ];
+
 		if ( netSocketIsSelected ( &sockReadSet, sock_i ) ) {
+			
+			printf ( "selected: %d \n", sock_i );
 			
 			// OpenSSL
 			if (s.security & NET_SECURITY_OPENSSL) {				
@@ -2391,7 +2394,7 @@ int NetworkSystem::netSocketListen ( int sock_i )
 {
 	TRACE_ENTER ( (__func__) );
 	NetSock& s = m_socks [ sock_i ];
-	netPrintf ( PRINT_VERBOSE, "Listen: port %i", s.src.port );
+	netPrintf ( PRINT_VERBOSE, "Listen: ip %s, port %i", getIPStr(s.src.ip).c_str(), s.src.port );
 	int ret = listen ( s.socket, SOMAXCONN );
 	if ( CXSocketError ( ret ) ) {
 		netPrintf ( PRINT_ERROR, "TCP listen error: Return: %d", ret );
