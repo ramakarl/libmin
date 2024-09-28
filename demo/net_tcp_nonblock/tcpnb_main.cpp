@@ -9,6 +9,10 @@
 // * Pure demo. No dependency on Libmin. 
 // * Functions provided here to handle cross-platform correctly.
 
+// Server IP & Port. Put external IP, LAN/NAT IP, or "localhost" here, in quotes.
+#define SERVER_IP			"192.168.1.109"
+#define SERVER_PORT		10020
+
 #ifdef _WIN32
 	#pragma comment(lib, "Ws2_32.lib")
 	#include <conio.h>
@@ -125,7 +129,7 @@ bool sockOkWouldBlock ()
 {
 	#ifdef _WIN32
 		int err = getLastError();
-		return (err==WSAEWOULDBLOCK || err==WSAEINPROGRESS );
+		return (err==WSAEWOULDBLOCK || err==WSAEINPROGRESS || err==WSAEALREADY );
 	#else
 		// Ubuntu notes: EWOULDBLOCK=11, EAGAIN=11, EINPROGRESS=115, EALREADY=114, EISCONN=106		
 		return (errno==EWOULDBLOCK || errno==EAGAIN || errno==EINPROGRESS || errno==EALREADY || errno==EISCONN);
@@ -153,8 +157,8 @@ int main ( int argc, char* argv [] )
 {	
 	int ret;
 	
-	int serverPort = 10020;
-	std::string serverIP = "192.168.1.109";
+	int serverPort = SERVER_PORT;
+	std::string serverIP = SERVER_IP;
 
 	// Server state
 	CX_SOCKET serverSock, srvCliSock;	
@@ -284,7 +288,7 @@ int main ( int argc, char* argv [] )
 				srvCliSock = accept(serverSock, (struct sockaddr*) &srvCliAddr, &srvCliAddrSize);			
 				if ( !isSockValid(srvCliSock) ) {					
 					if ( sockOkWouldBlock() ) {
-						// std::cout << "Server waiting for client." << std::endl;
+						// server waiting for client. no problem.
 						setLastError(0);
 					} else {
 						errorf("Server accept failed.");
@@ -316,14 +320,14 @@ int main ( int argc, char* argv [] )
 
 		// run client
 		if (bClient) {
-			// Attempt to connect to the server
-			if (!cliConnected) {
-				
-				// client not connected				
-				if (++cliTimer > 1000) {
+			
 
+			if (!cliConnected) {				
+				// client not connected	yet
+				
+				// try connect again
+				if (++cliTimer > 1000) {
 					cliTimer = 0;					
-					// try connect again
 					printf ( "Client contacting %s:%d\n", serverIP.c_str(), serverPort );
 					ret = connect( clientSock, (struct sockaddr*) &cliSrvAddr, sizeof(cliSrvAddr) );					
 					if (ret < CX_SOCK_ERROR) {
