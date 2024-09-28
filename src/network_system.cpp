@@ -314,9 +314,9 @@ inline void NetworkSystem::CXSocketUpdateAddr ( int sock_i, bool src )
 	// determine IP to use
 	netIP ip;	
 	switch (ntype) {
-	case NTYPE_BROADCAST:		ip = INADDR_BROADCAST;				optval = 1;	break;
-	case NTYPE_ANY:					ip = INADDR_ANY;				 			optval = 0;	break;
-	case NTYPE_CONNECT:			ip = s.src.ip;								optval = 0; break;
+	case NTYPE_BROADCAST:		ip = INADDR_BROADCAST;							optval = 1;	break;
+	case NTYPE_ANY:					ip = INADDR_ANY;				 						optval = 0;	break;
+	case NTYPE_CONNECT:			ip = (src) ? s.src.ip : s.dest.ip;	optval = 0; break;
 	};
 	if ( s.src.type != STATE_NONE ) {			
 		ret = setsockopt ( s.socket, SOL_SOCKET, SO_BROADCAST,  (const char*) &optval, sizeof ( optval ) );							
