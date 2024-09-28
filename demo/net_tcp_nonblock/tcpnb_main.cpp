@@ -9,7 +9,9 @@
 // * Pure demo. No dependency on Libmin. 
 // * Functions provided here to handle cross-platform correctly.
 
-// Server IP & Port. Put external IP, LAN/NAT IP, or "localhost" here, in quotes.
+// Server IP & Port. 
+// Put external IP, LAN/NAT IP, or "localhost" here, in quotes.
+// Remember to set up port forwarding if the server is behind a router.
 #define SERVER_IP			"192.168.1.109"
 #define SERVER_PORT		10020
 
