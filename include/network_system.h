@@ -211,7 +211,7 @@ private: // Functions
 	int netSocketBind ( int sock_i );	
 	int netSocketConnect ( int sock_i );
 	int netSocketListen ( int sock_i );
-	int netSocketAccept ( int sock_i,  SOCKET& tcp_sock, netIP& cli_ip, netPort& cli_port );	
+	int netSocketAccept ( int sock_i, CX_SOCKET& tcp_sock, netIP& cli_ip, netPort& cli_port );	
 	int netSocketRecv ( int sock_i, char* buf, int buflen, int& recvlen); 
 	void netSocketReuse(int sock_i );
 	bool netSocketIsConnected ( int sock_i );
@@ -221,7 +221,7 @@ private: // Functions
 
 	// Short helpers, used to simplify the program elsewhere
 	void sleep_ms ( int time_ms );
-	unsigned long get_read_ready_bytes ( SOCKET sock_h );		
+	unsigned long get_read_ready_bytes ( CX_SOCKET sock_h );		
 	bool invalid_socket_index ( int sock_i );
 	
 	// Handling tracing and logging
