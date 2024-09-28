@@ -23,6 +23,7 @@
 	#define CX_OPT						char
 	#define CX_SOCKLEN				int
 	#define CX_INVALID_SOCK		INVALID_SOCKET
+	#define SLEEP(x)					Sleep(x)
 #elif __linux__
 	#include <cstring>
 	#include <stdarg.h>				// for va_start/va_end
@@ -39,8 +40,9 @@
 	#define CX_SOCKET					int
 	#define CX_SOCK_ERROR			0										// check: result < SOCK_ERROR
 	#define CX_OPT						int
-	#define CX_SOCKLEN				socklet_t
+	#define CX_SOCKLEN				socklen_t
 	#define CX_INVALID_SOCK		-1
+	#define SLEEP(x)					sleep(x)
 #endif   
 
 bool get_arg(int argc, char** argv, const char* chk_arg, std::string& val)
@@ -341,7 +343,7 @@ int main ( int argc, char* argv [] )
 							timeout.tv_sec = 0;
 							timeout.tv_usec = 500;
 							// *note*: there must be a delay before selecting after connect
-							Sleep(500);
+							SLEEP(500);
 							ret = select ( clientSock+1, NULL, &writefds, NULL, &timeout);
 							if (ret > 0 && FD_ISSET(clientSock, &writefds)) {
 								std::cout << "Client connected ok!" << std::endl;
