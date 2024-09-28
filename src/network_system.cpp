@@ -2063,25 +2063,23 @@ void NetworkSystem::netList ( bool verbose )
 	if ( m_printVerbose || verbose ) { // Print the network
 		str side, mode, stat, src, dst, msg, secur;
 		dbgprintf ( "\n------ NETWORK SOCKETS. MyIP: %s, %s\n", m_hostName.c_str ( ), getIPStr ( m_hostIp ).c_str ( ) );
-		for ( int n = 0; n < m_socks.size ( ); n++ ) {
-			side = ( m_socks[ n ].side == NET_CLI ) ? "cli" : "srv";
-			secur = (m_socks[ n ].security & NET_SECURITY_OPENSSL) ? "ssl" : "tcp";			// future: udp should made a security level, remove s.mode variable.
-			switch ( m_socks[ n ].state ) {
-				case STATE_NONE:		stat = "off      ";	break;
-				case STATE_START:	stat = "enable   "; break;
-				case STATE_CONNECTED:	stat = "connected"; break;
-				case STATE_TERMINATED: stat = "terminatd"; break;
+		for ( int n = 0; n < m_socks.size (); n++ ) {
+			side = ( m_socks[n].side == NET_CLI ) ? "cli" : "srv";
+			secur = (m_socks[n].security & NET_SECURITY_OPENSSL) ? "ssl" : "tcp";			// future: udp should made a security level, remove s.mode variable.
+			stat == "";
+			switch ( m_socks[n].state ) {
+			case STATE_NONE:			stat = "off      ";	break;
+			case STATE_START:			stat = "start    "; break;
+			case STATE_HANDSHAKE:	stat = "handshake"; break;
+			case STATE_CONNECTED:	stat = "connected"; break;
+			case STATE_TERMINATED:stat = "terminatd"; break;
 			};
 			src = netPrintAddr ( m_socks[n].src );
 			dst = netPrintAddr ( m_socks[n].dest );
 			msg = "";
-			if ( m_socks[ n ].side==NET_CLI && m_socks[ n ].state == STATE_CONNECTED )
-				msg = "<-- to Server";
-			if ( m_socks[ n ].side==NET_SRV && m_socks[ n ].state == STATE_CONNECTED )
-				msg = "<-- to Client";
-			if ( m_socks[ n ].side==NET_SRV && m_socks[ n ].state == STATE_START && m_socks[ n ].src.ip == 0 )
-				msg = "<-- Server Listening Port";
-
+			if ( m_socks[n].side==NET_CLI && m_socks[n].state == STATE_CONNECTED ) msg = "<-- to Server";
+			if ( m_socks[n].side==NET_SRV && m_socks[n].state == STATE_CONNECTED ) msg = "<-- to Client";
+			if ( m_socks[n].side==NET_SRV && m_socks[n].src.type == NTYPE_ANY) msg = "<-- Server Listening Port";
 			dbgprintf ( "%d: %s %s %s src[%s] dst[%s] %s\n", n, side.c_str(), secur.c_str(), stat.c_str(), src.c_str(), dst.c_str(), msg.c_str() );
 		}
 		dbgprintf ( "------\n");
