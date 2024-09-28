@@ -200,8 +200,7 @@ private: // Functions
 	int netManageHandshakeError ( int sock_i, std::string reason );
 	int netManageTransmitError ( int sock_i, std::string reason, int force = 0 );
 	int netDeleteSocket ( int sock_i, int force=0 );
-	netIP netResolveServerIP(str name, netPort port);
-	bool netIsError ( int result );	// Socket-specific error check
+	netIP netResolveServerIP(str name, netPort port);	
 	void netReportError ( int result );
 
 	// Low level handling of sockets
@@ -238,8 +237,8 @@ private: // Functions
 	void CXSocketMakeBlock ( CX_SOCKET sock, bool block = false );
 	void CXSocketMakeNoDelay ( CX_SOCKET sock );
 	unsigned long CXSocketReadBytes ( CX_SOCKET sock );
-	bool CXSocketIsValid ( CX_SOCKET sock);	
-	int CXSocketError ( CX_SOCKET sock );
+	bool CXSocketIsValid ( CX_SOCKET sock);			// check if a socket is valid
+	bool CXSocketError ( int ret );							// check if TCP/IP func return is valid
 	bool CXSocketBlockError ( );
 	str CXGetErrorMsg ( int& error_id );
 	void CXSocketUpdateAddr ( int sock_i, bool src = true );

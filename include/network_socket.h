@@ -17,7 +17,7 @@
 		#define CX_SOCKET					SOCKET
 		#define CX_SOCKLEN				int		
 		#define CX_OPT						char
-		#define CX_SOCK_ERROR			(SOCKET_ERROR+1)		// to allow: result < SOCK_ERROR	
+		#define CX_SOCK_ERROR			0											// to allow: result < SOCK_ERROR	
 		#define CX_INVALID_SOCK		INVALID_SOCKET
 
 	#elif __ANDROID__
@@ -103,7 +103,7 @@
 			port = p;
 			// addr struct
 			addr.sin_family = inet;
-			addr.sin_port = p;
+			addr.sin_port = htons(p);
 #ifdef _WIN32
 			addr.sin_addr.s_addr = i;			
 #elif __ANDROID__

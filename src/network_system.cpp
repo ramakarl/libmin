@@ -248,7 +248,7 @@ unsigned long NetworkSystem::CXSocketReadBytes ( CX_SOCKET sock_h )
 	return bytes_avail;
 }
 
-inline bool NetworkSystem::CXSocketIsValid ( CX_SOCKET sock )
+bool NetworkSystem::CXSocketIsValid ( CX_SOCKET sock )
 {
 	// SOCKET is unsigned on windows, signed on linux.
 	// Windows checks for INVALID_SOCKET, a very large unsigned int.
@@ -256,16 +256,9 @@ inline bool NetworkSystem::CXSocketIsValid ( CX_SOCKET sock )
 	return (sock != CX_INVALID_SOCK);
 }
 
-inline int NetworkSystem::CXSocketError ( CX_SOCKET sock_h )
+ bool NetworkSystem::CXSocketError ( int ret )
 {
-	TRACE_ENTER ( (__func__) );
-	#if defined(_MSC_VER) || defined(_WIN32)
-		TRACE_EXIT ( (__func__) );
-		return sock_h == CX_SOCK_ERROR;
-	#else
-		TRACE_EXIT ( (__func__) );
-		return sock_h < CX_SOCK_ERROR;
-	#endif
+	return ret < CX_SOCK_ERROR;	
 }
 
 inline bool NetworkSystem::CXSocketBlockError ( )
@@ -2143,7 +2136,7 @@ bool NetworkSystem::netSendLiteral ( str str_lit, int sock_i )
 bool NetworkSystem::netCheckError ( int result, int sock_i )
 {
 	TRACE_ENTER ( (__func__) );
-	if ( CXSocketError ( m_socks[ sock_i ].socket ) ) {
+	if ( !CXSocketIsValid ( m_socks[ sock_i ].socket ) ) {
 		netManageTransmitError ( sock_i, "unexpected error" );		// Peer has shutdown (unexpected shutdown)
 		netPrintf ( PRINT_ERROR, "Unexpected shutdown" );
 		TRACE_EXIT ( (__func__) );
@@ -2327,7 +2320,7 @@ int NetworkSystem::netSocketBind ( int sock_i )
 	int addr_size = sizeof ( s->src.addr );
 	netPrintf ( PRINT_VERBOSE, "Bind: %s, port %i", ( s->side == NET_CLI ) ? "cli" : "srv", s->src.port );
 	int ret = bind ( s->socket, (sockaddr*) &s->src.addr, addr_size );
-	if ( netIsError ( ret ) ) {
+	if ( CXSocketError ( ret ) ) {
 		netPrintf ( PRINT_ERROR, "Cannot bind to source: Return: %d", ret );
 	}
 	TRACE_EXIT ( (__func__) );
@@ -2609,17 +2602,6 @@ str NetworkSystem::netPrintf ( int flag, const char* fmt_raw, ... )
 			break;
 	}
 	return msg;
-}
-
-bool NetworkSystem::netIsError ( int result )
-{
-	TRACE_ENTER ( (__func__) );
-	if ( CXSocketError ( result ) ) { 
-		TRACE_EXIT ( (__func__) );
-		return true; 
-	}
-	TRACE_EXIT ( (__func__) );
-	return false;
 }
 
 str NetworkSystem::getIPStr ( netIP ip )
