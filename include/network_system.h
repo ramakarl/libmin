@@ -202,6 +202,7 @@ private: // Functions
 	int netDeleteSocket ( int sock_i, int force=0 );
 	netIP netResolveServerIP(str name, netPort port);	
 	void netReportError ( int result );
+	bool netFuncError (int ret );		// check if TCP/IP func return is valid
 
 	// Low level handling of sockets
 	void netStartSocketAPI ( );
@@ -237,8 +238,7 @@ private: // Functions
 	void CXSocketMakeBlock ( CX_SOCKET sock, bool block = false );
 	void CXSocketMakeNoDelay ( CX_SOCKET sock );
 	unsigned long CXSocketReadBytes ( CX_SOCKET sock );
-	bool CXSocketIsValid ( CX_SOCKET sock);			// check if a socket is valid
-	bool CXSocketError ( int ret );							// check if TCP/IP func return is valid
+	bool CXSocketIsValid ( CX_SOCKET sock);			// check if a socket is valid	
 	bool CXSocketBlockError ( );
 	str CXGetErrorMsg ( int& error_id );
 	void CXSocketUpdateAddr ( int sock_i, bool src = true );

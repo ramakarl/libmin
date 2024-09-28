@@ -16,7 +16,7 @@
 		#pragma comment( lib, "ws2_32.lib")
 		#define CX_SOCKET					SOCKET
 		#define CX_SOCKLEN				int		
-		#define CX_OPT						char
+		#define CX_SOCKOPT				char
 		#define CX_SOCK_ERROR			0											// to allow: result < SOCK_ERROR	
 		#define CX_INVALID_SOCK		INVALID_SOCKET
 
@@ -33,7 +33,7 @@
 		#include <sys/ioctl.h>
 		#define CX_SOCKET					int
 		#define CX_SOCKLEN				socklen_t		
-		#define CX_OPT						int		
+		#define CX_SOCKOPT				int		
 		#define CX_SOCK_ERROR			0										// check: result < SOCK_ERROR
 		#define CX_INVALID_SOCK		-1
 
@@ -50,7 +50,7 @@
 		#include <sys/ioctl.h>
 		#define CX_SOCKET					int
 		#define CX_SOCKLEN				socklen_t		
-		#define CX_OPT						int		
+		#define CX_SOCKOPT				int		
 		#define CX_SOCK_ERROR			0										// check: result < SOCK_ERROR
 		#define CX_INVALID_SOCK		-1
   #endif

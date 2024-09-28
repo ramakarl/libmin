@@ -256,7 +256,7 @@ bool NetworkSystem::CXSocketIsValid ( CX_SOCKET sock )
 	return (sock != CX_INVALID_SOCK);
 }
 
- bool NetworkSystem::CXSocketError ( int ret )
+ bool NetworkSystem::netFuncError ( int ret )
 {
 	return ret < CX_SOCK_ERROR;	
 }
@@ -656,10 +656,14 @@ bool NetworkSystem::netServerStart ( netPort srv_port, int security )
 	NetAddr addr1 ( NTYPE_ANY, server_name, server_ip, srv_port );
 	NetAddr addr2 ( NTYPE_BROADCAST, "", 0, srv_port );
 	int srv_sock_i = netAddSocket ( NET_SRV, NET_TCP, STATE_START, false, addr1, addr2 ), ret;
-	const char reuse = 1;
+	
 	NetSock& s = m_socks[ srv_sock_i ];
-	if ( ( ret = setsockopt ( s.socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof ( int ) ) ) < 0 ) {	
-		netPrintf ( PRINT_ERROR, "Failed at SO_REUSEADDR; Return: %d", ret );
+
+  // Set socket options
+	CX_SOCKOPT opt = 1;
+	ret = setsockopt(s.socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(CX_SOCKOPT));
+	if ( netFuncError(ret) ) {	
+		netPrintf ( PRINT_ERROR, "Fail to set SO_REUSEADDR. Ret: %d", ret );
 		return false;
 	}
 	if ( security != NET_SECURITY_UNDEF ) {
@@ -667,9 +671,16 @@ bool NetworkSystem::netServerStart ( netPort srv_port, int security )
 	}
 	
 	// Bind & Listen
-	netSocketBind ( srv_sock_i );			// NOTE: MUST CHECK FOR BIND FAIL (indicates port blocked)
-
-	netSocketListen ( srv_sock_i );	
+	ret = netSocketBind ( srv_sock_i );
+	if (netFuncError(ret)) {
+		netPrintf(PRINT_ERROR, "Server fail to bind listen sock.");
+		return false;
+	}
+	ret = netSocketListen ( srv_sock_i );	
+	if (netFuncError(ret)) {
+		netPrintf(PRINT_ERROR, "Server fail to listen on sock.");
+		return false;
+	}
 
 	if ( security == NET_SECURITY_UNDEF ) {
 		if ( ( m_security > NET_SECURITY_PLAIN_TCP ) && ( m_security & NET_SECURITY_PLAIN_TCP ) ) {
@@ -1084,7 +1095,7 @@ int NetworkSystem::netClientConnectToServer ( str srv_name, netPort srv_port, bo
 	TRACE_ENTER ( (__func__) );
 	
 	netIP srv_ip;
-	int result, ret;
+	int ret;
 
 	// Reuse or create a client socket
 	if ( ! VALID_INDEX( cli_sock_i ) ) {
@@ -1104,11 +1115,12 @@ int NetworkSystem::netClientConnectToServer ( str srv_name, netPort srv_port, bo
 	}
 
 	// Set socket opts
-	const char reuse = 1;	
+	CX_SOCKOPT opt = 1;	
 	s.srvAddr = srv_name;
 	s.srvPort = srv_port; 
-	if ( ( ret = setsockopt ( s.socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof ( int ) ) ) < 0 ) {
-		netPrintf ( PRINT_ERROR_HS, "Failed at SO_REUSEADDR: Return: %d", ret );
+	ret = setsockopt(s.socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(CX_SOCKOPT) );
+	if ( netFuncError(ret) ) {
+		netPrintf ( PRINT_ERROR_HS, "Failed to set SO_REUSEADDR: Return: %d", ret );
 	}
 
 	// Start of handshake
@@ -1122,17 +1134,17 @@ int NetworkSystem::netClientConnectToServer ( str srv_name, netPort srv_port, bo
 	s.state = STATE_START;					// no longer in reuse STATE_NONE (stops triggering of reconnect)
 
 	// TCP connect here
-	result = netSocketConnect ( cli_sock_i );
-	if ( result < 0 ) {
+	ret = netSocketConnect ( cli_sock_i );
+	if ( ret < 0 ) {
 		// Connect error.
 		netManageHandshakeError ( cli_sock_i, "TCP handshake failed" );		
 	
-	} else if (result == 0) {
+	} else if (ret == 0) {
 		// Waiting to connect. Start TCP handshake. 
 
 
 
-	} else if (result > 0 ) {
+	} else if (ret > 0 ) {
 
 		// TCP connected ok.
 		if (s.security & NET_SECURITY_OPENSSL) {
@@ -2320,7 +2332,7 @@ int NetworkSystem::netSocketBind ( int sock_i )
 	int addr_size = sizeof ( s->src.addr );
 	netPrintf ( PRINT_VERBOSE, "Bind: %s, port %i", ( s->side == NET_CLI ) ? "cli" : "srv", s->src.port );
 	int ret = bind ( s->socket, (sockaddr*) &s->src.addr, addr_size );
-	if ( CXSocketError ( ret ) ) {
+	if ( netFuncError(ret) ) {
 		netPrintf ( PRINT_ERROR, "Cannot bind to source: Return: %d", ret );
 	}
 	TRACE_EXIT ( (__func__) );
@@ -2387,7 +2399,7 @@ int NetworkSystem::netSocketListen ( int sock_i )
 	NetSock& s = m_socks [ sock_i ];
 	netPrintf ( PRINT_VERBOSE, "Listen: ip %s, port %i", getIPStr(s.src.ip).c_str(), s.src.port );
 	int ret = listen ( s.socket, SOMAXCONN );
-	if ( CXSocketError ( ret ) ) {
+	if ( netFuncError( ret ) ) {
 		netPrintf ( PRINT_ERROR, "TCP listen error: Return: %d", ret );
 	}
 	TRACE_EXIT ( (__func__) );
