@@ -42,8 +42,8 @@
 // TRACING FUNCTIONS
 //----------------------------------------------------------------------------------------------------------------------
 
-//#define TRACE_FUNCTION_CALLS
-//#define TRACE_FUNCTION_FLUSH
+#define TRACE_FUNCTION_CALLS
+#define TRACE_FUNCTION_FLUSH
 
 double NetworkSystem::get_time ( ) 
 {
@@ -527,9 +527,7 @@ void NetworkSystem::netServerSetupHandshakeSSL ( int sock_i )
 {
 	TRACE_ENTER ( (__func__) );
 	char msg[ 2048 ];
-
 	NetSock& s = m_socks [ sock_i ];
-
 	CXSocketMakeNoDelay ( s.socket );
 	int ret = 0, exp;
 	CXSocketMakeBlock( s.socket, false);		// non-blocking	
@@ -661,10 +659,8 @@ bool NetworkSystem::netServerStart ( netPort srv_port, int security )
 	// Get host name (this machine)
 	m_hostType = 's';
 	netIP server_ip = getHostIP();
-	str server_name = getHostName();
-	char namebuf[512];
-	strncpy(namebuf, server_name.c_str(), 512);
-	NetAddr addr1 ( NTYPE_ANY, namebuf, server_ip, srv_port );
+	str		server_name = getHostName();
+	NetAddr addr1 ( NTYPE_ANY, server_name, server_ip, srv_port );
 	NetAddr addr2 ( NTYPE_BROADCAST, "", 0, srv_port );
 	int srv_sock_i = netAddSocket ( NET_SRV, NET_TCP, STATE_START, false, addr1, addr2 ), ret;
 	const char reuse = 1;
@@ -675,8 +671,8 @@ bool NetworkSystem::netServerStart ( netPort srv_port, int security )
 	}
 	if ( security != NET_SECURITY_UNDEF ) {
 		m_socks[ srv_sock_i ].security = security;
-	}	
-		
+	}
+	
 	// Bind & Listen
 	netSocketBind ( srv_sock_i );			// NOTE: MUST CHECK FOR BIND FAIL (indicates port blocked)
 
@@ -728,10 +724,8 @@ void NetworkSystem::netServerAcceptClient ( int sock_i )
 
 	} else if (result > 0) {
 		// Add socket for client
-		char namebuf[512];
-		strncpy (namebuf, srv_name.c_str(), 512);
 		netIP srv_ip = m_hostIp; // Listen/accept on ANY address (0.0.0.0), final connection needs the server IP
-		NetAddr addr1 ( NTYPE_CONNECT, namebuf, srv_ip, srv_port );
+		NetAddr addr1 ( NTYPE_CONNECT, srv_name, srv_ip, srv_port );
 		NetAddr addr2 ( NTYPE_CONNECT, "", cli_ip, cli_port );
 		int cli_sock_i = netAddSocket ( NET_SRV, NET_TCP, STATE_START, false, addr1, addr2 ); // Create new socket
 
@@ -1004,13 +998,11 @@ void NetworkSystem::netClientStart ( netPort cli_port, str srv_addr )
 	
 	eventStr_t sys = 'net '; 
 	m_hostType = 'c';																	// Network System is running in client mode
-	char namebuf[512];
 	netPrintf ( PRINT_VERBOSE, "Start Client:" );
 
 	struct HELPAPI NetAddr netAddr = NetAddr ( );			// Start a TCP default socket on Client (for reference)
 	netAddr.setAddress ( AF_INET, inet_addr( srv_addr.c_str () ), cli_port );	
-	strncpy( namebuf, m_hostName.c_str(), 512);
-	netAddSocket ( NET_CLI, NET_TCP, STATE_NONE, false, NetAddr ( NTYPE_ANY, namebuf, m_hostIp, cli_port ), netAddr );
+	netAddSocket ( NET_CLI, NET_TCP, STATE_NONE, false, NetAddr ( NTYPE_ANY, m_hostName, m_hostIp, cli_port ), netAddr );
 
 	TRACE_EXIT ( (__func__) );
 }
@@ -1064,7 +1056,6 @@ int NetworkSystem::netFindOrCreateSocket (str srv_name, netPort srv_port, netIP 
 	int cli_sock_i;	
 	str cli_name = "";
 	netIP cli_ip = m_hostIp;
-	char namebuf[512]; 
 
 	netPort cli_port = srv_port + 1;			// client port
 
@@ -1075,14 +1066,12 @@ int NetworkSystem::netFindOrCreateSocket (str srv_name, netPort srv_port, netIP 
 	}
 
 	// Find socket to specific server & port (only one per client)
-	strncpy(namebuf, srv_name.c_str(), 512);
-	NetAddr srv_addr = NetAddr(NTYPE_CONNECT, namebuf, srv_ip, srv_port); 
+	NetAddr srv_addr = NetAddr(NTYPE_CONNECT, srv_name, srv_ip, srv_port); 
 	cli_sock_i = netFindSocket(NET_CLI, NET_TCP, STATE_NONE, srv_addr);
 
 	if (cli_sock_i == NET_ERR) {
 		// Add new socket
-		strncpy(namebuf, cli_name.c_str(), 512);
-		NetAddr cli_addr = NetAddr(NTYPE_CONNECT, namebuf, cli_ip, cli_port);
+		NetAddr cli_addr = NetAddr(NTYPE_CONNECT, cli_name, cli_ip, cli_port);
 		cli_sock_i = netAddSocket(NET_CLI, NET_TCP, STATE_NONE, block, cli_addr, srv_addr);
 		if (cli_sock_i == NET_ERR) {
 			netPrintf(PRINT_ERROR_HS, "Unable to add socket");
@@ -1121,11 +1110,10 @@ int NetworkSystem::netClientConnectToServer ( str srv_name, netPort srv_port, bo
 		return cli_sock_i;
 	}
 
-	// Record the server name & port for reconnects
-	s.setServerIP ( srv_name, srv_port );		
-	
 	// Set socket opts
 	const char reuse = 1;	
+	s.srvAddr = srv_name;
+	s.srvPort = srv_port; 
 	if ( ( ret = setsockopt ( s.socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof ( int ) ) ) < 0 ) {
 		netPrintf ( PRINT_ERROR_HS, "Failed at SO_REUSEADDR: Return: %d", ret );
 	}
@@ -1426,11 +1414,6 @@ int NetworkSystem::netAddSocket ( int side, int mode, int state, bool block, Net
 	TRACE_ENTER ( (__func__) );
 
 	NetSock s;
-	
-	printf ( "sz: %d\n", int(m_socks.size()) );
-	m_socks.push_back ( s ); printf ( "sz: %d\n", int(m_socks.size()) );
-	m_socks.push_back ( s ); printf ( "sz: %d\n", int(m_socks.size()) );
-
 	s.sys = 'net ';
 	s.side = side;
 	s.mode = mode;
@@ -1475,13 +1458,13 @@ int NetworkSystem::netAddSocket ( int side, int mode, int state, bool block, Net
 	// socket recv event
 	s.event = new Event ( 'net ', 'Psox' );
 
-	int last = m_socks.size ( );
-	m_socks.push_back ( s );	
+	int n = m_socks.size ( );
+	m_socks.push_back ( s );
 
-	netSocketCreate ( last );
+	netSocketCreate ( n );
 	
 	TRACE_EXIT ( (__func__) );
-	return last;
+	return n;
 }
 
 void NetworkSystem::netSocketReuse ( int sock_i )
@@ -1553,7 +1536,7 @@ int NetworkSystem::netManageHandshakeError ( int sock_i, std::string reason )
 
 		netSocketReuse( sock_i );						// reuse socket. don't try and reconnect here. 
 
-		netPrintf(PRINT_VERBOSE, "    Fallback to TCP. Trying server=%s:%d", s.srvAddr, s.srvPort );				
+		netPrintf(PRINT_VERBOSE, "    Fallback to TCP. Trying server=%s:%d", s.srvAddr.c_str(), s.srvPort );				
 	
   }	else {
 		bool force_del = (s.side != NET_CLI);		// only retain client sockets
@@ -2079,8 +2062,7 @@ void NetworkSystem::netList ( bool verbose )
 	TRACE_ENTER ( (__func__) );
 	if ( m_printVerbose || verbose ) { // Print the network
 		str side, mode, stat, src, dst, msg, secur;
-		printf ( "%d\n", int(m_socks.size()) );
-		printf ( "\n------ NETWORK SOCKETS %d. MyIP: %s, %s\n", (int) m_socks.size(), m_hostName.c_str (), getIPStr ( m_hostIp ).c_str() );
+		dbgprintf ( "\n------ NETWORK SOCKETS. MyIP: %s, %s\n", m_hostName.c_str ( ), getIPStr ( m_hostIp ).c_str ( ) );
 		for ( int n = 0; n < m_socks.size (); n++ ) {
 			side = ( m_socks[n].side == NET_CLI ) ? "cli" : "srv";
 			secur = (m_socks[n].security & NET_SECURITY_OPENSSL) ? "ssl" : "tcp";			// future: udp should made a security level, remove s.mode variable.
@@ -2098,9 +2080,9 @@ void NetworkSystem::netList ( bool verbose )
 			if ( m_socks[n].side==NET_CLI && m_socks[n].state == STATE_CONNECTED ) msg = "<-- to Server";
 			if ( m_socks[n].side==NET_SRV && m_socks[n].state == STATE_CONNECTED ) msg = "<-- to Client";
 			if ( m_socks[n].side==NET_SRV && m_socks[n].src.type == NTYPE_ANY) msg = "<-- Server Listening Port";
-			printf ( "%d: %s %s %s src[%s] dst[%s] %s\n", n, side.c_str(), secur.c_str(), stat.c_str(), src.c_str(), dst.c_str(), msg.c_str() );
+			dbgprintf ( "%d: %s %s %s src[%s] dst[%s] %s\n", n, side.c_str(), secur.c_str(), stat.c_str(), src.c_str(), dst.c_str(), msg.c_str() );
 		}
-		printf ( "------\n");
+		dbgprintf ( "------\n");
 	}
 	TRACE_EXIT ( (__func__) );
 }
@@ -2415,7 +2397,6 @@ int NetworkSystem::netSocketListen ( int sock_i )
 	if ( CXSocketError ( ret ) ) {
 		netPrintf ( PRINT_ERROR, "TCP listen error: Return: %d", ret );
 	}
-	
 	TRACE_EXIT ( (__func__) );
 	return ret;
 }

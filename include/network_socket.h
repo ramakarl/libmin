@@ -14,11 +14,11 @@
     #include <winsock2.h>			// Winsock Ver 2.0
 		#include <ws2tcpip.h>
 		#pragma comment( lib, "ws2_32.lib")
-		#define CX_SOCKET			SOCKET
-		#define CX_SOCKLEN			int		
-		#define CX_OPT				char
+		#define CX_SOCKET					SOCKET
+		#define CX_SOCKLEN				int		
+		#define CX_OPT						char
 		#define CX_SOCK_ERROR			(SOCKET_ERROR+1)		// to allow: result < SOCK_ERROR	
-		#define CX_INVALID_SOCK			INVALID_SOCKET
+		#define CX_INVALID_SOCK		INVALID_SOCKET
 
 	#elif __ANDROID__
 		#include <sys/socket.h>			// Non-windows Platforms (Linux, Cygwin)
@@ -31,11 +31,11 @@
 		#include <fcntl.h>
 		#include <errno.h>
 		#include <sys/ioctl.h>
-		#define CX_SOCKET			int
-		#define CX_SOCKLEN			socklen_t		
-		#define CX_OPT				int		
-		#define CX_SOCK_ERROR		0										// check: result < SOCK_ERROR
-		#define CX_INVALID_SOCK			-1
+		#define CX_SOCKET					int
+		#define CX_SOCKLEN				socklen_t		
+		#define CX_OPT						int		
+		#define CX_SOCK_ERROR			0										// check: result < SOCK_ERROR
+		#define CX_INVALID_SOCK		-1
 
   #elif __linux__
     #include <sys/socket.h>			// Non-windows Platforms (Linux, Cygwin)
@@ -48,9 +48,9 @@
 		#include <fcntl.h>
 		#include <errno.h>
 		#include <sys/ioctl.h>
-		#define CX_SOCKET				int
+		#define CX_SOCKET					int
 		#define CX_SOCKLEN				socklen_t		
-		#define CX_OPT					int		
+		#define CX_OPT						int		
 		#define CX_SOCK_ERROR			0										// check: result < SOCK_ERROR
 		#define CX_INVALID_SOCK		-1
   #endif
@@ -94,8 +94,8 @@
 	// Network Address Abstraction
 	struct HELPAPI NetAddr {
 	public:
-    		NetAddr ( int t, char*  n, netIP i, int p ) { strncpy(name, n, 256); type = t; setAddress(AF_INET, i, p);}
-		NetAddr ()  { strncpy(name, "", 256); type = STATE_NONE; setAddress(AF_INET, 0, 0); }
+    NetAddr ( int t, std::string n, netIP i, int p ) { name = n; type = t; setAddress(AF_INET, i, p);}
+		NetAddr ()  { name = ""; type = STATE_NONE; setAddress(AF_INET, 0, 0); }
 
 		void setAddress ( int inet, unsigned long i, unsigned short p ) 
 		{
@@ -103,7 +103,7 @@
 			port = p;
 			// addr struct
 			addr.sin_family = inet;
-			addr.sin_port = htons(p);
+			addr.sin_port = p;
 #ifdef _WIN32
 			addr.sin_addr.s_addr = i;			
 #elif __ANDROID__
@@ -111,62 +111,60 @@
 #elif __linux__
 			addr.sin_addr.s_addr = i;
 #endif						
-			// memset( addr.sin_zero, 0, sizeof(addr.sin_zero ));
+			memset( addr.sin_zero, 0, sizeof(addr.sin_zero ));
 		}
 
-		char			name[256];
-		char			type;			// type (any, broadcast, search, connect)
-		int			sock;
-		int			port;
-		netIP			ip;
-		sockaddr_in		addr;
+		std::string			name;
+		char						type;			// type (any, broadcast, search, connect)
+		int							sock;
+		int							port;
+		netIP						ip;
+		sockaddr_in			addr;
 	};
 
 	// Network Socket Abstraction
 	struct HELPAPI NetSock {
-		NetSock() {txBuf=0;txPtr=0;rxBuf=0;rxPtr=0;event=0;pktBuf=0;pktPtr=0;}
-		void setServerIP ( std::string addr, int p ) { strncpy(srvAddr, addr.c_str(), 512); srvPort=p; }
-
-		eventStr_t 		sys;			// system
-		char			side;			// side (client, server)
-		char			mode;			// mode (TCP, UDP)		
-		char			state;			// stat (off, connected)
-		timeval			timeout;		
-		NetAddr			src;			// source socket (ip, port, name, sockID)		
-		NetAddr			dest;			// dest socket (ip, port, name, sockID)	
-		CX_SOCKET		socket;			// hard socket
-		bool			blocking;		// is blocking
+		eventStr_t sys;					// system
+		char			side;					// side (client, server)
+		char			mode;					// mode (TCP, UDP)		
+		char			state;				// stat (off, connected)
+		timeval		timeout;		
+		NetAddr		src;					// source socket (ip, port, name, sockID)		
+		NetAddr		dest;					// dest socket (ip, port, name, sockID)	
+		CX_SOCKET	socket;				// hard socket
+		bool			blocking;			// is blocking
 		bool			broadcast;		// is broadcast
 		int 			security; 		// indicates the security level; e.g., OpenSSL
-		int 			reconnectLimit; 	// limits the number of reconnection attempts 
-		int 			reconnectBudget;	// remaining allowed reconnect attempts
-		TimeX 			lastStateChange; 		// for tracking when timeouts should occur
+		int 			reconnectLimit;  // limits the number of reconnection attempts 
+		int 			reconnectBudget; // remaining allowed reconnect attempts
+		TimeX 		lastStateChange; // for tracking when timeouts should occur
 		
 		// Outgoing buffers
 		char*			txBuf;					// transmit buffer (per socket)
 		char*			txPtr;				
-		int			txPktSize;
-		int			txLen;					// transmit so far
-		int			txMax;					// transmit max (expandable)
+		int				txPktSize;
+		int				txLen;					// transmit so far
+		int				txMax;					// transmit max (expandable)
 
 		// Incoming buffers
 		char*			rxBuf;					// receive buffer (per socket)
 		char*			rxPtr;				
-		int			rxLen;					// recv so far
-		int			rxMax;					// recv max (expandable)		
+		int				rxLen;					// recv so far
+		int				rxMax;					// recv max (expandable)		
 
 		// Incoming packets & event
-		int			eventLen;
-		Event*			event;					// deserialized event	
+		int				eventLen;
+		Event*		event;					// deserialized event	
 		char*			pktBuf;					// current packet
 		char*			pktPtr;					// packet offset
-		int			pktLen;
-		int			pktMax;
-		int			pktCounter;		
+		int				pktLen;
+		int				pktMax;
+		int				pktCounter;		
 
 		
-		char			srvAddr[512];
-		int 			srvPort;
+		
+		std::string srvAddr;
+		int srvPort;
 		
 		#ifdef BUILD_OPENSSL
 			SSL_CTX 	*ctx;			// MP: Need to read up on these before commenting; Same cross-platform ? Tentative: Yes
