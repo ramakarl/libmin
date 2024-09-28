@@ -94,7 +94,7 @@
 	// Network Address Abstraction
 	struct HELPAPI NetAddr {
 	public:
-    NetAddr ( int t, std::string n, netIP i, int p ) { name = n; type = t; setAddress(AF_INET, i, p);}
+    		NetAddr ( int t, std::string n, netIP i, int p ) { name = n; type = t; setAddress(AF_INET, i, p);}
 		NetAddr ()  { name = ""; type = STATE_NONE; setAddress(AF_INET, 0, 0); }
 
 		void setAddress ( int inet, unsigned long i, unsigned short p ) 
@@ -114,57 +114,55 @@
 			memset( addr.sin_zero, 0, sizeof(addr.sin_zero ));
 		}
 
-		std::string			name;
-		char						type;			// type (any, broadcast, search, connect)
-		int							sock;
-		int							port;
-		netIP						ip;
-		sockaddr_in			addr;
+		std::string		name;
+		char			type;			// type (any, broadcast, search, connect)
+		int			sock;
+		int			port;
+		netIP			ip;
+		sockaddr_in		addr;
 	};
 
 	// Network Socket Abstraction
 	struct HELPAPI NetSock {
-		eventStr_t sys;					// system
-		char			side;					// side (client, server)
-		char			mode;					// mode (TCP, UDP)		
-		char			state;				// stat (off, connected)
-		timeval		timeout;		
-		NetAddr		src;					// source socket (ip, port, name, sockID)		
-		NetAddr		dest;					// dest socket (ip, port, name, sockID)	
-		CX_SOCKET	socket;				// hard socket
-		bool			blocking;			// is blocking
+		NetSock()	{txBuf=0;txPtr=0;rxBuf=0;rxPtr=0;pktBuf=0;pktPtr=0;}
+	
+		std::string 		srvAddr;
+		int 			srvPort;	
+		char			side;			// side (client, server)
+		char			mode;			// mode (TCP, UDP)		
+		char			state;			// stat (off, connected)
+		timeval			timeout;		
+		NetAddr			src;			// source socket (ip, port, name, sockID)		
+		NetAddr			dest;			// dest socket (ip, port, name, sockID)	
+		CX_SOCKET		socket;			// hard socket
+		bool			blocking;		// is blocking
 		bool			broadcast;		// is broadcast
 		int 			security; 		// indicates the security level; e.g., OpenSSL
-		int 			reconnectLimit;  // limits the number of reconnection attempts 
-		int 			reconnectBudget; // remaining allowed reconnect attempts
-		TimeX 		lastStateChange; // for tracking when timeouts should occur
+		int 			reconnectLimit;  	// limits the number of reconnection attempts 
+		int 			reconnectBudget; 	// remaining allowed reconnect attempts
+		TimeX 			lastStateChange; 	// for tracking when timeouts should occur
 		
 		// Outgoing buffers
 		char*			txBuf;					// transmit buffer (per socket)
 		char*			txPtr;				
-		int				txPktSize;
-		int				txLen;					// transmit so far
-		int				txMax;					// transmit max (expandable)
+		int			txPktSize;
+		int			txLen;					// transmit so far
+		int			txMax;					// transmit max (expandable)
 
 		// Incoming buffers
 		char*			rxBuf;					// receive buffer (per socket)
 		char*			rxPtr;				
-		int				rxLen;					// recv so far
-		int				rxMax;					// recv max (expandable)		
+		int			rxLen;					// recv so far
+		int			rxMax;					// recv max (expandable)		
 
 		// Incoming packets & event
-		int				eventLen;
-		Event*		event;					// deserialized event	
+		int			eventLen;
+		Event*			event;					// deserialized event	
 		char*			pktBuf;					// current packet
 		char*			pktPtr;					// packet offset
-		int				pktLen;
-		int				pktMax;
-		int				pktCounter;		
-
-		
-		
-		std::string srvAddr;
-		int srvPort;
+		int			pktLen;
+		int			pktMax;
+		int			pktCounter;		
 		
 		#ifdef BUILD_OPENSSL
 			SSL_CTX 	*ctx;			// MP: Need to read up on these before commenting; Same cross-platform ? Tentative: Yes

@@ -83,13 +83,6 @@ class EventPool;
 
 class HELPAPI NetworkSystem {
 	
-#define VALID_INDEX(index) ((index) >= 0 && (index) < m_socks.size())
-	
-#ifdef _WIN32
-	typedef int socklen_t;
-	typedef struct fd_set fd_set;
-#endif
-	
 public:
 	NetworkSystem ( const char* trace_file_name = NULL );
 
@@ -162,14 +155,11 @@ public:
 	bool		isClient ( )					{ return m_hostType == 'c'; }
 	bool 		netIsQueueEmpty ( )		{ return m_eventQueue.getSize ( ) == 0; }
 	
-	EventPool*  getNetPool ( )		{ return m_eventPool; }		
-	
-	
-	NetSock*	getSock ( int sock_i )			{ return VALID_INDEX(sock_i) ? &m_socks[ sock_i ] : 0; }
-	str			getSockIP ( int sock_i )		{ return VALID_INDEX(sock_i) ? getIPStr ( m_socks[ sock_i ].dest.ip ) : ""; }
-	int			getServerSock ( int sock_i )	{ return VALID_INDEX(sock_i) ? m_socks[ sock_i ].dest.sock : -1; }
-	
-	str 		getIPStr ( netIP ip ); // return IP as a string
+	EventPool*  	getNetPool ( )		{ return m_eventPool; }		
+	NetSock*	getSock ( int i );		// socket itself
+	str		getSockIP ( int i );		// dest IP of socket
+	int		getServerSock ( int i );	// client's socket on server
+	str 		getIPStr ( netIP ip );		// return IP as a string
 	netIP		getStrToIP ( str name );
 
 protected:
@@ -222,7 +212,7 @@ private: // Functions
 	// Short helpers, used to simplify the program elsewhere
 	void sleep_ms ( int time_ms );
 	unsigned long get_read_ready_bytes ( CX_SOCKET sock_h );		
-	bool invalid_socket_index ( int sock_i );
+	bool valid_socket_index ( int sock_i );
 	
 	// Handling tracing and logging
 	double get_time ( );
