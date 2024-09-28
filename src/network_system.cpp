@@ -824,18 +824,26 @@ void NetworkSystem::netServerProcessIO ( )
 		NetSock& s = m_socks[ sock_i ];
 		if ( netSocketIsSelected ( &sockReadSet, sock_i ) ) {
 			
-			if (s.state == STATE_HANDSHAKE) {
+			// OpenSSL
+			if (s.security & NET_SECURITY_OPENSSL) {				
 				#ifdef BUILD_OPENSSL
-					netServerAcceptSSL(sock_i);								// SSL accept, has STATE_HANDSHAKE. (NTYPE_CONNECT because TCP accept completed)
+					if (s.state == STATE_HANDSHAKE && s.src.type == NTYPE_CONNECT) {
+						netServerAcceptSSL(sock_i);								// SSL accept, has STATE_HANDSHAKE. (NTYPE_CONNECT because TCP accept completed)
+					}
 				#endif
-			} else if (s.src.type == NTYPE_ANY) {			
-				netServerAcceptClient(sock_i);							// TCP accept, listen has NTYPE_ANY
+			} 			
+
+			// All protocols
+			if (s.src.type == NTYPE_ANY) {
+				// Check listening socket (TCP or SSL)
+				netServerAcceptClient(sock_i);
 			} else {
-				// connection-oriented socket. do recv.				
-				netReceiveData(sock_i);
+				// Receive pending data
+				netReceiveData(sock_i);			
 			}
 		}
 		if ( netSocketIsSelected ( &sockWriteSet, sock_i ) ) {
+			// Send pending data
 			netSendResidualEvent ( sock_i );
 		}
 	}
