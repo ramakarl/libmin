@@ -17,7 +17,7 @@
 		#define CX_SOCKET					SOCKET
 		#define CX_SOCKLEN				int		
 		#define CX_SOCKOPT				char
-		#define CX_SOCK_ERROR			0											// to allow: result < SOCK_ERROR	
+		#define CX_SOCK_ERROR			SOCKET_ERROR
 		#define CX_INVALID_SOCK		INVALID_SOCKET
 
 	#elif __ANDROID__
@@ -34,7 +34,7 @@
 		#define CX_SOCKET					int
 		#define CX_SOCKLEN				socklen_t		
 		#define CX_SOCKOPT				int		
-		#define CX_SOCK_ERROR			0										// check: result < SOCK_ERROR
+		#define CX_SOCK_ERROR			-1		
 		#define CX_INVALID_SOCK		-1
 
   #elif __linux__

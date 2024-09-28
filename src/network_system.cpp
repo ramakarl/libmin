@@ -256,7 +256,7 @@ bool NetworkSystem::CXSocketIsValid ( CX_SOCKET sock )
 
  bool NetworkSystem::netFuncError ( int ret )
 {
-	return ret < CX_SOCK_ERROR;	
+	return (ret < 0) || (ret==CX_SOCK_ERROR);	
 }
 
 inline bool NetworkSystem::CXSocketBlockError ( )
@@ -858,8 +858,6 @@ void NetworkSystem::netServerProcessIO ( )
 		NetSock& s = m_socks[ sock_i ];
 
 		if ( netSocketIsSelected ( &sockReadSet, sock_i ) ) {
-			
-			printf ( "selected: %d \n", sock_i );
 			
 			// OpenSSL
 			if (s.security & NET_SECURITY_OPENSSL) {				
@@ -2417,7 +2415,7 @@ int NetworkSystem::netSocketConnect ( int sock_i )
 
 	int ret = connect (s->socket, (sockaddr*)&s->dest.addr, addr_size);
 
-	if ( ret < CX_SOCK_ERROR ) {
+	if ( netFuncError(ret) ) {
 
 		if ( CXSocketWouldBlock (msg) ) {
 			// connection in progress. wait for it.
@@ -2529,13 +2527,14 @@ bool NetworkSystem::netSocketIsConnected ( int sock_i )
     FD_ZERO ( &sockSet );
     FD_SET ( s.socket, &sockSet );
     struct timeval tv = { 0, 0 };
-    int so_error = -1;
+    CX_SOCKOPT opt = -1;
+		// Use select and result from getsockopt to check if connection is done
     if ( select ( s.socket + 1, NULL, &sockSet, NULL, &tv ) > 0 ) { 
-        CX_SOCKLEN len = sizeof ( so_error );
-        getsockopt ( s.socket, SOL_SOCKET, SO_ERROR, &so_error, &len );
+        CX_SOCKLEN len = sizeof ( CX_SOCKOPT );
+        getsockopt ( s.socket, SOL_SOCKET, SO_ERROR, &opt, &len );
     }
     TRACE_EXIT ( (__func__) );
-    return so_error == 0; // Use select and result from getsockopt to check if connection is done
+    return opt == 0;			// connected ==> opt=0 means no SO_ERROR 
 }
 
 bool NetworkSystem::netSocketIsSelected ( fd_set* sockSet, int sock_i )
