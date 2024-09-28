@@ -131,7 +131,7 @@
 		timeval		timeout;		
 		NetAddr		src;					// source socket (ip, port, name, sockID)		
 		NetAddr		dest;					// dest socket (ip, port, name, sockID)	
-		SOCKET		socket;				// hard socket
+		CX_SOCKET	socket;				// hard socket
 		bool			blocking;			// is blocking
 		bool			broadcast;		// is broadcast
 		int 			security; 		// indicates the security level; e.g., OpenSSL
