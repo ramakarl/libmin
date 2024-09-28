@@ -128,6 +128,8 @@ public:
 	int netClientConnectToServer ( str srv_name, netPort srv_port, bool block = false, int sock_i = -1 );
 	void netClientCheckConnectionHandshakes ( );
 	void netClientProcessIO ( );
+	void netClientHandshake ( int sock_i );
+	void netClientCompleteConnection( int sock_i );
 	
 	// Client & server common API
 	int netCloseConnection ( int sock_i );
@@ -164,7 +166,7 @@ public:
 	
 	
 	NetSock*	getSock ( int sock_i )			{ return VALID_INDEX(sock_i) ? &m_socks[ sock_i ] : 0; }
-	str			getSockIP ( int sock_i )		{ return VALID_INDEX(sock_i) ? getIPStr ( m_socks[ sock_i ].dest.ipL ) : ""; }
+	str			getSockIP ( int sock_i )		{ return VALID_INDEX(sock_i) ? getIPStr ( m_socks[ sock_i ].dest.ip ) : ""; }
 	int			getServerSock ( int sock_i )	{ return VALID_INDEX(sock_i) ? m_socks[ sock_i ].dest.sock : -1; }
 	
 	str 		getIPStr ( netIP ip ); // return IP as a string
@@ -187,7 +189,7 @@ private: // Functions
 		void netServerAcceptSSL ( int sock_i );
 		void netClientSetupHandshakeSSL ( int sock_i ); 
 		void netClientConnectSSL ( int sock_i );		
-    #endif
+  #endif
 
 	// Abtract socket functions
 	int netAddSocket ( int side, int mode, int state, bool block, NetAddr src, NetAddr dest );
@@ -233,16 +235,16 @@ private: // Functions
 	// Cross-platform socket interactions
 	void CXSetHostname ( );
 	void CXSocketApiInit ( );
-	void CXSocketMakeBlock ( SOCKET sock_h, bool block = false );
-	void CXSocketMakeNoDelay ( SOCKET sock_h );
-	unsigned long CXSocketReadBytes ( SOCKET sock_h );
-	int CXSocketIvalid ( SOCKET sock_h );
-	int CXSocketError ( SOCKET sock_h );
+	void CXSocketMakeBlock ( CX_SOCKET sock, bool block = false );
+	void CXSocketMakeNoDelay ( CX_SOCKET sock );
+	unsigned long CXSocketReadBytes ( CX_SOCKET sock );
+	bool CXSocketIsValid ( CX_SOCKET sock);	
+	int CXSocketError ( CX_SOCKET sock );
 	bool CXSocketBlockError ( );
 	str CXGetErrorMsg ( int& error_id );
 	void CXSocketUpdateAddr ( int sock_i, bool src = true );
-	void CXSocketClose ( SOCKET sock_h );
-	bool CXIsConnectError ( std::string& msg );
+	void CXSocketClose ( CX_SOCKET sock_h );
+	bool CXSocketWouldBlock (std::string& msg);
 	str CXGetIpStr ( netIP ip );
 	
 private: // State

@@ -194,7 +194,7 @@ inline void NetworkSystem::CXSocketApiInit ( )
 	TRACE_EXIT ( (__func__) );
 }
 
-inline void NetworkSystem::CXSocketMakeBlock ( SOCKET sock_h, bool block )
+inline void NetworkSystem::CXSocketMakeBlock ( CX_SOCKET sock_h, bool block )
 {
 	TRACE_ENTER ( (__func__) );
 	#ifdef _WIN32 // windows
@@ -225,7 +225,7 @@ inline void NetworkSystem::CXSocketMakeBlock ( SOCKET sock_h, bool block )
 	TRACE_EXIT ( (__func__) );
 }
 
-unsigned long NetworkSystem::CXSocketReadBytes ( SOCKET sock_h ) 
+unsigned long NetworkSystem::CXSocketReadBytes ( CX_SOCKET sock_h )
 {   
 	TRACE_ENTER ( (__func__) );
 	unsigned long bytes_avail;
@@ -248,27 +248,23 @@ unsigned long NetworkSystem::CXSocketReadBytes ( SOCKET sock_h )
 	return bytes_avail;
 }
 
-inline int NetworkSystem::CXSocketIvalid ( SOCKET sock_h )
+inline bool NetworkSystem::CXSocketIsValid ( CX_SOCKET sock )
 {
-	TRACE_ENTER ( (__func__) );
-	#ifdef _WIN32
-		TRACE_EXIT ( (__func__) );
-		return sock_h == INVALID_SOCKET;
-	#else
-		TRACE_EXIT ( (__func__) );
-		return sock_h < 0;
-	#endif
+	// SOCKET is unsigned on windows, signed on linux.
+	// Windows checks for INVALID_SOCKET, a very large unsigned int.
+	// Linux checks for -1 (signed). See Windows & Linux accept function, return value.
+	return (sock != CX_INVALID_SOCK);
 }
 
-inline int NetworkSystem::CXSocketError ( SOCKET sock_h )
+inline int NetworkSystem::CXSocketError ( CX_SOCKET sock_h )
 {
 	TRACE_ENTER ( (__func__) );
 	#if defined(_MSC_VER) || defined(_WIN32)
 		TRACE_EXIT ( (__func__) );
-		return sock_h == SOCKET_ERROR;
+		return sock_h == CX_SOCK_ERROR;
 	#else
 		TRACE_EXIT ( (__func__) );
-		return sock_h < 0;
+		return sock_h < CX_SOCK_ERROR;
 	#endif
 }
 
@@ -318,10 +314,9 @@ inline void NetworkSystem::CXSocketUpdateAddr ( int sock_i, bool src )
 	// determine IP to use
 	netIP ip;	
 	switch (ntype) {
-	case NTYPE_BROADCAST:		ip = htonl(INADDR_BROADCAST); optval = 1;	break;
-	case NTYPE_LISTEN:			ip = s.src.ipL;								optval = 0; break;
-	case NTYPE_ANY:					ip = htonl(INADDR_ANY); 			optval = 0;	break;
-	case NTYPE_CONNECT:			ip = s.src.ipL; 							optval = 0; break;
+	case NTYPE_BROADCAST:		ip = INADDR_BROADCAST;				optval = 1;	break;
+	case NTYPE_ANY:					ip = INADDR_ANY;				 			optval = 0;	break;
+	case NTYPE_CONNECT:			ip = s.src.ip;								optval = 0; break;
 	};
 	if ( s.src.type != STATE_NONE ) {			
 		ret = setsockopt ( s.socket, SOL_SOCKET, SO_BROADCAST,  (const char*) &optval, sizeof ( optval ) );							
@@ -331,25 +326,16 @@ inline void NetworkSystem::CXSocketUpdateAddr ( int sock_i, bool src )
 	CXSocketMakeBlock( s.socket, s.blocking );
 
 	if ( src ) {
-		// set src side of this connection		
-		s.src.setIP ( ip );															// cross-platform
-		s.src.addr.sin_family = AF_INET;
-		s.src.addr.sin_port = htons ( s.src.port );
-		s.src.addr.sin_addr = s.src.ip;
-		memset ( s.src.addr.sin_zero, 0, sizeof ( s.src.addr.sin_zero ) );		
-
+		// set src side of this connection				
+		s.src.setAddress ( AF_INET, ip, s.src.port );			// cross-platform		
 	} else {
 		// set dest side of this connection		
-		s.dest.setIP( ip );
-		s.dest.addr.sin_family = AF_INET;
-		s.dest.addr.sin_port = htons ( s.dest.port );
-		s.dest.addr.sin_addr = s.dest.ip;
-		memset ( s.dest.addr.sin_zero, 0, sizeof ( s.dest.addr.sin_zero ) );
+		s.dest.setAddress ( AF_INET, ip, s.dest.port );				// cross-platform						
 	}
 	TRACE_EXIT ( (__func__) );
 }
 
-inline void NetworkSystem::CXSocketClose ( SOCKET sock_h )
+inline void NetworkSystem::CXSocketClose ( CX_SOCKET sock_h )
 {
 	TRACE_ENTER ( (__func__) );
 	#ifdef _WIN32
@@ -357,8 +343,8 @@ inline void NetworkSystem::CXSocketClose ( SOCKET sock_h )
 		closesocket ( sock_h );
 	#else
 		int ret, err = 1;
-		socklen_t len = sizeof ( err );
-		if ( ( ret = getsockopt ( sock_h, SOL_SOCKET, SO_ERROR, (char*)&err, &len ) ) == -1 ) {
+		CX_SOCKLEN len = sizeof ( err );
+		if ( ( ret = getsockopt ( sock_h, SOL_SOCKET, SO_ERROR, (char*) &err, &len ) ) == -1 ) {
 			netPrintf ( PRINT_ERROR , "Failed at getsockopt SO_ERROR: Return: %d", ret );
 		}
 		if ( err ) {
@@ -424,12 +410,17 @@ NetworkSystem::NetworkSystem ( const char* trace_file_name )
 void NetworkSystem::sleep_ms ( int time_ms ) 
 {    
 	TRACE_ENTER ( (__func__) ); 
-	TimeX t;
-	t.SleepNSec ( time_ms * 1e6 );  
+	#ifdef _WIN32
+		Sleep( time_ms );
+	#else
+		sleep( time_ms );
+	#endif	
+	//TimeX t;
+	//t.SleepNSec ( time_ms * 1e6 );  
 	TRACE_EXIT ( (__func__) );
 }
 
-unsigned long NetworkSystem::get_read_ready_bytes ( SOCKET sock_h ) 
+unsigned long NetworkSystem::get_read_ready_bytes ( CX_SOCKET sock_h ) 
 {   
 	TRACE_ENTER ( (__func__) ); 
 	unsigned long bytes_avail = CXSocketReadBytes ( sock_h );
@@ -437,7 +428,7 @@ unsigned long NetworkSystem::get_read_ready_bytes ( SOCKET sock_h )
 	return bytes_avail;
 }
 
-void NetworkSystem::CXSocketMakeNoDelay ( SOCKET sock_h ) 
+void NetworkSystem::CXSocketMakeNoDelay ( CX_SOCKET sock_h ) 
 {
 	TRACE_ENTER ( (__func__) );
 	int no_delay = 1, ret;
@@ -619,7 +610,7 @@ void NetworkSystem::netServerSetupHandshakeSSL ( int sock_i )
 	}
 	
 	s.security &= ~NET_SECURITY_FAIL;
-	s.state = STATE_SSL_HANDSHAKE;
+	s.state = STATE_HANDSHAKE;
 	s.lastStateChange.SetTimeNSec ( );
 
 	TRACE_EXIT ( (__func__) );
@@ -669,7 +660,7 @@ bool NetworkSystem::netServerStart ( netPort srv_port, int security )
 	m_hostType = 's';
 	netIP server_ip = getHostIP();
 	str		server_name = getHostName();
-	NetAddr addr1 ( NTYPE_LISTEN, server_name, server_ip, srv_port );
+	NetAddr addr1 ( NTYPE_ANY, server_name, server_ip, srv_port );
 	NetAddr addr2 ( NTYPE_BROADCAST, "", 0, srv_port );
 	int srv_sock_i = netAddSocket ( NET_SRV, NET_TCP, STATE_START, false, addr1, addr2 ), ret;
 	const char reuse = 1;
@@ -721,40 +712,44 @@ void NetworkSystem::netServerAcceptClient ( int sock_i )
 	}
 
 	// TCP Accept
-	SOCKET sock_h;		// New literal socket
+	CX_SOCKET sock_h;		// New literal socket
 	int result = netSocketAccept ( sock_i, sock_h, cli_ip, cli_port );
-	if ( result < 0 ) {
+	if ( result < 0 ) {		
+		// Accept error.
 		netManageHandshakeError ( sock_i, "connection not accepted" );		
 		TRACE_EXIT ( (__func__) );
 		return;
-	}
+	} else if ( result==0 ) {
+		// Waiting. Not yet accepted.
 
-	// Add socket for client
-	netIP srv_ip = m_hostIp; // Listen/accept on ANY address (0.0.0.0), final connection needs the server IP
-	NetAddr addr1 ( NTYPE_CONNECT, srv_name, srv_ip, srv_port );
-	NetAddr addr2 ( NTYPE_CONNECT, "", cli_ip, cli_port );
-	int cli_sock_i = netAddSocket ( NET_SRV, NET_TCP, STATE_START, false, addr1, addr2 ); // Create new socket
+	} else if (result > 0) {
+		// Add socket for client
+		netIP srv_ip = m_hostIp; // Listen/accept on ANY address (0.0.0.0), final connection needs the server IP
+		NetAddr addr1 ( NTYPE_CONNECT, srv_name, srv_ip, srv_port );
+		NetAddr addr2 ( NTYPE_CONNECT, "", cli_ip, cli_port );
+		int cli_sock_i = netAddSocket ( NET_SRV, NET_TCP, STATE_START, false, addr1, addr2 ); // Create new socket
 
-  // Set socket origin & info
-	NetSock& s = m_socks[ cli_sock_i ];
-	CXSocketMakeBlock( sock_h, false);  
-	s.security = security_level;	// security level
-	s.socket = sock_h;						// assign literal socket
-	s.dest.ipL = cli_ip;					// assign client IP
-	s.dest.port = cli_port;				// assign client port
-	s.state = STATE_START;
-	s.lastStateChange.SetTimeNSec ( );
+		// Set socket origin & info
+		NetSock& s = m_socks[ cli_sock_i ];
+		CXSocketMakeBlock( sock_h, false);  
+		s.security = security_level;	// security level
+		s.socket = sock_h;						// assign literal socket
+		s.dest.ip = cli_ip;					// assign client IP
+		s.dest.port = cli_port;				// assign client port
+		s.state = STATE_START;
+		s.lastStateChange.SetTimeNSec ( );
 
-	// OpenSSL handshake or TCP complete
-	if ( s.security & NET_SECURITY_OPENSSL ) {		
-		#ifdef BUILD_OPENSSL
-			netServerSetupHandshakeSSL ( cli_sock_i );
-			if ( s.security & NET_SECURITY_FAIL ) {
-				netManageHandshakeError ( sock_i, "SSL handshake failed");
-			}
-		#endif	
-	}	else if ( s.security & NET_SECURITY_PLAIN_TCP ) { 		
-		netServerCompleteConnection ( cli_sock_i );
+		// OpenSSL handshake or TCP complete
+		if ( s.security & NET_SECURITY_OPENSSL ) {		
+			#ifdef BUILD_OPENSSL
+				netServerSetupHandshakeSSL ( cli_sock_i );
+				if ( s.security & NET_SECURITY_FAIL ) {
+					netManageHandshakeError ( sock_i, "SSL handshake failed");
+				}
+			#endif	
+		}	else if ( s.security & NET_SECURITY_PLAIN_TCP ) { 		
+			netServerCompleteConnection ( cli_sock_i );
+		}
 	}
 	TRACE_EXIT ( (__func__) ); 	
 } 
@@ -762,7 +757,7 @@ void NetworkSystem::netServerAcceptClient ( int sock_i )
 void NetworkSystem::netServerCompleteConnection ( int sock_i )
 {
 	TRACE_ENTER ( (__func__) );
-	int srv_sock_svc = netFindSocket ( NET_SRV, NET_TCP, NTYPE_LISTEN );
+	int srv_sock_svc = netFindSocket ( NET_SRV, NET_TCP, NTYPE_ANY );
 	if ( srv_sock_svc == -1 ) {
 	   netPrintf ( PRINT_ERROR_HS, "Unable to find server listen socket" );
 	}
@@ -774,7 +769,7 @@ void NetworkSystem::netServerCompleteConnection ( int sock_i )
 	// Send first event to client
 	Event e; 
 	netMakeEvent (e, 'sOkT', 0 );
-	e.attachInt64 ( s.dest.ipL );	// Client IP
+	e.attachInt64 ( s.dest.ip );	// Client IP
 	e.attachInt64 ( s.dest.port );	// Client port assigned by server!
 	e.attachInt64 ( m_hostIp );		// Server IP
 	e.attachInt64 ( srv_port );		// Server port
@@ -797,7 +792,7 @@ void NetworkSystem::netServerCompleteConnection ( int sock_i )
 
 	// Accept succeeded
 	bool ssl = (s.security & NET_SECURITY_OPENSSL) == NET_SECURITY_OPENSSL;
-	netPrintf(PRINT_VERBOSE, "SUCCESS %s: Server %s:%d, Accepted %s:%d", ssl ? "OpenSLL" : "TCP", getIPStr(m_hostIp).c_str(), s.src.port, getIPStr(s.dest.ipL).c_str(), s.dest.port);
+	netPrintf(PRINT_VERBOSE, "SUCCESS %s: Server %s:%d, Accepted %s:%d", ssl ? "OpenSLL" : "TCP", getIPStr(m_hostIp).c_str(), s.src.port, getIPStr(s.dest.ip).c_str(), s.dest.port);
 	netList();
 	
 	TRACE_EXIT ( (__func__) );
@@ -808,7 +803,7 @@ void NetworkSystem::netServerCheckConnectionHandshakes ( )
 	for ( int sock_i = 0; sock_i < (int) m_socks.size ( ); sock_i++ ) { 
 		NetSock& s = m_socks[ sock_i ];
 
-		if ( s.state == STATE_SSL_HANDSHAKE ) {
+		if ( s.state == STATE_HANDSHAKE ) {
 			TimeX current_time;
 			current_time.SetTimeNSec ( );
 			if (  current_time.GetElapsedSec ( s.lastStateChange ) > 5.0 ) {
@@ -829,12 +824,12 @@ void NetworkSystem::netServerProcessIO ( )
 		NetSock& s = m_socks[ sock_i ];
 		if ( netSocketIsSelected ( &sockReadSet, sock_i ) ) {
 			
-			if (s.state == STATE_SSL_HANDSHAKE) {
+			if (s.state == STATE_HANDSHAKE) {
 				#ifdef BUILD_OPENSSL
-					netServerAcceptSSL(sock_i);								// SSL accept, has SSL_HANDSHAKE. (NTYPE_CONNECT because TCP accept completed)
+					netServerAcceptSSL(sock_i);								// SSL accept, has STATE_HANDSHAKE. (NTYPE_CONNECT because TCP accept completed)
 				#endif
-			} else if (s.src.type == NTYPE_LISTEN) {			
-				netServerAcceptClient(sock_i);						// TCP accept, has NTYPE_LISTEN
+			} else if (s.src.type == NTYPE_ANY) {			
+				netServerAcceptClient(sock_i);							// TCP accept, listen has NTYPE_ANY
 			} else {
 				// connection-oriented socket. do recv.				
 				netReceiveData(sock_i);
@@ -935,7 +930,7 @@ void NetworkSystem::netClientSetupHandshakeSSL ( int sock_i )
 	}	
 
 	s.security &= ~NET_SECURITY_FAIL;
-	s.state = STATE_SSL_HANDSHAKE;
+	s.state = STATE_HANDSHAKE;
 	s.lastStateChange.SetTimeNSec ( );
 	TRACE_EXIT ( (__func__) );
 }	
@@ -995,8 +990,7 @@ void NetworkSystem::netClientStart ( netPort cli_port, str srv_addr )
 	netPrintf ( PRINT_VERBOSE, "Start Client:" );
 
 	struct HELPAPI NetAddr netAddr = NetAddr ( );			// Start a TCP default socket on Client (for reference)
-	netAddr.setIP ( ntohl ( inet_addr ( srv_addr.c_str ( ) ) ) );
-	netAddr.ipL = inet_addr ( srv_addr.c_str ( ) );
+	netAddr.setAddress ( AF_INET, inet_addr( srv_addr.c_str () ), cli_port );	
 	netAddSocket ( NET_CLI, NET_TCP, STATE_NONE, false, NetAddr ( NTYPE_ANY, m_hostName, m_hostIp, cli_port ), netAddr );
 
 	TRACE_EXIT ( (__func__) );
@@ -1085,8 +1079,8 @@ int NetworkSystem::netClientConnectToServer ( str srv_name, netPort srv_port, bo
 {
 	TRACE_ENTER ( (__func__) );
 	
-	netIP cli_ip, srv_ip;
-	int cli_port, connect_result, ret;
+	netIP srv_ip;
+	int result, ret;
 
 	// Reuse or create a client socket
 	if ( ! VALID_INDEX( cli_sock_i ) ) {
@@ -1124,25 +1118,60 @@ int NetworkSystem::netClientConnectToServer ( str srv_name, netPort srv_port, bo
 	s.state = STATE_START;					// no longer in reuse STATE_NONE (stops triggering of reconnect)
 
 	// TCP connect here
-	connect_result = netSocketConnect ( cli_sock_i );
-	if ( connect_result != 0 ) {
-		netManageHandshakeError ( cli_sock_i, "TCP handshake failed" );
-		//netReportError ( connect_result );
-	} 
+	result = netSocketConnect ( cli_sock_i );
+	if ( result < 0 ) {
+		// Connect error.
+		netManageHandshakeError ( cli_sock_i, "TCP handshake failed" );		
+	
+	} else if (result == 0) {
+		// Waiting to connect. Start TCP handshake. 
 
-	// OpenSSL handshake
-	#ifdef BUILD_OPENSSL
-		if ( s.security & NET_SECURITY_OPENSSL ) { 				
-			netClientSetupHandshakeSSL ( cli_sock_i );			// state may change to STATE_SSL_HANDSHAKE
-			if ( s.security & NET_SECURITY_FAIL ) {	
-				netManageHandshakeError ( cli_sock_i, "SSL handshake failed" );
-			}
+
+
+	} else if (result > 0 ) {
+
+		// TCP connected ok.
+		if (s.security & NET_SECURITY_OPENSSL) {
+			#ifdef BUILD_OPENSSL
+				netClientSetupHandshakeSSL(cli_sock_i);			// state may change to STATE_HANDSHAKE
+				if (s.security & NET_SECURITY_FAIL) {
+					netManageHandshakeError(cli_sock_i, "SSL handshake failed");
+				}
+			#endif
+		} else if (s.security & NET_SECURITY_PLAIN_TCP) {
+			netClientCompleteConnection(cli_sock_i);
 		}
-	#endif	
+	}
 
 	TRACE_EXIT ( (__func__) );
 	return cli_sock_i; // Return socket for this connection
 }
+
+void NetworkSystem::netClientHandshake ( int sock_i )
+{
+	// TCP/IP non-blocking handshake
+  // - connect was called. we run select to wait for server.
+	// - there must be a delay before selecting after connect. this is implemented by the caller.
+
+	NetSock* s = &m_socks[sock_i];
+	fd_set writefds;
+	FD_ZERO (&writefds);
+	FD_SET (s->socket, &writefds);
+	timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 500;
+  
+	int ret = select(s->socket + 1, NULL, &writefds, NULL, &timeout);
+	if (ret > 0 && FD_ISSET( s->socket, &writefds)) {
+		// connection complete				
+		m_socks[ sock_i ].state = STATE_CONNECTED;
+		netPrintf(PRINT_VERBOSE_HS, "Client connect complete. \n");		
+	} else {
+		// non-fatal. waiting for complete.
+		netPrintf(PRINT_VERBOSE_HS, "Client waiting for server. \n");		
+	}
+}
+
 
 void NetworkSystem::netClientCheckConnectionHandshakes ( )
 {
@@ -1154,24 +1183,37 @@ void NetworkSystem::netClientCheckConnectionHandshakes ( )
 
 		for ( int sock_i = 1; sock_i < (int) m_socks.size ( ); sock_i++ ) {
 			NetSock& s = m_socks[ sock_i ];
-			if ( s.state == STATE_SSL_HANDSHAKE || s.state==STATE_START ) {
-				TimeX current_time;
-				current_time.SetTimeNSec ( );
-				if ( current_time.GetElapsedSec ( s.lastStateChange ) > 5.0 ) {					
-					netManageHandshakeError ( sock_i, "client timed out" );
+			
+			if ( s.security & NET_SECURITY_OPENSSL) {				
+				// OpenSSL - retry connect during handshake
+				#ifdef BUILD_OPENSSL					
+				if ( s.state == STATE_HANDSHAKE ) {
+					netClientConnectSSL(sock_i);	// This call is MORE important than the others
+				}
+				#endif
+			} else if (s.security & NET_SECURITY_PLAIN_TCP) {
+				// TCP/IP - retry connect during handshake
+				if (s.state == STATE_HANDSHAKE) {
+					netClientHandshake ( sock_i );
 				}
 			}
-			if ( (s.security & NET_SECURITY_OPENSSL) && s.state == STATE_SSL_HANDSHAKE ) {
-				#ifdef BUILD_OPENSSL
-					netClientConnectSSL ( sock_i ); // This call is MORE important than the other
-				#endif		
-			}
-			else if ( ( s.state == STATE_NONE ) && s.reconnectBudget > 0 ) {	
+			
+			// All protocols
+			if (s.state == STATE_START || s.state == STATE_HANDSHAKE ) {
+				// Check for timeout
+				TimeX current_time;
+				current_time.SetTimeNSec();
+				if (current_time.GetElapsedSec(s.lastStateChange) > 5.0) {
+					netManageHandshakeError(sock_i, "client timed out");
+				}
+			} else if (s.state == STATE_NONE && s.reconnectBudget > 0 ) {	
+				// Auto-reconnect if desired
 				s.reconnectBudget--;
 				netClientConnectToServer ( s.srvAddr, s.srvPort, false, sock_i ); // If disconnected, try and reconnect
-			}
+			}			
 		}
 	}
+
 	TRACE_EXIT ( (__func__) );
 }
 	
@@ -1182,17 +1224,14 @@ void NetworkSystem::netClientProcessIO ( )
 	fd_set sockWriteSet;
 	int rcv_events = netSocketSelect ( &sockReadSet, &sockWriteSet );
 	NET_PERF_PUSH ( "findsocks" );
+	
 	for ( int sock_i = 0; sock_i < (int) m_socks.size ( ); sock_i++ ) { 		
-		if ( netSocketIsSelected ( &sockReadSet, sock_i ) ) {
-			NetSock& s = m_socks[ sock_i ];
-			if ( s.security & NET_SECURITY_OPENSSL && s.state == STATE_SSL_HANDSHAKE ) {
-				#ifdef BUILD_OPENSSL
-					netClientConnectSSL ( sock_i ); // This call is LESS important than the other
-				#endif		
-			}						
+		if ( netSocketIsSelected ( &sockReadSet, sock_i ) ) {			
+			// Receive any pending data
 			netReceiveData(sock_i);
 		}
 		if ( netSocketIsSelected ( &sockWriteSet, sock_i ) ) {
+			// Send any pending data
 			netSendResidualEvent( sock_i );
 		}
 	}	
@@ -1284,6 +1323,15 @@ int NetworkSystem::netNonFatalErrorSSL ( int sock, int ret )
 // -> CORE CODE <-
 //----------------------------------------------------------------------------------------------------------------------
 
+
+void NetworkSystem::netClientCompleteConnection(int sock_i)
+{
+	// We do not mark the client connection fully complete until client has 
+	// received 'sOkT' event. See netProcessEvents.
+	//
+	m_socks[ sock_i ].state = STATE_HANDSHAKE;
+}
+
 void NetworkSystem::netProcessEvents ( Event& e )
 {
 	TRACE_ENTER ( (__func__) );
@@ -1300,7 +1348,7 @@ void NetworkSystem::netProcessEvents ( Event& e )
 	
 			// Verify client and server IPs
 			netIP srv_ip_chk = e.getSrcIP ( ); // source IP from the socket event came on
-			netIP cli_ip_chk = m_socks[ cli_sock ].src.ipL; // original client IP
+			netIP cli_ip_chk = m_socks[ cli_sock ].src.ip; // original client IP
 
 			// Mark the client socket as CONNECTED.
 			// Update with server socket & client port.
@@ -1328,7 +1376,7 @@ void NetworkSystem::netProcessEvents ( Event& e )
 			int local_sock_i = e.getUInt ( ); // Socket to close
 			int remote_sock = e.getUInt ( ); // Remote socket
 			if (!invalid_socket_index(local_sock_i)) {	
-				netIP cli_ip = m_socks[ local_sock_i ].dest.ipL;
+				netIP cli_ip = m_socks[ local_sock_i ].dest.ip;
 				netPrintf ( PRINT_VERBOSE_HS, "SRV: Client %s closed OK", getIPStr ( cli_ip ).c_str ( ) );
 				netManageTransmitError ( local_sock_i, "client closed ok");
 			}
@@ -1697,7 +1745,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 				new_event ( *s.event, s.eventLen - Event::staticSerializedHeaderSize ( ), 'app ', name, 0, m_eventPool, "netRecv" );
 				s.event->rescope ( "nets" );									// belongs to network now
 				s.event->setSrcSock ( sock_i );								// tag event /w socket
-				s.event->setSrcIP( m_socks[ sock_i ].src.ipL );				// recover sender address from socket
+				s.event->setSrcIP( m_socks[ sock_i ].src.ip );				// recover sender address from socket
 				
 				// Deserialize directly from input buffer (for performance)				
 				s.event->deserialize ( s.pktPtr, s.eventLen );		// deserialize					
@@ -1738,7 +1786,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 			new_event ( *s.event, s.eventLen - Event::staticSerializedHeaderSize ( ), 'net ', name, 0, m_eventPool, "netRecv" );
 			s.event->rescope ( "nets" );							// belongs to network now
 			s.event->setSrcSock ( sock_i );					// tag event /w socket
-			s.event->setSrcIP ( m_socks[ sock_i ].src.ipL );		// recover sender address from socket
+			s.event->setSrcIP ( m_socks[ sock_i ].src.ip );		// recover sender address from socket
 			
 			// Deserialize event from recv buf			
 			s.event->deserialize ( s.rxBuf, s.eventLen );	// deserialize			
@@ -1799,7 +1847,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 				m_event.deserialize(m_packetPtr, imin(m_eventLen, m_packetLen)); // Deserialize header				
 			}
 			m_event.setSrcSock(sock_i);		// <--- tag event /w socket
-			m_event.setSrcIP(m_socks[sock_i].src.ipL); // recover sender address from socket
+			m_event.setSrcIP(m_socks[sock_i].src.ip); // recover sender address from socket
 			bDeserial = true;
 
 		}
@@ -1959,7 +2007,7 @@ int NetworkSystem::netFindSocket ( int side, int mode, int state, NetAddr dest )
 	TRACE_ENTER ( (__func__) );
 	for ( int n = 0; n < m_socks.size ( ); n++ ) { // Find socket with specific destination
 		if ( m_socks[ n ].mode == mode && m_socks[ n ].side == side && m_socks[ n].state == state ) {
-			if ( m_socks[ n ].dest.type == dest.type &&  m_socks[ n ].dest.ipL == dest.ipL && m_socks[ n ].dest.port == dest.port ) {
+			if ( m_socks[ n ].dest.type == dest.type &&  m_socks[ n ].dest.ip == dest.ip && m_socks[ n ].dest.port == dest.port ) {
 				TRACE_EXIT ( (__func__) );
 				return n;
 			}
@@ -1993,7 +2041,7 @@ str NetworkSystem::netPrintAddr ( NetAddr adr )
 	case NTYPE_SEARCH:		type = "srch";	break;
 	case NTYPE_CONNECT:		type = "conn";	break;
 	};
-	sprintf ( buf, "%s,%s:%d", type.c_str(), getIPStr(adr.ipL).c_str(), adr.port );
+	sprintf ( buf, "%s,%s:%d", type.c_str(), getIPStr(adr.ip).c_str(), adr.port );
 	TRACE_EXIT ( (__func__) );
 	return buf;
 }
@@ -2020,7 +2068,7 @@ void NetworkSystem::netList ( bool verbose )
 				msg = "<-- to Server";
 			if ( m_socks[ n ].side==NET_SRV && m_socks[ n ].state == STATE_CONNECTED )
 				msg = "<-- to Client";
-			if ( m_socks[ n ].side==NET_SRV && m_socks[ n ].state == STATE_START && m_socks[ n ].src.ipL == 0 )
+			if ( m_socks[ n ].side==NET_SRV && m_socks[ n ].state == STATE_START && m_socks[ n ].src.ip == 0 )
 				msg = "<-- Server Listening Port";
 
 			dbgprintf ( "%d: %s %s %s src[%s] dst[%s] %s\n", n, side.c_str(), secur.c_str(), stat.c_str(), src.c_str(), dst.c_str(), msg.c_str() );
@@ -2058,7 +2106,7 @@ bool NetworkSystem::netSendLiteral ( str str_lit, int sock_i )
 	
 	NetSock& s = m_socks[ sock_i ]; // Send over socket
 	if ( s.mode == NET_TCP ) {
-		if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_SSL_HANDSHAKE ) {
+		if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) {
 			result = send ( s.socket, buf, len, 0 ); // TCP/IP
 		} else {
 			#ifdef BUILD_OPENSSL
@@ -2102,7 +2150,7 @@ void NetworkSystem::netSendResidualEvent ( int sock_i )
 	NetSock& s = m_socks[ sock_i ];
 	int remaining = s.txPktSize - s.txLen, result;
 
-	if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_SSL_HANDSHAKE ) {
+	if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) {
 		result = send ( s.socket, s.txBuf + s.txLen, remaining, 0 ); // TCP/IP
 	} else {
 		s.txLen = 0;
@@ -2157,7 +2205,7 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 
 	NetSock& s = m_socks[ sock_i ];
 	if ( m_socks[ sock_i ].mode == NET_TCP ) { // Send over socket
-		if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_SSL_HANDSHAKE ) {
+		if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) {
 
 			result = send ( s.socket, buf, event_len, 0 ); // TCP/IP
 
@@ -2249,7 +2297,6 @@ int NetworkSystem::netSocketCreate ( int sock_i )
 	NetSock& s = m_socks[ sock_i ];	    
 	
 	// note: STATE_NONE must be allowed here. indicates client socket being reused. 
-
 	if ( s.socket == 0 ) {
 		if ( s.mode == NET_TCP ) {
 			s.socket = socket ( AF_INET, SOCK_STREAM, IPPROTO_TCP ); 
@@ -2278,33 +2325,32 @@ int NetworkSystem::netSocketBind ( int sock_i )
 	return ret;
 }
 
-// CXIsConnectError
-// call after 'connect' to determine if error is fatal
-// NON-fatal errors: 
+// CXSocketWouldBlock
+// call after 'connect' to determine if error is ok.
+// Non-errors
 // - would block (again) - non-blocking socket incomplete
 // - is conn - already connected
 // - in progress - blocking connect is in progress
 // - already - non-blocking connect in progress
-bool NetworkSystem::CXIsConnectError ( std::string& msg )
+bool NetworkSystem::CXSocketWouldBlock ( std::string& msg )
 {
-	bool fatal = true;
+	bool ok = false;
 
 	#ifdef _WIN32 
 		// windows (winsock)
 		int e = WSAGetLastError ();
 		msg = CXGetErrorMsg ( e );
 		if (e==WSAEWOULDBLOCK || e == WSAEISCONN || e==WSAEINPROGRESS || e == WSAEALREADY ) {
-			fatal = false;
+			ok = true;
 		}
 	#else
 		int e = errno;
-		msg = strerror(e);
-		if (e == EAGAIN || e==EINPROGRESS || e==EALREADY) {
-			fatal = false;		
+		msg = strerror(e);		
+		if (e == EWOULDBLOCK || e == EAGAIN || e==EINPROGRESS || e==EALREADY || errno == EISCONN) {
+			ok = true;
 		}
-	#endif
-	
-	return fatal;
+	#endif	
+	return ok;
 }
 
 int NetworkSystem::netSocketConnect ( int sock_i )
@@ -2314,19 +2360,18 @@ int NetworkSystem::netSocketConnect ( int sock_i )
 	NetSock* s = &m_socks[ sock_i ];
 	int addr_size = sizeof ( s->dest.addr );
 
-	netPrintf ( PRINT_VERBOSE_HS, "Trying connect. Client %s:%d  -> Srv %s:%d", getIPStr(s->src.ipL).c_str(), s->src.port, getIPStr (s->dest.ipL ).c_str ( ), s->dest.port );
+	netPrintf ( PRINT_VERBOSE_HS, "Trying connect. Client %s:%d  -> Srv %s:%d", getIPStr(s->src.ip).c_str(), s->src.port, getIPStr (s->dest.ip ).c_str ( ), s->dest.port );
 
 	int ret = connect (s->socket, (sockaddr*)&s->dest.addr, addr_size);
+	if ( ret < CX_SOCK_ERROR ) {
 
-	if ( ret < 0 ) {
-		// See documentation for 'connect'. Not necessarily a fatal error.
-		if ( CXIsConnectError (msg) ) {
-			// fatal error
-			netManageHandshakeError ( sock_i, "    Connect fatal error. " + msg );			
+		if ( CXSocketWouldBlock (msg) ) {
+			// connection in progress. wait for it.
+			// check for complete connection using select		
+			ret = 0;				
 		} else {
-			// non-fatal error
-			netPrintf ( PRINT_VERBOSE, "    Connect status. %s", msg.c_str() );
-			ret = 0;		// say its ok.
+			// fatal error
+			netManageHandshakeError ( sock_i, "		 Connect fatal error. " + msg );			
 		}		
 	}
 
@@ -2347,30 +2392,41 @@ int NetworkSystem::netSocketListen ( int sock_i )
 	return ret;
 }
 
-int NetworkSystem::netSocketAccept ( int sock_i, SOCKET& tcp_sock, netIP& cli_ip, netPort& cli_port )
+int NetworkSystem::netSocketAccept ( int sock_i, CX_SOCKET& tcp_sock, netIP& cli_ip, netPort& cli_port )
 {
 	TRACE_ENTER ( (__func__) );
+	std::string msg;
 	NetSock& s = m_socks [ sock_i ];
 	struct sockaddr_in sin;
 	int addr_size = sizeof ( sin );
+
 	tcp_sock = accept ( s.socket, (sockaddr*) &sin, (socklen_t *) (&addr_size) );
 
-	if ( CXSocketIvalid ( tcp_sock ) ) {
-		netPrintf ( PRINT_ERROR_HS, "TCP accept error: Return: %d", tcp_sock );
-		TRACE_EXIT ( (__func__) );
-		return -1;
+	if ( !CXSocketIsValid ( tcp_sock ) ) {
+		if ( CXSocketWouldBlock( msg ) ) {
+			// No error. Non-blocking wait.
+			TRACE_EXIT((__func__));
+			return 0;
+		}	else {
+			// Accept had real error.
+			netPrintf(PRINT_ERROR_HS, "TCP accept error: Return: %d", tcp_sock);
+			TRACE_EXIT((__func__));
+			return -1;
+		}		
 	}
-	
+
+	// Accept completed.
 	cli_ip = sin.sin_addr.s_addr;		// IP address of connecting client
 	cli_port = sin.sin_port;				// Accepting TCP does not know/care what the client port is
 	TRACE_EXIT ( (__func__) );
+
 	return 1;
 }
 
 int NetworkSystem::netSocketRecv ( int sock_i, char* buf, int bufmax, int& recvlen )
 {
 	TRACE_ENTER ( (__func__) ); // Return value: success = 0, or an error number; on success recvlen = bytes recieved
-	socklen_t addr_size;
+	CX_SOCKLEN addr_size;
 	int result;
 	NetSock& s = m_socks [ sock_i ];
 	if ( s.src.type != NTYPE_CONNECT ) {
@@ -2380,7 +2436,7 @@ int NetworkSystem::netSocketRecv ( int sock_i, char* buf, int bufmax, int& recvl
 	
 	addr_size = sizeof ( s.src.addr );
 	if ( s.mode == NET_TCP ) {
-		if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_SSL_HANDSHAKE ) { 
+		if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) { 
 			result = recv ( s.socket, buf, bufmax, 0 );	// TCP/IP
 		} else {
 			#ifdef BUILD_OPENSSL
@@ -2421,7 +2477,7 @@ bool NetworkSystem::netSocketIsConnected ( int sock_i )
     struct timeval tv = { 0, 0 };
     int so_error = -1;
     /* if ( select ( s.socket + 1, NULL, &sockSet, NULL, &tv ) > 0 ) { 
-        socklen_t len = sizeof ( so_error );
+        CX_SOCKLEN len = sizeof ( so_error );
         getsockopt ( s.socket, SOL_SOCKET, SO_ERROR, &so_error, &len );
     } */
     TRACE_EXIT ( (__func__) );
@@ -2433,7 +2489,7 @@ bool NetworkSystem::netSocketIsSelected ( fd_set* sockSet, int sock_i )
 	if ( invalid_socket_index ( sock_i ) ) return false;
 
 	NetSock& s = m_socks[ sock_i ];
-	if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_SSL_HANDSHAKE ) { 
+	if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) { 
 		return FD_ISSET ( s.socket, sockSet );
 	} 
 	#ifdef BUILD_OPENSSL
@@ -2461,7 +2517,7 @@ int NetworkSystem::netSocketSelect ( fd_set* sockReadSet, fd_set* sockWriteSet )
 	for ( int n = 0; n < (int) m_socks.size ( ); n++ ) { // Get all sockets that are Enabled or Connected
 		NetSock& s = m_socks[ n ];
 		if ( s.state != STATE_NONE && s.state != STATE_TERMINATED && s.state != STATE_FAILED ) {
-			if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_SSL_HANDSHAKE ) { 
+			if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) { 
 				FD_SET ( s.socket, sockReadSet );
 				if ( s.txPktSize > 0 ) {
 					FD_SET ( s.socket, sockWriteSet );

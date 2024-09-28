@@ -10,12 +10,15 @@
 
 	#include <vector>	
 
-    #ifdef _WIN32
-        #include <winsock2.h>			// Winsock Ver 2.0
+  #ifdef _WIN32
+    #include <winsock2.h>			// Winsock Ver 2.0
 		#include <ws2tcpip.h>
 		#pragma comment( lib, "ws2_32.lib")
-
-		typedef int		socklen_t;
+		#define CX_SOCKET					SOCKET
+		#define CX_SOCKLEN				int		
+		#define CX_OPT						char
+		#define CX_SOCK_ERROR			(SOCKET_ERROR+1)		// to allow: result < SOCK_ERROR	
+		#define CX_INVALID_SOCK		INVALID_SOCKET
 
 	#elif __ANDROID__
 		#include <sys/socket.h>			// Non-windows Platforms (Linux, Cygwin)
@@ -28,9 +31,14 @@
 		#include <fcntl.h>
 		#include <errno.h>
 		#include <sys/ioctl.h>
-		typedef int SOCKET;
-        #elif __linux__
-                #include <sys/socket.h>			// Non-windows Platforms (Linux, Cygwin)
+		#define CX_SOCKET					int
+		#define CX_SOCKLEN				socklen_t		
+		#define CX_OPT						int		
+		#define CX_SOCK_ERROR			0										// check: result < SOCK_ERROR
+		#define CX_INVALID_SOCK		-1
+
+  #elif __linux__
+    #include <sys/socket.h>			// Non-windows Platforms (Linux, Cygwin)
 		#include <netinet/in.h>
 		#include <arpa/inet.h>
 		#include <sys/time.h>
@@ -40,8 +48,12 @@
 		#include <fcntl.h>
 		#include <errno.h>
 		#include <sys/ioctl.h>
-		typedef int SOCKET;
-    #endif
+		#define CX_SOCKET					int
+		#define CX_SOCKLEN				socklen_t		
+		#define CX_OPT						int		
+		#define CX_SOCK_ERROR			0										// check: result < SOCK_ERROR
+		#define CX_INVALID_SOCK		-1
+  #endif
 
 	#ifdef BUILD_OPENSSL
 		#include <openssl/bio.h>					// MP: Same cross-platform ? Tentative: Yes
@@ -66,50 +78,48 @@
 	#define NET_SECURITY_DTLS				8
 	
 	// connection types
-	#define NTYPE_ANY						0					// localhost, any interface
-	#define NTYPE_LISTEN				1					// specific IP, listen mode
-	#define NTYPE_BROADCAST			2		
-	#define NTYPE_SEARCH				3	
-	#define NTYPE_CONNECT				4					// specific IP, connect mode
+	#define NTYPE_ANY						0					// localhost, any interface	
+	#define NTYPE_BROADCAST			1
+	#define NTYPE_SEARCH				2	
+	#define NTYPE_CONNECT				3					// specific IP, connect mode
 
 	#define STATE_NONE					0 // stats
 	#define STATE_START					1
-	#define STATE_SSL_HANDSHAKE			2
-	#define STATE_CONNECTED				3
+	#define STATE_HANDSHAKE			2	
+	#define STATE_CONNECTED			3
 	#define STATE_FAILED				4
-	#define STATE_TERMINATED			5
+	#define STATE_TERMINATED		5
 	
 
 	// Network Address Abstraction
 	struct HELPAPI NetAddr {
 	public:
-        NetAddr ( int t, std::string n, netIP i, int p ) { type = t; name = n; ipL = i; setIP(i); port = p;}
-		NetAddr ()  { type = STATE_NONE; name = ""; ipL = 0; setIP(0); port = 0; }
+    NetAddr ( int t, std::string n, netIP i, int p ) { name = n; type = t; setAddress(AF_INET, i, p);}
+		NetAddr ()  { name = ""; type = STATE_NONE; setAddress(AF_INET, 0, 0); }
 
-		void setIP ( netIP i ) {
+		void setAddress ( int inet, unsigned long i, unsigned short p ) 
+		{
+			ip = i;
+			port = p;
+			// addr struct
+			addr.sin_family = inet;
+			addr.sin_port = p;
 #ifdef _WIN32
-			ip.S_un.S_addr = i;
+			addr.sin_addr.s_addr = i;			
 #elif __ANDROID__
-			ip.s_addr = i;
+			addr.sin_addr.s_addr = i;
 #elif __linux__
-			ip.s_addr = i;
-#endif
+			addr.sin_addr.s_addr = i;
+#endif						
+			memset( addr.sin_zero, 0, sizeof(addr.sin_zero ));
 		}
 
-		std::string		name;
-		char			type;			// type (any, broadcast, search, connect)
-		int				sock;
-		int				port;
-		netIP			ipL;
-
-#ifdef _WIN32
-		in_addr			ip;
-#elif __ANDROID__
-                struct in_addr	        ip;
-#elif __linux__
-	        struct in_addr          ip;
-#endif
-		sockaddr_in		addr;
+		std::string			name;
+		char						type;			// type (any, broadcast, search, connect)
+		int							sock;
+		int							port;
+		netIP						ip;
+		sockaddr_in			addr;
 	};
 
 	// Network Socket Abstraction
