@@ -235,7 +235,7 @@ private: // Functions
 	// Cross-platform socket interactions
 	void CXSetHostname ( );
 	void CXSocketApiInit ( );
-	void CXSocketMakeBlock ( CX_SOCKET sock, bool block = false );
+	void CXSocketSetBlockMode ( CX_SOCKET sock, bool block = false );
 	void CXSocketMakeNoDelay ( CX_SOCKET sock );
 	unsigned long CXSocketReadBytes ( CX_SOCKET sock );
 	bool CXSocketIsValid ( CX_SOCKET sock);			// check if a socket is valid	

@@ -194,32 +194,28 @@ inline void NetworkSystem::CXSocketApiInit ( )
 	TRACE_EXIT ( (__func__) );
 }
 
-inline void NetworkSystem::CXSocketMakeBlock ( CX_SOCKET sock_h, bool block )
+inline void NetworkSystem::CXSocketSetBlockMode ( CX_SOCKET sock, bool block )
 {
 	TRACE_ENTER ( (__func__) );
 	#ifdef _WIN32 // windows
 		unsigned long block_mode = block ? 0 : 1;			// inverted on Windows. See ioctlsocket spec.
-		ioctlsocket ( sock_h, FIONBIO, &block_mode ); // FIONBIO = non-blocking mode	
+		ioctlsocket ( sock, FIONBIO, &block_mode ); // FIONBIO = non-blocking mode	
 	#else // linux
-		int flags = fcntl ( sock_h, F_GETFL, 0 ), ret;
+		int flags = fcntl ( sock, F_GETFL, 0 ), ret;
 		if ( flags == -1 ) {
 			netPrintf ( PRINT_ERROR, "Failed at fcntl F_GETFL: Return: %d", flags );
 			TRACE_EXIT ( (__func__) );
 			return;
-		} else {
-			netPrintf ( PRINT_VERBOSE, "Call to get flags succeded" );
-		}
-		
+		}		
 		if ( block ) {
 			flags &= ~O_NONBLOCK;
 		} else {
 			flags |= O_NONBLOCK;
 		}
-
-		if ( ( ret = fcntl ( sock_h, F_SETFL, flags ) ) == -1 ) {
+		if ( ( ret = fcntl ( sock, F_SETFL, flags ) ) == -1 ) {
 			netPrintf ( PRINT_ERROR, "Failed at fcntl F_SETFL: Return: %d", ret );
 		} else {
-			netPrintf ( PRINT_VERBOSE, "Call to set blocking succeded" );
+			netPrintf ( PRINT_VERBOSE, "Call to set block mode succeded" );
 		}
 	#endif
 	TRACE_EXIT ( (__func__) );
@@ -316,7 +312,7 @@ inline void NetworkSystem::CXSocketUpdateAddr ( int sock_i, bool src )
 	}		
 	
 	// set connection blocking mode
-	CXSocketMakeBlock( s.socket, s.blocking );
+	CXSocketSetBlockMode (s.socket, s.blocking );	
 
 	if ( src ) {
 		// set src side of this connection				
@@ -523,7 +519,7 @@ void NetworkSystem::netServerSetupHandshakeSSL ( int sock_i )
 	NetSock& s = m_socks [ sock_i ];
 	CXSocketMakeNoDelay ( s.socket );
 	int ret = 0, exp;
-	CXSocketMakeBlock( s.socket, false);		// non-blocking	
+	CXSocketSetBlockMode ( s.socket, false);		// non-blocking	
 
 	s.security |= NET_SECURITY_FAIL; 
 	s.state = STATE_FAILED; 
@@ -682,11 +678,16 @@ bool NetworkSystem::netServerStart ( netPort srv_port, int security )
 		return false;
 	}
 
+	// Start accept handshake
+	m_socks[ srv_sock_i ].state = STATE_HANDSHAKE;
+
 	if ( security == NET_SECURITY_UNDEF ) {
 		if ( ( m_security > NET_SECURITY_PLAIN_TCP ) && ( m_security & NET_SECURITY_PLAIN_TCP ) ) {
 			netServerStart ( --srv_port, NET_SECURITY_PLAIN_TCP );
 		}
 	}
+
+
 	TRACE_EXIT ( (__func__) );
 
 	return true;
@@ -735,11 +736,11 @@ void NetworkSystem::netServerAcceptClient ( int sock_i )
 
 		// Set socket origin & info
 		NetSock& s = m_socks[ cli_sock_i ];
-		CXSocketMakeBlock( sock_h, false);  
-		s.security = security_level;	// security level
-		s.socket = sock_h;						// assign literal socket
-		s.dest.ip = cli_ip;					// assign client IP
-		s.dest.port = cli_port;				// assign client port
+		CXSocketSetBlockMode ( sock_h, false);  // non-blocking
+		s.security = security_level;						// security level
+		s.socket = sock_h;											// assign literal socket
+		s.dest.ip = cli_ip;											// assign client IP
+		s.dest.port = cli_port;									// assign client port
 		s.state = STATE_START;
 		s.lastStateChange.SetTimeNSec ( );
 
@@ -804,16 +805,33 @@ void NetworkSystem::netServerCompleteConnection ( int sock_i )
 
 void NetworkSystem::netServerCheckConnectionHandshakes ( ) 
 {
+	TimeX current_time;
+	current_time.SetTimeNSec();
+
 	for ( int sock_i = 0; sock_i < (int) m_socks.size ( ); sock_i++ ) { 
 		NetSock& s = m_socks[ sock_i ];
 
-		if ( s.state == STATE_HANDSHAKE ) {
-			TimeX current_time;
-			current_time.SetTimeNSec ( );
-			if (  current_time.GetElapsedSec ( s.lastStateChange ) > 5.0 ) {
-				netManageHandshakeError ( sock_i, "server SSL timeout");
+		if (current_time.GetElapsedSec(s.lastStateChange) > 1.0) {
+			s.lastStateChange = current_time;
+
+			// OpenSSL
+			if (s.security & NET_SECURITY_OPENSSL) {
+				if (s.state==STATE_HANDSHAKE) {
+					netManageHandshakeError(sock_i, "server SSL timeout");
+				}
+			}
+
+			// TCP/IP protocols
+			if ( s.security & NET_SECURITY_PLAIN_TCP ) {
+				// Check listening socket
+				if ( s.state == STATE_HANDSHAKE && s.src.type == NTYPE_ANY ) {
+					printf ( "Listening: %d\n", sock_i );
+					netServerAcceptClient(sock_i);
+				}			
 			}
 		}
+		
+		
 	}
 }
 
@@ -823,7 +841,9 @@ void NetworkSystem::netServerProcessIO ( )
 	fd_set sockReadSet;
 	fd_set sockWriteSet;
 	int rcv_events = netSocketSelect ( &sockReadSet, &sockWriteSet );
+
 	NET_PERF_PUSH ( "findsocks" );
+
 	for ( int sock_i = 0; sock_i < (int) m_socks.size ( ); sock_i++ ) { 
 		NetSock& s = m_socks[ sock_i ];
 
@@ -841,10 +861,7 @@ void NetworkSystem::netServerProcessIO ( )
 			} 			
 
 			// All protocols
-			if (s.src.type == NTYPE_ANY) {
-				// Check listening socket (TCP or SSL)
-				netServerAcceptClient(sock_i);
-			} else {
+			if (s.src.type == NTYPE_CONNECT) {				
 				// Receive pending data
 				netReceiveData(sock_i);			
 			}
@@ -878,7 +895,7 @@ void NetworkSystem::netClientSetupHandshakeSSL ( int sock_i )
 	
 	int ret = 0, exp;
 	CXSocketMakeNoDelay ( s.socket );
-	CXSocketMakeBlock( s.socket, false);
+	CXSocketSetBlockMode ( s.socket, false);
 	s.security |= NET_SECURITY_FAIL; // Assume failure until end of this function
 	s.state = STATE_FAILED; 
 	s.lastStateChange.SetTimeNSec ( );
