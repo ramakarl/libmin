@@ -2,30 +2,41 @@
 #include <string>
 #include <iostream>
 
+// TCP/IP Non-Blocking demo (tcpnb)
+//
+// * This demo shows how to write TCP/IP non-blocking behavior 
+//   for both Linux & Windows.
+// * Pure demo. No dependency on Libmin. 
+// * Functions provided here to handle cross-platform correctly.
+
 #ifdef _WIN32
 	#pragma comment(lib, "Ws2_32.lib")
 	#include <conio.h>
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
-	#define CX_SOCKET		SOCKET
-	#define CX_SOCK_ERROR			(SOCKET_ERROR+1)		// to allow: result < SOCK_ERROR
-	#define	sockLen						int
+	#define CX_SOCKET					SOCKET
+	#define CX_SOCK_ERROR			(SOCKET_ERROR+1)		// to allow: result < SOCK_ERROR	
+	#define CX_OPT						char
+	#define CX_SOCKLEN				int
+	#define CX_INVALID_SOCK		INVALID_SOCKET
 #elif __linux__
 	#include <cstring>
-	#include <stdarg.h>		// for va_start/va_end
+	#include <stdarg.h>				// for va_start/va_end
 	#include <stdio.h>
 	#include <sys/socket.h>
 	#include <net/if.h>
 	#include <netinet/in.h>
 	#include <netinet/tcp.h> 
 	#include <arpa/inet.h>
-	#include <netdb.h>		// for addrinfo
+	#include <netdb.h>				// for addrinfo
 	#include <errno.h>    
 	#include <fcntl.h>
 	#include <unistd.h>
 	#define CX_SOCKET					int
-	#define CX_SOCK_ERROR			0			// check: result < SOCK_ERROR
-	#define	sockLen			socklen_t
+	#define CX_SOCK_ERROR			0										// check: result < SOCK_ERROR
+	#define CX_OPT						int
+	#define CX_SOCKLEN				socklet_t
+	#define CX_INVALID_SOCK		-1
 #endif   
 
 bool get_arg(int argc, char** argv, const char* chk_arg, std::string& val)
@@ -51,7 +62,7 @@ void setLastError(int i)
 
 int getLastError()
 {
-	#ifdef _WIN32 // get error on windows
+	#ifdef _WIN32
 		return WSAGetLastError(); // windows get last error
 	#else
 		return errno;
@@ -71,13 +82,10 @@ int setSockBlockMode (CX_SOCKET sock, bool block)
 }
 bool isSockValid (CX_SOCKET sock)
 {
-	// SOCKET is unsigned on windows. Windows checks for INVALID_SOCKET, a very large unsigned int
+	// SOCKET is unsigned on windows, signed on linux.
+  // Windows checks for INVALID_SOCKET, a very large unsigned int.
   // Linux checks for -1 (signed). See Windows & Linux accept function, return value.
-	#ifdef _WIN32
-		return sock != INVALID_SOCKET;	
-	#else
-		return sock != -1;
-	#endif
+	return (sock != CX_INVALID_SOCK);
 }
 
 void cleanup (CX_SOCKET s)
@@ -91,7 +99,8 @@ void cleanup (CX_SOCKET s)
 
 std::string getErrorMsg(int& error_id)
 {	
-	#ifdef _WIN32 // get error on windows
+	#ifdef _WIN32 
+		// get error on windows
 		if (error_id == 0) {
 			error_id = WSAGetLastError(); // windows get last error
 		}
@@ -111,17 +120,19 @@ std::string getErrorMsg(int& error_id)
 	#endif		
 	return error_str;
 }
+
 bool sockOkWouldBlock ()
 {
 	#ifdef _WIN32
-		return (getLastError()==WSAEWOULDBLOCK);
+		int err = getLastError();
+		return (err==WSAEWOULDBLOCK || err==WSAEINPROGRESS );
 	#else
 		// Ubuntu notes: EWOULDBLOCK=11, EAGAIN=11, EINPROGRESS=115, EALREADY=114, EISCONN=106		
 		return (errno==EWOULDBLOCK || errno==EAGAIN || errno==EINPROGRESS || errno==EALREADY || errno==EISCONN);
 	#endif
 }
 
-std::string errorf(const char* fmt_raw, ...)
+std::string errorf (const char* fmt_raw, ...)
 {
 	// formatted user msg string
 	char buffer[2048];
@@ -143,25 +154,17 @@ int main ( int argc, char* argv [] )
 	int ret;
 	
 	int serverPort = 10020;
-	std::string serverIP = "127.0.0.1";
+	std::string serverIP = "192.168.1.109";
 
 	// Server state
-	#ifdef _WIN32
-		SOCKET serverSock, srvCliSock;
-	#else
-		int serverSock, srvCliSock;
-	#endif
+	CX_SOCKET serverSock, srvCliSock;	
 	struct sockaddr_in serverAddr, srvCliAddr;
-	sockLen srvCliAddrSize = sizeof(srvCliAddr);
+	CX_SOCKLEN srvCliAddrSize = sizeof(srvCliAddr);
 	bool srvConnected = false;
 	bool srvSent = false;
 
 	// Client state
-	#ifdef _WIN32
-		SOCKET clientSock;
-	#else	
-		int clientSock;
-	#endif
+	CX_SOCKET clientSock;	
 	struct sockaddr_in cliSrvAddr;
 	bool cliConnected = false;
 	int cliTimer = 0;
@@ -202,11 +205,7 @@ int main ( int argc, char* argv [] )
 		serverAddr.sin_port = htons(serverPort);
 
 		// Set socket options
-		#ifdef _WIN32
-			char opt = 1;
-		#else	
-			int opt = 1;
-		#endif	
+		CX_OPT opt = 1;		
 		if ( setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) ) {
 			errorf( "Server setsockopt failed.");
 			return 1;
@@ -242,7 +241,7 @@ int main ( int argc, char* argv [] )
 	if (bClient) {
 		// Create socket
 		clientSock = socket(AF_INET, SOCK_STREAM, 0);
-		if ( !isSockValid(serverSock) ) {		
+		if ( !isSockValid(clientSock) ) {		
 			errorf( "Client socket create failed. ");			
 			cleanup(serverSock);
 			return 1;
@@ -282,7 +281,7 @@ int main ( int argc, char* argv [] )
 		if (bServer) {
 			if (!srvConnected) {
 				// server not yet connected
-				srvCliSock = accept(serverSock, (struct sockaddr*)& srvCliAddr, &srvCliAddrSize);			
+				srvCliSock = accept(serverSock, (struct sockaddr*) &srvCliAddr, &srvCliAddrSize);			
 				if ( !isSockValid(srvCliSock) ) {					
 					if ( sockOkWouldBlock() ) {
 						// std::cout << "Server waiting for client." << std::endl;
@@ -326,7 +325,7 @@ int main ( int argc, char* argv [] )
 					cliTimer = 0;					
 					// try connect again
 					printf ( "Client contacting %s:%d\n", serverIP.c_str(), serverPort );
-					ret = connect( clientSock, (struct sockaddr*) &cliSrvAddr, sizeof(cliSrvAddr) );
+					ret = connect( clientSock, (struct sockaddr*) &cliSrvAddr, sizeof(cliSrvAddr) );					
 					if (ret < CX_SOCK_ERROR) {
 						if ( sockOkWouldBlock() ) {
 							// connection in progress. wait for it.
@@ -337,21 +336,12 @@ int main ( int argc, char* argv [] )
 							timeval timeout;
 							timeout.tv_sec = 0;
 							timeout.tv_usec = 500;
+							// *note*: there must be a delay before selecting after connect
+							Sleep(500);
 							ret = select ( clientSock+1, NULL, &writefds, NULL, &timeout);
 							if (ret > 0 && FD_ISSET(clientSock, &writefds)) {
-								//#ifdef _WIN32
-								  std::cout << "Client connected ok!" << std::endl;
-								  cliConnected = true;
-								/*#else
-								  int so_error; 
-		  						  socklen_t len = sizeof(so_error);
-		  						  if (getsockopt(clientSock, SOL_SOCKET, SO_ERROR, &so_error, &len) < 0 ) {
-		 							errorf ( "Client socket select error.\n" );
-								  } else {
-									std::cout << "Client connected ok!" << std::endl;
-									cliConnected = true;
-								  }
-								#endif */
+								std::cout << "Client connected ok!" << std::endl;
+								cliConnected = true;
 							}
 							setLastError(0);
 						} else {
