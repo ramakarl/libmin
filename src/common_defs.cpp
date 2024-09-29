@@ -59,15 +59,30 @@ bool cuAvailable ()
 
 void dbgprintf(const char * fmt, ...)
 {
-    va_list  vlist;
-    va_start(vlist, fmt);    
-    #if defined(__ANDROID__)
-        __android_log_vprint(ANDROID_LOG_DEBUG, "NAPP", fmt, vlist );
-    #elif defined(__linux__)
-        vprintf(fmt, vlist);
-    #elif defined(_WIN32)
-        vprintf(fmt, vlist);
-    #endif
+  // get formatted print
+  char buf[2048];
+  va_list  args;
+  va_start (args, fmt);    
+  
+  // cross-platform print
+  #if defined(_WIN32)
+      vprintf( fmt, args);
+  #elif defined(__ANDROID__)
+      // android - use log_vprint 
+      __android_log_vprint(ANDROID_LOG_DEBUG, "NAPP", fmt, args );
+  #elif defined(__linux__)
+      // linux - termios output should automatically insert \r\n
+      vprintf( fmt, args);
+
+      // explicitly replace '\n' with '\r\n'
+      /* vsnprintf ( buf, sizeof(buf), fmt, args);
+      va_end(args);
+      std::string str;
+      for (int n=0; n < strlen(buf); n++) {
+        if (buf[n]=='\n') str += "\r\n"; else str += buf[n];
+      }            
+      printf ("%s", str.c_str());*/
+  #endif
 }
 
 char getPathDelim()
