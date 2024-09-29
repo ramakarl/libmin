@@ -42,6 +42,11 @@ static std::vector<std::string> gPaths;
 
 static xlong gMemStart = 0;       // amount of used memory when application starts
 
+std::vector<std::string>& getGlobalPaths()
+{
+  return gPaths;
+}
+
 bool cuAvailable ()
 {
   // indicate if CUDA was built with libmin
