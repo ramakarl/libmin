@@ -154,8 +154,8 @@
     HELPAPI char getPathDelim();
     HELPAPI char getPathDelimOpposite();
     HELPAPI std::vector<std::string>& getGlobalPaths ();
-    HELPAPI bool addSearchPath ( const char* path );
-    HELPAPI bool addSearchPath ( const std::string path);
+    HELPAPI std::string addSearchPath ( const char* path );
+    HELPAPI std::string addSearchPath ( const std::string path);
     HELPAPI bool getFileLocation ( const char* filename, char* outpath );
     HELPAPI bool getFileLocation ( const char* filename, char* outpath, std::vector<std::string> paths );
     HELPAPI bool getFileLocation ( const std::string filename, std::string &outpath );    

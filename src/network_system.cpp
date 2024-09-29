@@ -835,7 +835,7 @@ void NetworkSystem::netServerCheckConnectionHandshakes ( )
 			if ( s.security & NET_SECURITY_PLAIN_TCP ) {
 				// Check listening socket
 				if ( s.state == STATE_HANDSHAKE && s.src.type == NTYPE_ANY ) {
-					printf ( "Listening: %d\n", sock_i );
+					//printf ( "Listening: %d\n", sock_i );
 					netServerAcceptClient(sock_i);
 				}			
 			}
@@ -2655,9 +2655,10 @@ str NetworkSystem::netPrintf ( int flag, const char* fmt_raw, ... )
 	return msg;
 }
 
-NetSock* NetworkSystem::getSock ( int i )	{ return valid_socket_index(i) ? &m_socks[ i ] : 0; }
-str	 NetworkSystem::getSockIP ( int i ) 	{ return valid_socket_index(i) ? getIPStr ( m_socks[ i ].dest.ip ) : "";}
-int	 NetworkSystem::getServerSock( int i)	{ return valid_socket_index(i) ? m_socks[ i ].dest.sock : -1; }
+NetSock* NetworkSystem::getSock ( int i )		{ return valid_socket_index(i) ? &m_socks[ i ] : 0; }
+str	 NetworkSystem::getSockSrcIP(int i)			{ return valid_socket_index(i) ? getIPStr(m_socks[i].src.ip) : ""; }
+str	 NetworkSystem::getSockDestIP ( int i ) { return valid_socket_index(i) ? getIPStr(m_socks[i].dest.ip ) : "";}
+int	 NetworkSystem::getServerSock( int i)		{ return valid_socket_index(i) ? m_socks[ i ].dest.sock : -1; }
 
 
 str NetworkSystem::getIPStr ( netIP ip )

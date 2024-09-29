@@ -157,8 +157,9 @@ public:
 	
 	EventPool*  	getNetPool ( )		{ return m_eventPool; }		
 	NetSock*	getSock ( int i );		// socket itself
-	str		getSockIP ( int i );		// dest IP of socket
-	int		getServerSock ( int i );	// client's socket on server
+	str			getSockSrcIP(int i);			// src IP of socket
+	str			getSockDestIP ( int i );	// dest IP of socket	
+	int			getServerSock ( int i );	// client's socket on server
 	str 		getIPStr ( netIP ip );		// return IP as a string
 	netIP		getStrToIP ( str name );
 

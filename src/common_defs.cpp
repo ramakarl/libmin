@@ -87,45 +87,36 @@ char getPathDelimOpposite()
     #endif
 }
 
-bool addSearchPath ( const char* path )
+std::string addSearchPath ( const char* path )
 {
-    std::string p = path;
-    
-    // replace to match platform
-    std::replace ( p.begin(), p.end(), getPathDelimOpposite(), getPathDelim() );
-    
-    // every search path must be terminated with a delimiter. add one if needed
-    if ( p.at( p.length()-1) != getPathDelim() ) {
-        p = p + getPathDelim();
-    }    
-
-    gPaths.push_back ( p );
-
-    // check for path existence
-    struct stat  info;
-    bool exists = (stat ( path, &info ) == 0);
-    return exists;
+  char pathbuf[2048];
+  strncpy ( pathbuf, path, 2048);
+  return addSearchPath ( std::string(pathbuf) );
 }
 
-bool addSearchPath(const std::string path)
+std::string addSearchPath(const std::string path)
 {   
-    std::string p = path;
+  std::string p = path;
 
-    // replace to match platform
-    std::replace(p.begin(), p.end(), getPathDelimOpposite(), getPathDelim());
+  // replace to match platform
+  std::replace(p.begin(), p.end(), getPathDelimOpposite(), getPathDelim());
 
-    // every search path must be terminated with a delimiter. add one if needed
-    if (p.at(p.length() - 1) != getPathDelim()) {
-        p = p + getPathDelim();
-    }
+  // every search path must be terminated with a delimiter. add one if needed
+  if (p.at(p.length() - 1) != getPathDelim()) {
+    p = p + getPathDelim();
+  }
+
+  // check for path existence  
+  struct stat info;
+  char pathbuf[2048];
+  strncpy(pathbuf, p.c_str(), 2048);
+  bool exists = (stat(pathbuf, &info) == 0);
+  if (exists) {
     gPaths.push_back(p);
-
-    // check for path existence
-    char pathch[2048];
-    strncpy(pathch, p.c_str(), 2048);
-    struct stat  info;
-    bool exists = (stat(pathch, &info) == 0);
-    return exists;
+  } else {
+    p = "";
+  }
+  return p;
 }
 
 
