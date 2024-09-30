@@ -1758,7 +1758,8 @@ xlong NetworkSystem::ComputeChecksum ( char* buf, int len )
 {
 	xlong sum = 0;
 	for (int n=0; n < len; n++) {
-		sum = sum + xlong(*buf);
+		sum = sum + xlong(* (unsigned char*) buf);
+		buf++;
 	}	
 	return sum;	
 }
@@ -1842,19 +1843,19 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 			s.event->rescope ( "nets" );							// belongs to network now
 			s.event->setSrcSock ( sock_i );						// tag event /w socket
 			s.event->setSrcIP ( m_socks[ sock_i ].src.ip );		// recover sender address from socket
-			
+				
 			// Deserialize event from recv buf			
 			s.event->deserialize ( s.rxBuf, s.eventLen );	// deserialize			
 			netQueueEvent ( *s.event );					// queue event (consumed later)			
-			
+	
+			xlong chksum = ComputeChecksum(s.rxBuf, s.eventLen);			//--- use for debugging. to determine if network system/event issue or app. should match sender hash.
+
 			// Reduce recv buffer
 			s.rxLen -= s.eventLen;							// consume event bytes in recv buffer
 			memcpy( s.rxBuf, s.rxBuf + s.eventLen, s.rxLen);	// transfer remaining bytes to beginning (memcpy ok since data always moving backwards in mem)
 			s.rxPtr = s.rxBuf + s.rxLen;				// reset to beginning of recv			
 
-			xlong hash = ComputeChecksum ( s.rxBuf, s.eventLen );			//--- use for debugging. to determine if network system/event issue or app. should match sender hash.
-
-			netPrintf(PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s --> RECV  chksum=%lld", s.eventLen, s.eventLen, s.rxLen, s.event->getNameStr().c_str(), hash );
+			netPrintf(PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s --> RECV  chksum=%lld", s.eventLen, s.eventLen, s.rxLen, s.event->getNameStr().c_str(), chksum );
 			s.eventLen = 0;											// reset event len
 
 			// Check for additional event(s)
@@ -2275,7 +2276,7 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 
 	xlong chksum = ComputeChecksum( buf, event_len );		//--- use for debugging. to determine if network system/event issue or app. should match sender hash.
 
-	netPrintf ( PRINT_FLOW, "TX %d bytes, %s --> SENDING  chksum=%lld", e.getSerializedLength ( ), e.getNameStr ( ).c_str ( ), chksum );
+	netPrintf ( PRINT_FLOW, "TX %d bytes, %s --> SENDING  chksum=%lld", e.getSerializedLength (), e.getNameStr().c_str(), chksum );
 
 	if ( m_socks[ sock_i ].mode == NET_TCP ) { // Send over socket
 		if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) {
