@@ -2273,7 +2273,7 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 	char* buf = e.getSerializedData ( );
 	int event_len = e.getSerializedLength ( );
 
-	xlong chksum = ComputeChecksum(s.rxBuf, s.eventLen);		//--- use for debugging. to determine if network system/event issue or app. should match sender hash.
+	xlong chksum = ComputeChecksum( buf, event_len );		//--- use for debugging. to determine if network system/event issue or app. should match sender hash.
 
 	netPrintf ( PRINT_FLOW, "TX %d bytes, %s --> SENDING  chksum=%lld", e.getSerializedLength ( ), e.getNameStr ( ).c_str ( ), chksum );
 
