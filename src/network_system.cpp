@@ -1758,7 +1758,7 @@ xlong NetworkSystem::ComputeChecksum ( char* buf, int len )
 {
 	xlong sum = 0;
 	for (int n=0; n < len; n++) {
-		sum = xlong(sum + buf);
+		sum = sum + xlong(*buf);
 	}	
 	return sum;	
 }
