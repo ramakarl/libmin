@@ -2193,7 +2193,10 @@ void NetworkSystem::netSendResidualEvent ( int sock_i )
 {
 	TRACE_ENTER ( (__func__) );
 	NetSock& s = m_socks[ sock_i ];
-	int remaining = s.txPktSize - s.txLen, result;
+	int remaining = s.txPktSize - s.txLen;
+	int result = 0;
+
+	netPrintf(PRINT_VERBOSE, "Remaining: %d of %d", remaining, s.txPktSize);
 
 	if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) {
 		result = send ( s.socket, s.txBuf + s.txLen, remaining, 0 ); // TCP/IP
@@ -2204,8 +2207,9 @@ void NetworkSystem::netSendResidualEvent ( int sock_i )
 		//result = SSL_write ( s.ssl, s.txBuf + s.txSoFar, remaining );
 	}
 	
-	if ( result > 0 ) {
-		s.txLen += result;
+	if ( result > 0 ) {		
+		s.txLen += result;		
+		netPrintf(PRINT_VERBOSE, "Sent more: %d of %d, now %d", result, s.txPktSize, s.txPktSize-s.txLen );
 		if ( result != remaining ) {
 			netPrintf ( PRINT_FLOW, "2 Tail TX: %d ?= %d (%d)", result, remaining, s.txLen );
 		} else {
@@ -2248,6 +2252,7 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 	e.serialize ();		// Prepare serialized buffer	
 	char* buf = e.getSerializedData ( );
 	int event_len = e.getSerializedLength ( );
+
 	netPrintf ( PRINT_FLOW, "TX %d bytes, %s", e.getSerializedLength ( ), e.getNameStr ( ).c_str ( ) );
 
 	if ( m_socks[ sock_i ].mode == NET_TCP ) { // Send over socket
@@ -2263,10 +2268,11 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 					// partial event sent, transmit more later
 					netExpandBuf (s.txBuf, s.txPtr, s.txMax, s.txLen, event_len + 1);
 					s.txLen = result;
-					s.txPktSize = result;
+					s.txPktSize = event_len;
 					memcpy ( s.txBuf, buf, result );
 					s.txBuf[ event_len ] = '\0';
 					netPrintf ( PRINT_FLOW, "1 Partial TX: %d < %d", result, event_len) ;					
+					netPrintf ( PRINT_VERBOSE, "Partial: %d of %d, %d remain", result, s.txPktSize, s.txPktSize - s.txLen );
 				}
 				
 				// done
