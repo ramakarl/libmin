@@ -2233,7 +2233,7 @@ void NetworkSystem::netSendResidualEvent ( int sock_i )
 		if ( result != remaining ) {
 			netPrintf ( PRINT_FLOW, "2 Tail TX: %d ?= %d (%d)", result, remaining, s.txLen );
 		} else {
-			netPrintf ( PRINT_FLOW, "2 Partial TX done!" );
+			netPrintf ( PRINT_FLOW, "2 Partial TX done!" );			
 			s.txLen = s.txPktSize = 0;
 		} 
 	} 
@@ -2273,7 +2273,9 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 	char* buf = e.getSerializedData ( );
 	int event_len = e.getSerializedLength ( );
 
-	netPrintf ( PRINT_FLOW, "TX %d bytes, %s", e.getSerializedLength ( ), e.getNameStr ( ).c_str ( ) );
+	xlong chksum = ComputeChecksum(s.rxBuf, s.eventLen);		//--- use for debugging. to determine if network system/event issue or app. should match sender hash.
+
+	netPrintf ( PRINT_FLOW, "TX %d bytes, %s --> SENDING  chksum=%lld", e.getSerializedLength ( ), e.getNameStr ( ).c_str ( ), chksum );
 
 	if ( m_socks[ sock_i ].mode == NET_TCP ) { // Send over socket
 		if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) {
