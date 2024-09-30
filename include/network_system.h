@@ -203,7 +203,7 @@ private: // Functions
 	int netSocketConnect ( int sock_i );
 	int netSocketListen ( int sock_i );
 	int netSocketAccept ( int sock_i, CX_SOCKET& tcp_sock, netIP& cli_ip, netPort& cli_port );	
-	int netSocketRecv ( int sock_i, char* buf, int buflen, int& recvlen); 
+	int netSocketRecv ( int sock_i, char* buf, int buflen ); 
 	void netSocketReuse(int sock_i );
 	bool netSocketIsConnected ( int sock_i );
 	bool netSocketIsSelected ( fd_set* sockSet, int sock_i );
@@ -236,6 +236,8 @@ private: // Functions
 	void CXSocketClose ( CX_SOCKET sock_h );
 	bool CXSocketWouldBlock (std::string& msg);
 	str CXGetIpStr ( netIP ip );
+
+	xlong ComputeChecksum (char* buf, int len);
 	
 private: // State
 	
