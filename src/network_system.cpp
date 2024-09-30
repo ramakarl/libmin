@@ -2204,13 +2204,12 @@ void NetworkSystem::netSendResidualEvent ( int sock_i )
 		//result = SSL_write ( s.ssl, s.txBuf + s.txSoFar, remaining );
 	}
 	
-	netPrintf ( PRINT_ERROR, "2 Tail TX: %d %d", result, remaining );
 	if ( result > 0 ) {
 		s.txLen += result;
 		if ( result != remaining ) {
-			netPrintf ( PRINT_ERROR, "2 Tail TX: %d ?= %d (%d)", result, remaining, s.txLen );
+			netPrintf ( PRINT_FLOW, "2 Tail TX: %d ?= %d (%d)", result, remaining, s.txLen );
 		} else {
-			netPrintf ( PRINT_ERROR, "2 Partial TX done!" );
+			netPrintf ( PRINT_FLOW, "2 Partial TX done!" );
 			s.txLen = s.txPktSize = 0;
 		} 
 	} 
