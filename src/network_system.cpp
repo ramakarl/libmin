@@ -1467,20 +1467,20 @@ int NetworkSystem::netAddSocket ( int side, int mode, int state, bool block, Net
 	#endif
 
 	// inital packet buf
-	s.pktMax = 32767;		// fixed size
-	s.pktBuf = (char*) malloc (s.pktMax);		
+	s.pktMax = 65536;			// fixed size
+	s.pktBuf = (char*) malloc ( s.pktMax );		
 	s.pktPtr = s.pktBuf;
 	s.pktLen = 0;
 	s.pktCounter = 0;
 
 	// initial rx buf
-	s.rxMax = 2048;			// expandable
+	s.rxMax = 8192;			// expandable
 	s.rxBuf = (char*) malloc(s.rxMax);
 	s.rxPtr = s.rxBuf;
 	s.rxLen = 0;
 
 	// initial tx buf
-	s.txMax = 2048;			// expandable
+	s.txMax = 8192;			// expandable
 	s.txBuf = (char*) malloc(s.txMax);
 	s.txPtr = s.txBuf;
 	s.txLen = 0;	
@@ -1738,6 +1738,7 @@ int NetworkSystem::netProcessQueue ( void )
 //
 void NetworkSystem::netExpandBuf (char*& buf, char*& ptr, int& max, int& len, int new_max)
 {
+	assert ( len <= max );
 	if (new_max > max) {
 		char* new_buf = (char*) malloc ( new_max );
 		memcpy ( new_buf, buf, len );
@@ -1785,6 +1786,8 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 	s.pktCounter++;
 	s.pktPtr = s.pktBuf;			// recv packet itself is atomic, start at beginning
 
+	xlong chksum = 0;
+
 	while ( s.pktLen > 0 ) {
 		if ( s.rxLen == 0 && s.pktLen >= header_sz ) { // Check for new or partial event
 			
@@ -1802,7 +1805,12 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 				// Deserialize directly from input buffer (for performance)				
 				s.event->deserialize ( s.pktPtr, s.eventLen );		// deserialize					
 				netQueueEvent ( *s.event );								// queue event (consumed later)				
-				netPrintf ( PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s --> RECV", s.pktLen, s.eventLen, s.rxLen, s.event->getNameStr ( ).c_str ( ) );				
+
+				// Checksum [debugging] - determine if send/recv buffers (events) match byte-for-byte
+				if (m_printFlow) {
+					chksum = ComputeChecksum(s.pktPtr, s.eventLen);
+				}
+				netPrintf ( PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s --> RECV  chksum=%lld", s.pktLen, s.eventLen, s.rxLen, s.event->getNameStr ( ).c_str(), chksum );	
 
 				s.pktLen -= s.eventLen;								// consume event size in bytes
 				s.pktPtr += s.eventLen;
@@ -1840,23 +1848,25 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 			// Create event; no name/target. will be set during deserialize	
 			eventStr_t name = *(eventStr_t*) (s.pktPtr + Event::staticOffsetLenInfo() + 4);
 			new_event ( *s.event, s.eventLen - Event::staticSerializedHeaderSize ( ), 'net ', name, 0, m_eventPool, "netRecv" );
-			s.event->rescope ( "nets" );							// belongs to network now
-			s.event->setSrcSock ( sock_i );						// tag event /w socket
+			s.event->rescope ( "nets" );						// belongs to network now
+			s.event->setSrcSock ( sock_i );					// tag event /w socket
 			s.event->setSrcIP ( m_socks[ sock_i ].src.ip );		// recover sender address from socket
 				
 			// Deserialize event from recv buf			
 			s.event->deserialize ( s.rxBuf, s.eventLen );	// deserialize			
-			netQueueEvent ( *s.event );					// queue event (consumed later)			
-	
-			xlong chksum = ComputeChecksum(s.rxBuf, s.eventLen);			//--- use for debugging. to determine if network system/event issue or app. should match sender hash.
-
+			netQueueEvent ( *s.event );							// queue event (consumed later)			
+			
+			// Checksum [debugging] - determine if send/recv buffers (events) match byte-for-byte
+			if ( m_printFlow ) {
+				chksum = ComputeChecksum(s.rxBuf, s.eventLen);
+			}
 			// Reduce recv buffer
-			s.rxLen -= s.eventLen;							// consume event bytes in recv buffer
-			memcpy( s.rxBuf, s.rxBuf + s.eventLen, s.rxLen);	// transfer remaining bytes to beginning (memcpy ok since data always moving backwards in mem)
-			s.rxPtr = s.rxBuf + s.rxLen;				// reset to beginning of recv			
+			s.rxLen -= s.eventLen;									// consume event bytes in recv buffer
+			memmove ( s.rxBuf, s.rxBuf + s.eventLen, s.rxLen);		// must us an overlap-safe memory copy (not memcpy), to shift the data back
+			s.rxPtr = s.rxBuf + s.rxLen;						// reset to beginning of recv						
 
 			netPrintf(PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s --> RECV  chksum=%lld", s.eventLen, s.eventLen, s.rxLen, s.event->getNameStr().c_str(), chksum );
-			s.eventLen = 0;											// reset event len
+			s.eventLen = 0;													// reset event len
 
 			// Check for additional event(s)
 			if (s.rxLen > header_sz) {
@@ -2001,6 +2011,7 @@ void NetworkSystem::netReceiveData ( int sock_i )
 		} else if ( result > 0 ) {
 			// received bytes. deserialize.
 			s.pktLen = result; 
+			assert ( result <= s.pktMax );
 			netDeserializeEvents(sock_i);
 		}
 
@@ -2213,14 +2224,11 @@ bool NetworkSystem::netCheckError ( int result, int sock_i )
 void NetworkSystem::netSendResidualEvent ( int sock_i )
 {
 	TRACE_ENTER ( (__func__) );
-	NetSock& s = m_socks[ sock_i ];
-	int remaining = s.txPktSize - s.txLen;
+	NetSock& s = m_socks[ sock_i ];	
 	int result = 0;
 
-	netPrintf(PRINT_VERBOSE, "Remaining: %d of %d", remaining, s.txPktSize);
-
 	if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) {
-		result = send ( s.socket, s.txBuf + s.txLen, remaining, 0 ); // TCP/IP
+		result = send ( s.socket, s.txBuf, s.txLen, 0 ); // TCP/IP
 	} else {
 		s.txLen = 0;
 		TRACE_EXIT ( (__func__) );
@@ -2228,13 +2236,15 @@ void NetworkSystem::netSendResidualEvent ( int sock_i )
 		//result = SSL_write ( s.ssl, s.txBuf + s.txSoFar, remaining );
 	}
 	
-	if ( result > 0 ) {		
-		s.txLen += result;		
-		netPrintf(PRINT_VERBOSE, "Sent more: %d of %d, now %d", result, s.txPktSize, s.txPktSize-s.txLen );
-		if ( result != remaining ) {
-			netPrintf ( PRINT_FLOW, "2 Tail TX: %d ?= %d (%d)", result, remaining, s.txLen );
+	if ( result > 0 ) {
+		s.txLen -= result;
+		int remain = s.txLen;
+		memmove ( s.txBuf, s.txBuf + result, remain );		// overlapping move
+		s.txPtr = s.txBuf + remain;
+		if ( result != s.txLen ) {
+			netPrintf ( PRINT_FLOW, "TX %d/%d (txLen=%d)", result, remain, s.txLen );
 		} else {
-			netPrintf ( PRINT_FLOW, "2 Partial TX done!" );			
+			netPrintf ( PRINT_FLOW, "TX %d/%d (txLen=%d) - DONE", result, remain, s.txLen );			
 			s.txLen = s.txPktSize = 0;
 		} 
 	} 
@@ -2248,7 +2258,7 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 	// caller may wish to send on any outgoing socket
 	if ( sock_i == -1 ) { 
 		sock_i = netFindOutgoingSocket ( true );
-		if ( sock_i == -1 ) 			{ TRACE_EXIT ( (__func__) ); return false; }		
+		if ( sock_i == -1 ) 						{ TRACE_EXIT ( (__func__) ); return false; }		
 	}
 	// check valid socket idx
 	if (!valid_socket_index(sock_i)) 		{ TRACE_EXIT ( (__func__) ); return false; }
@@ -2265,7 +2275,7 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 	// make sure we have an event data buffer
 	int result;
 	e.rescope ( "nets" );
-	if ( e.mData == 0x0 ) 				{ TRACE_EXIT ( (__func__) ); return false; }
+	if ( e.mData == 0x0 ) 							{ TRACE_EXIT ( (__func__) ); return false; }
 	
 	// event retains is persist/consume status
 	//  (will pass thru send back to caller)
@@ -2274,7 +2284,11 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 	char* buf = e.getSerializedData ( );
 	int event_len = e.getSerializedLength ( );
 
-	xlong chksum = ComputeChecksum( buf, event_len );		//--- use for debugging. to determine if network system/event issue or app. should match sender hash.
+	// Checksum [debugging] - determine if send/recv buffers match
+	xlong chksum = 0;
+	if ( m_printFlow ) {
+		chksum = ComputeChecksum( buf, event_len );		
+	}
 
 	netPrintf ( PRINT_FLOW, "TX %d bytes, %s --> SENDING  chksum=%lld", e.getSerializedLength (), e.getNameStr().c_str(), chksum );
 
@@ -2289,13 +2303,12 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 					// full event sent					
 				} else {
 					// partial event sent, transmit more later
-					netExpandBuf (s.txBuf, s.txPtr, s.txMax, s.txLen, event_len + 1);
-					s.txLen = result;
-					s.txPktSize = event_len;
-					memcpy ( s.txBuf, buf, result );
+					int remain = event_len - result;
+					netExpandBuf (s.txBuf, s.txPtr, s.txMax, s.txLen, s.txLen + remain);
+					memcpy ( s.txPtr, buf + result, remain);
+					s.txLen += remain;					
 					s.txBuf[ event_len ] = '\0';
-					netPrintf ( PRINT_FLOW, "1 Partial TX: %d < %d", result, event_len) ;					
-					netPrintf ( PRINT_VERBOSE, "Partial: %d of %d, %d remain", result, s.txPktSize, s.txPktSize - s.txLen );
+					netPrintf ( PRINT_FLOW, "TX %d/%d, %d remain (txLen=%d)", result, event_len, remain, s.txLen );
 				}
 				
 				// done
@@ -2605,7 +2618,7 @@ int NetworkSystem::netSocketSelect ( fd_set* sockReadSet, fd_set* sockWriteSet )
 		if ( s.state != STATE_NONE && s.state != STATE_TERMINATED && s.state != STATE_FAILED ) {
 			if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) { 
 				FD_SET ( s.socket, sockReadSet );
-				if ( s.txPktSize > 0 ) {
+				if ( s.txLen > 0 ) {
 					FD_SET ( s.socket, sockWriteSet );
 				}
 				if ( (int) s.socket > maxfd ) maxfd = s.socket;
@@ -2613,7 +2626,7 @@ int NetworkSystem::netSocketSelect ( fd_set* sockReadSet, fd_set* sockWriteSet )
 				#ifdef BUILD_OPENSSL
 					int fd = SSL_get_fd ( s.ssl );
 					FD_SET ( fd, sockReadSet );	
-					if ( s.txPktSize > 0 ) {
+					if ( s.txLen > 0 ) {
 						FD_SET ( fd, sockWriteSet );	
 					}
 					if ( (int) fd > maxfd ) maxfd = fd;

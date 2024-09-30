@@ -90,7 +90,7 @@ void new_event ( Event& p, size_t size, eventStr_t targ, eventStr_t name, eventS
 	if (p.mData == 0x0 || size > p.mMax ) {
 		p.mData = new_event_data ( size, p.mMax, pool, name, msg );	  // payload allocation			
 	}
-	memset ( p.mData, '0', p.mMax );
+	// memset ( p.mData, '0', p.mMax );			//--- debugging
 
 	p.bOwn = true;					// event retains ownership
 	p.bDestroy = true;			// default to kill on local func out of scope
