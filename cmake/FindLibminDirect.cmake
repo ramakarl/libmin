@@ -32,7 +32,7 @@ endfunction()
 # LIBMIN_ROOT - should be set by caller during bootstrap
 #
 message ( STATUS "  LIBMIN_ROOT: ${LIBMIN_ROOT}")
-if ( NOT DEFINED LIBEXT_ROOT )
+if ( NOT DEFINED LIBMIN_ROOT )
   set ( LIBMIN_ROOT "${LIBMIN_ROOT}" CACHE PATH "Path to /libmin source" )
 endif()
 _CONFIRM_PATH ( LIBMIN_ROOT "${LIBMIN_ROOT}" "/src/dataptr.cpp" "LIBMIN_ROOT" )
@@ -42,6 +42,10 @@ set ( LIBMIN_ROOT_MAINS "${LIBMIN_ROOT}/mains" )
 set ( LIBMIN_ROOT_SRC "${LIBMIN_ROOT}/src")
 set ( LIBMIN_ROOT_INC "${LIBMIN_ROOT}/include")
 set ( LIBEXT_ROOT ${LIBEXT_ROOT} )
+message ( STATUS "  Found paths..")
+message ( STATUS "  LIBMIN_ROOT_MAINS: ${LIBMIN_ROOT_MAINS}")
+message ( STATUS "  LIBMIN_ROOT_SRC: ${LIBMIN_ROOT_SRC}")
+message ( STATUS "  LIBMIN_ROOT_INC: ${LIBMIN_ROOT_INC}")
 
 #set ( DEBUG_HEAP false CACHE BOOL "Enable heap checking (debug or release).")
 set ( DEBUG_HEAP true CACHE BOOL "Enable heap checking (debug or release).")
@@ -50,9 +54,11 @@ if ( ${DEBUG_HEAP} )
    add_definitions( -D_CRTDBG_MAP_ALLOC)
 endif()
 
-message ( STATUS "----- Running LibminDirect.cmake" )
+message ( STATUS "----- Completed LibminDirect.cmake" )
 message ( STATUS "  CURRENT DIRECTORY:  ${CMAKE_CURRENT_SOURCE_DIR}" )
 message ( STATUS "  LIBMIN SOURCE CODE: ${LIBMIN_ROOT}" )
+
+set ( LIBMIN_FOUND TRUE CACHE BOOL "" FORCE)
 
 ###################################################################################
 # Provide a cross-platform main

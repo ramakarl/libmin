@@ -327,8 +327,8 @@ bool Application::appCreateGL (const Application::ContextFlags *cflags, int& wid
     m_win->_context = context;
 
     glDisable(GL_DITHER);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
+    // glEnable(GL_CULL_FACE);
+    // glEnable(GL_DEPTH_TEST);
 
     dbgprintf("Set Viewport");
     glViewport(0, 0, m_win->_width, m_win->_height);
@@ -504,9 +504,9 @@ void Application::appHandleEvent (guiEvent g)
 }
 
 #ifdef USE_NETWORK
-    void Application::appSendEventToApp ( Event* e )
+    bool Application::appSendEventToApp ( Event* e )
     {
-        pApp->on_event ( e );
+        return pApp->on_event ( e );
     }
 #endif
 

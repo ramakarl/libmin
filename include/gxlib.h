@@ -39,9 +39,9 @@
     GXAPI void start2D ( int w, int h, bool bStatic = false );
     GXAPI void start2D ( int w, int h, Vec4F region, bool bStatic = false );
     GXAPI void setview2D ( int w, int h );
-    GXAPI void setview2D ( Matrix4F& model, Matrix4F& view, Matrix4F& proj );      
+    GXAPI void setview2D ( int w, int h, Matrix4F& model, Matrix4F& view, Matrix4F& proj );      
     GXAPI void setAspectCorrect ( float a );
-    GXAPI void setMatrices2D ( int grp, int xr, int yr, Matrix4F& model, Matrix4F& view, Matrix4F& proj );    
+    GXAPI void setMatrices2D ( int grp, Matrix4F& model, Matrix4F& view, Matrix4F& proj );    
     GXAPI void setTextSz ( float hgt, float kern );
     GXAPI void setTextPix ( float hgt, Vec4F view );
     GXAPI bool getTextDim (std::string msg, Vec4F view, Vec2F& px, Vec2F& sz );

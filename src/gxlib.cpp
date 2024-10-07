@@ -138,16 +138,19 @@ void glib::setview2D (int w, int h)
   model.Identity();
   proj.Identity();
 
-	setMatrices2D ( gx.m_curr_set, gx.m_Xres, gx.m_Yres, model, view, proj );   
+	setMatrices2D ( gx.m_curr_set, model, view, proj );   
 }
 
 // set view matrices explicitly
-void glib::setview2D ( Matrix4F& model, Matrix4F& view, Matrix4F& proj )
+void glib::setview2D ( int w, int h, Matrix4F& model, Matrix4F& view, Matrix4F& proj )
 {
-	setMatrices2D( gx.m_curr_set, gx.m_Xres, gx.m_Yres, model, view, proj );
+	gx.m_Xres = w;
+	gx.m_Yres = h;
+
+	setMatrices2D( gx.m_curr_set, model, view, proj );
 }
 
-void glib::setMatrices2D ( int s, int xr, int yr, Matrix4F& model, Matrix4F& view, Matrix4F& proj )
+void glib::setMatrices2D ( int s, Matrix4F& model, Matrix4F& view, Matrix4F& proj )
 {	
 	// assign 2D view matrices to a cmd set
   gxSet* set = gx.getSet(s);
@@ -369,7 +372,7 @@ bool glib::getTextDim (std::string msg, Vec4F view, Vec2F& px, Vec2F& sz )
 	sz.y = font.ascent * textDel;
 
 	// world space to pixels
-	px = sz * Vec2F(gx.m_Xres / (view.z - view.x), gx.m_Yres / (view.w - view.y) );
+	px = sz * Vec2F( float(gx.m_Xres) / (view.z - view.x), float(gx.m_Yres) / (view.w - view.y) );
 
 	return true;
 }
@@ -1037,6 +1040,7 @@ void gxLib::createShader2D ()
 			"    outColor = color * imgclr;\n"
 			"}\n"
 		;
+		
 
 		glShaderSource(fs, 1, &fss, 0);
 		glCompileShader(fs);
