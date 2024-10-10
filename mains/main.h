@@ -90,7 +90,8 @@
 		// - abstraction virtual, available for app to override
 		virtual void startup()  {}
 		virtual bool init() { return true; }
-        virtual bool activate() { return true; }
+    virtual bool activate() { return true; }
+		virtual bool deactivate() { return true; }
 		virtual void shutdown() {}
 		virtual void reshape(int w, int h) { }
 		virtual void on_arg(int i, std::string arg, std::string val ) {}

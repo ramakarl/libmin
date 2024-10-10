@@ -24,7 +24,8 @@ Application* pApp = 0x0;
 
 struct OSWindow
 {
-    OSWindow (Application* app) : m_app(app), m_screen(0), m_visible(true), _awindow(0), _display(0), _surface(0), _context(0) {}    // empty constructor
+    OSWindow (Application* app) : m_app(app), m_screen(0), m_visible(true), _awindow(0), _javavm(0), _javaGlobalObject(0), _javaGlobalClass(0),
+                                 _display(0), _surface(0), _context(0) {}    // empty constructor
 
     Application*    m_app;              // handle to the owner application
     int             m_screen;
@@ -68,37 +69,180 @@ extern "C"
     #include <android/native_window_jni.h>
     #include <android/surface_control.h>
 
-    static ANativeWindow *window = 0;
+    bool nativeDestroyGL ( )
+    {
+      dbgprintf ( "nativeDestroyGL()\n");
+
+      dbgprintf ( "  nativeDestroyGL: appStopWindow.\n");
+      pApp->appStopWindow();      // sets active=false, stops eglSwapBuffers
+
+      OSWindow* win = pApp->m_win;
+      if (win==0x0) {
+        dbgprintf("  ERROR: nativeDestroGL: OSWindow is null.\n");
+        return false;
+      }
+      if (win->_awindow == 0x0) 
+        return true;
+
+      if (win->_display == EGL_NO_DISPLAY && win->_surface==EGL_NO_SURFACE && win->_context==EGL_NO_CONTEXT)
+        return true;
+
+      dbgprintf( "  nativeDestroyGL: Clear context. eglMakeCurrent.\n");
+      eglMakeCurrent(win->_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
+      if (win->_context != EGL_NO_CONTEXT) {
+        dbgprintf("  nativeDestroyGL: Destroy context. eglDestroyContext.\n");
+        eglDestroyContext(win->_display, win->_context);
+      }
+      if (win->_surface != EGL_NO_SURFACE) {
+        dbgprintf("  nativeDestroyGL: Destroy surface. eglDestroySurface.\n");
+        eglDestroySurface(win->_display, win->_surface);
+      }
+      dbgprintf("  nativeDestroyGL: Terminate. eglTerminate.\n");
+      eglTerminate(win->_display);
+
+      win->_display = EGL_NO_DISPLAY;
+      win->_surface = EGL_NO_SURFACE;
+      win->_context = EGL_NO_CONTEXT;
+
+      if (win->_awindow != 0x0) {
+        dbgprintf("  nativeDestroyGL: Released NativeWindow.\n");
+        ANativeWindow_release(pApp->m_win->_awindow);
+        win->_awindow = 0x0;
+      }      
+
+      return true;
+    }
+
+    bool nativeRebuildGL ( JNIEnv* env, jclass cself, jobject surface, jobject self)
+    {
+      dbgprintf("nativeRebuildGL()\n");
+      if (surface == 0) {
+        dbgprintf("ERROR: nativeRebuildGL: Surface is null.\n");
+        return false;
+      }
+      // Create a new OSwindow container (if needed)
+      if (pApp->m_win == 0x0) {
+        dbgprintf("  nativeRebuildGL: New OS Window containter.\n");
+        pApp->m_win = new OSWindow(pApp);  // create os-specific variables first time
+      }
+      OSWindow* win = pApp->m_win;         // get OSWindow container
+
+      // Create Window and EGL Context
+      if (win->_awindow == 0x0) {        
+        dbgprintf("  nativeRebuildGL: Getting NativeWindow and Surface.\n");
+        ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
+        if (window == 0x0) { 
+          dbgprintf("ERROR: nativeRebuildGL: Window is null.\n"); 
+          return false; 
+        } 
+
+        // Get the Java VM from environment
+        JavaVM* javaVm;
+        env->GetJavaVM(&javaVm);
+
+        // Get global objects
+        jobject jo = reinterpret_cast<jobject>(env->NewGlobalRef(self));
+        jclass jc = reinterpret_cast<jclass>(env->NewGlobalRef(cself));
+
+        // Assign Android window & objects (from surface)
+        dbgprintf("  nativeRebuildGL: Assigning Java objects.\n");
+        win->_awindow = (ANativeWindow*)window;
+        win->_javavm = (JavaVM*)javaVm;
+        win->_javaGlobalObject = jo;
+        win->_javaGlobalClass = jc;      
+
+        // NativeDestroy any previous context
+        // dbgprintf("  nativeRebuildGL: Clear any previous context...\n");
+        // nativeDestroyGL();
+
+        //-- Start OpenGL GLES 3.0
+        int wid, hgt;
+        dbgprintf("  nativeRebuildGL: appCreateGL.\n");
+        if (!pApp->appCreateGL(&pApp->m_cflags, wid, hgt)) {
+          dbgprintf("ERROR: appCreateGL failed.\n");
+          return false;
+        }
+        pApp->m_winSz[0] = wid;
+        pApp->m_winSz[1] = hgt;
+
+        //-- OpenGL initialization
+        dbgprintf("  appInitGL().\n");
+        pApp->appInitGL();
+        if (pApp->m_startup) {    // Call user init() only ONCE per application
+          dbgprintf("    init()");    // Calls init2D
+          if (!pApp->init()) { dbgprintf("ERROR: Unable to init() app.\n"); return false; }
+        }
+      }
+
+      //-- Start the app
+      dbgprintf("  appStartWindow.\n");
+      pApp->appStartWindow();
+    
+      return true;
+    }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeSetSurface ( JNIEnv* env, jclass cself, jobject surface, jobject self)
+    Java_com_quantasciences_qtvc_MainActivity_nativeCreateSurface ( JNIEnv* env, jclass cself, jobject surface, jobject self)
     {
-        if ( surface != 0 ) {
-            // get the Window from the Java Android surface
-            ANativeWindow* window = ANativeWindow_fromSurface ( env, surface );
-            if (window==0x0) { dbgprintf ( "ERROR: Window is null.\n"); return; }
+      nativeRebuildGL ( env, cself, surface, self );      
+    }
 
-            // get the Java VM from environment
-            JavaVM* javaVm;
-            env->GetJavaVM( &javaVm );
+    JNIEXPORT void JNICALL
+    Java_com_quantasciences_qtvc_MainActivity_nativeChangeSurface(JNIEnv* env, jclass cself, jobject surface, jobject self)
+    {
+    }
+    JNIEXPORT void JNICALL
+    Java_com_quantasciences_qtvc_MainActivity_nativeDestroySurface(JNIEnv* env, jclass cself, jobject surface, jobject self)
+    { 
+      pApp->m_active = false;
+      eglMakeCurrent (pApp->m_win->_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      //nativeDestroyGL();      
+    }
+    JNIEXPORT void JNICALL
+    Java_com_quantasciences_qtvc_MainActivity_nativeOnPause ( jclass cself )
+    {
+      pApp->m_active = false; 
+      eglMakeCurrent(pApp->m_win->_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      //nativeDestroyGL();      
+    }    
+    JNIEXPORT void JNICALL
+    Java_com_quantasciences_qtvc_MainActivity_nativeOnResume ( JNIEnv* env, jclass cself, jobject surf, jobject self )
+    {
+      OSWindow* win = pApp->m_win; 
+      if (win==0) return;
+      if (win->_display == EGL_NO_DISPLAY) return;
 
-            // get global objects
-            jobject jo = reinterpret_cast<jobject>(env->NewGlobalRef(self));
-            jclass jc = reinterpret_cast<jclass>( env->NewGlobalRef(cself));
+      const EGLint attribs[] = {
+                EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+                EGL_BLUE_SIZE, 8,
+                EGL_GREEN_SIZE, 8,
+                EGL_RED_SIZE, 8,
+                EGL_NONE
+      };
+      EGLint attributes[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
+      EGLConfig config;
+      EGLint numConfigs;
+      EGLSurface surface;
 
-            // start the native window
-            pApp->appStartWindow ( window, javaVm, (void*) jo, (void*) jc );
+      if (!eglChooseConfig( win->_display, attribs, &config, 1, &numConfigs)) {
+        dbgprintf("ERROR: eglChooseConfig() returned error %d", eglGetError());
+        return;
+      }
+      if (!(surface = eglCreateWindowSurface( win->_display, config, win->_awindow, 0))) {
+        dbgprintf("ERROR: eglCreateWindowSurface() returned error %d", eglGetError());
+        return;
+      }      
+      eglMakeCurrent( win->_display, win->_surface, win->_surface, win->_context );
+      win->_surface = surface;     
 
-        } else {
-            // stop the native window
-            pApp->appStopWindow ();
-        }
+      nativeRebuildGL ( env, cself, surf, self );            
     }
 
     JNIEXPORT void JNICALL
     Java_com_quantasciences_qtvc_MainActivity_nativeStartup ( JNIEnv *env, jclass cself, jobject self)
     {
-        pApp->startup ();       // Call the user startup. This will call appStart.
+      pApp->startup (); 
     }
 
     JNIEXPORT void JNICALL
@@ -210,36 +354,11 @@ bool Application::appStart ( const std::string& title, const std::string& shortn
     return true;
 }
 
-bool Application::appStartWindow ( void* awin, void* jvm, void* jobj, void* jcls )
+bool Application::appStartWindow (void* arg1, void* arg2, void* arg3, void* arg4)
 {
-    dbgprintf ( "appStartWindow\n" );
+    dbgprintf ( "  appStartWindow\n" );
 
-    // Native entry point.
-    // Java/JNI will call this function with a new surface and ANativeWindow
-    if ( m_win == 0x0 ) {
-        m_win = new OSWindow(this);         // create os-specific variables first time
-    }
-
-    //-- Assign Android window (from surface)
-    m_win->_awindow = (ANativeWindow*) awin;
-    m_win->_javavm = (JavaVM*) jvm;
-    m_win->_javaGlobalObject = (jobject) jobj;
-    m_win->_javaGlobalClass = (jclass) jcls;
-
-    //-- Start OpenGL GLES 3.0
-    int wid, hgt;
-    appCreateGL ( &m_cflags, wid, hgt );
-    m_winSz[0] = wid;
-    m_winSz[1] = hgt;
-
-    //-- Additional OpenGL initialization
-    appInitGL();
-
-    if ( m_startup ) {                      // Call user init() only ONCE per application
-        dbgprintf("init()");
-        if ( !init() ) { dbgprintf ( "ERROR: Unable to init() app.\n"); return false; }
-    }
-    dbgprintf("activate()");                // Call user activate() each time window/surface is recreated
+    dbgprintf("    activate()");                // Call user activate() each time window/surface is recreated
     if ( !activate() ) { dbgprintf ( "ERROR: Activate failed.\n"); return false; }
 
     m_startup = false;
@@ -249,8 +368,7 @@ bool Application::appStartWindow ( void* awin, void* jvm, void* jobj, void* jcls
 }
 
 bool Application::appCreateGL (const Application::ContextFlags *cflags, int& width, int& height)
-{
-    dbgprintf ( "appCreateGL\n" );
+{  
 
     const EGLint attribs[] = {
             EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -274,51 +392,51 @@ bool Application::appCreateGL (const Application::ContextFlags *cflags, int& wid
         return false;
     }
 
-    dbgprintf("Initializing context");
+    dbgprintf("    Initializing context");
 
     if ((display = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {
-        dbgprintf("eglGetDisplay() returned error %d", eglGetError());
+        dbgprintf("ERROR: eglGetDisplay() returned error %d", eglGetError());
         return false;
     }
     if (!eglInitialize(display, 0, 0)) {
-        dbgprintf("eglInitialize() returned error %d", eglGetError());
+        dbgprintf("ERROR: eglInitialize() returned error %d", eglGetError());
         return false;
     }
 
     if (!eglChooseConfig(display, attribs, &config, 1, &numConfigs)) {
-        dbgprintf("eglChooseConfig() returned error %d", eglGetError());
+        dbgprintf("ERROR: eglChooseConfig() returned error %d", eglGetError());
         return false;
     }
 
     if (!eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format)) {
-        dbgprintf("eglGetConfigAttrib() returned error %d", eglGetError());
+        dbgprintf("ERROR: eglGetConfigAttrib() returned error %d", eglGetError());
         return false;
     }
 
-    dbgprintf("Creating GL Surface");
+    dbgprintf("    Creating GL Surface");
     ANativeWindow_setBuffersGeometry(m_win->_awindow, 0, 0, format);
 
     if (!(surface = eglCreateWindowSurface(display, config, m_win->_awindow, 0))) {
-        dbgprintf("eglCreateWindowSurface() returned error %d", eglGetError());
+        dbgprintf("ERROR: eglCreateWindowSurface() returned error %d", eglGetError());
         return false;
     }
 
-    dbgprintf("Creating GL Context");
+    dbgprintf("    Creating GL Context");
 
     if (!(context = eglCreateContext(display, config, EGL_NO_CONTEXT, attributes ))) {
-        dbgprintf("eglCreateContext() returned error %d", eglGetError());
+        dbgprintf("ERROR: eglCreateContext() returned error %d", eglGetError());
         return false;
     }
 
-    dbgprintf("Making Context Current");
+    dbgprintf("    Making Context Current");
     if (!eglMakeCurrent(display, surface, surface, context)) {
-        dbgprintf("eglMakeCurrent() returned error %d", eglGetError());
+        dbgprintf("ERROR: eglMakeCurrent() returned error %d", eglGetError());
         return false;
     }
 
     if (!eglQuerySurface(display, surface, EGL_WIDTH, &m_win->_width) ||
         !eglQuerySurface(display, surface, EGL_HEIGHT, &m_win->_height)) {
-        dbgprintf("eglQuerySurface() returned error %d", eglGetError());
+        dbgprintf("ERROR: eglQuerySurface() returned error %d", eglGetError());
         return false;
     }
 
@@ -326,11 +444,7 @@ bool Application::appCreateGL (const Application::ContextFlags *cflags, int& wid
     m_win->_surface = surface;
     m_win->_context = context;
 
-    glDisable(GL_DITHER);
-    // glEnable(GL_CULL_FACE);
-    // glEnable(GL_DEPTH_TEST);
-
-    dbgprintf("Set Viewport");
+    dbgprintf("    Set Viewport");
     glViewport(0, 0, m_win->_width, m_win->_height);
 
     // tell parent about new width & height of android device
@@ -354,16 +468,13 @@ bool Application::appInitGL()
 // for example, on android when the app is backgrounded but not closed
 bool Application::appStopWindow ()
 {
-    dbgprintf ( "appStopWindow\n" );
+    dbgprintf ( "  appStopWindow\n" );
 
-    m_active = false;                // no longer active
+    m_active = false;                 // No longer active
 
-    eglMakeCurrent ( m_win->_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT );
-
-    eglDestroySurface( m_win->_display, m_win->_surface );
-
-    eglDestroyContext( m_win->_display, m_win->_context);
-
+    dbgprintf("  deactivate()");        // Call user deactivate() each time window/surface is destroyed
+    if (!deactivate()) { dbgprintf("ERROR: Deactivate failed.\n"); return false; }
+    
     return true;
 }
 
@@ -546,206 +657,6 @@ void Application::appCloseKeyboard()
 
     env->CallVoidMethod( m_win->_javaGlobalObject, method);
 }
-
-/*static const char *g_screenquad_vert =
-	"#version 440 core\n"
-	"layout(location = 0) in vec3 vertex;\n"
-	"layout(location = 1) in vec3 normal;\n"
-	"layout(location = 2) in vec3 texcoord;\n"
-	"uniform vec4 uCoords;\n"
-	"uniform vec2 uScreen;\n"
-	"out vec3 vtc;\n"
-	"void main() {\n"
-	"   vtc = texcoord*0.5+0.5;\n"
-	"   gl_Position = vec4( -1.0 + (uCoords.x/uScreen.x) + (vertex.x+1.0f)*(uCoords.z-uCoords.x)/uScreen.x,\n"
-	"                       -1.0 + (uCoords.y/uScreen.y) + (vertex.y+1.0f)*(uCoords.w-uCoords.y)/uScreen.y,\n"
-	"                       0.0f, 1.0f );\n"
-	"}\n";
-
-static const char *g_screenquad_frag =
-	"#version 440\n"
-	"uniform sampler2D uTex1;\n"
-	"uniform sampler2D uTex2;\n"
-	"uniform int uTexFlags;\n"
-	"in vec3 vtc;\n"
-	"out vec4 outColor;\n"
-	"void main() {\n"
-	"   vec4 op1 = ((uTexFlags & 0x01)==0) ? texture ( uTex1, vtc.xy) : texture ( uTex1, vec2(vtc.x, 1.0-vtc.y));\n"
-	"   if ( (uTexFlags & 0x02) != 0 ) {\n"
-	"		vec4 op2 = ((uTexFlags & 0x04)==0) ? texture ( uTex2, vtc.xy) : texture ( uTex2, vec2(vtc.x, 1.0-vtc.y));\n"
-	"		outColor = vec4( op1.xyz*(1.0-op2.w) + op2.xyz * op2.w, 1 );\n"
-	"   } else { \n"
-	"		outColor = vec4( op1.xyz, 1 );\n"
-	"   }\n"
-	"}\n";
-
-
-struct nvVertex {
-	nvVertex(float x1, float y1, float z1, float tx1, float ty1, float tz1) { x=x1; y=y1; z=z1; tx=tx1; ty=ty1; tz=tz1; }
-	float	x, y, z;
-	float	nx, ny, nz;
-	float	tx, ty, tz;
-};
-struct nvFace {
-	nvFace(unsigned int x1, unsigned int y1, unsigned int z1) { a=x1; b=y1; c=z1; }
-	unsigned int  a, b, c;
-};
-
-void NVPWindow::initScreenQuadGL()
-{
-	int status;
-	int maxLog = 65536, lenLog;
-	char log[65536];
-
-	// Create a screen-space shader
-	m_screenquad_prog = (int)glCreateProgram();
-	GLuint vShader = (int)glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vShader, 1, (const GLchar**)&g_screenquad_vert, NULL);
-	glCompileShader(vShader);
-	glGetShaderiv(vShader, GL_COMPILE_STATUS, &status);
-	if (!status) {
-		glGetShaderInfoLog(vShader, maxLog, &lenLog, log);
-		dbgprintf("*** Compile Error in init_screenquad vShader\n");
-		dbgprintf("  %s\n", log);
-	}
-
-	GLuint fShader = (int)glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fShader, 1, (const GLchar**)&g_screenquad_frag, NULL);
-	glCompileShader(fShader);
-	glGetShaderiv(fShader, GL_COMPILE_STATUS, &status);
-	if (!status) {
-		glGetShaderInfoLog(fShader, maxLog, &lenLog, log);
-		dbgprintf("*** Compile Error in init_screenquad fShader\n");
-		dbgprintf("  %s\n", log);
-	}
-	glAttachShader(m_screenquad_prog, vShader);
-	glAttachShader(m_screenquad_prog, fShader);
-	glLinkProgram(m_screenquad_prog);
-	glGetProgramiv(m_screenquad_prog, GL_LINK_STATUS, &status);
-	if (!status) {
-		dbgprintf("*** Error! Failed to link in init_screenquad\n");
-	}
-	checkGL ( "glLinkProgram (init_screenquad)" );
-	
-	// Get texture parameter
-	m_screenquad_utex1 = glGetUniformLocation (m_screenquad_prog, "uTex1" );
-	m_screenquad_utex2 = glGetUniformLocation (m_screenquad_prog, "uTex2");
-	m_screenquad_utexflags = glGetUniformLocation(m_screenquad_prog, "uTexFlags");
-	m_screenquad_ucoords = glGetUniformLocation ( m_screenquad_prog, "uCoords" );
-	m_screenquad_uscreen = glGetUniformLocation ( m_screenquad_prog, "uScreen" );
-
-
-	// Create a screen-space quad VBO
-	std::vector<nvVertex> verts;
-	std::vector<nvFace> faces;
-	verts.push_back(nvVertex(-1, -1, 0, -1, 1, 0));
-	verts.push_back(nvVertex(1, -1, 0, 1, 1, 0));
-	verts.push_back(nvVertex(1, 1, 0, 1, -1, 0));
-	verts.push_back(nvVertex(-1, 1, 0, -1, -1, 0));
-	faces.push_back(nvFace(0, 1, 2));
-	faces.push_back(nvFace(2, 3, 0));
-
-	glGenBuffers(1, (GLuint*)&m_screenquad_vbo[0]);
-	glGenBuffers(1, (GLuint*)&m_screenquad_vbo[1]);
-	checkGL("glGenBuffers (init_screenquad)");
-	glGenVertexArrays(1, (GLuint*)&m_screenquad_vbo[2]);
-	glBindVertexArray(m_screenquad_vbo[2]);
-	checkGL("glGenVertexArrays (init_screenquad)");
-	glBindBuffer(GL_ARRAY_BUFFER, m_screenquad_vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(nvVertex), &verts[0].x, GL_STATIC_DRAW_ARB);
-	checkGL("glBufferData[V] (init_screenquad)");
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(nvVertex), 0);				// pos
-	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)12);	// norm
-	glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)24);	// texcoord
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_screenquad_vbo[1]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces.size() * 3 * sizeof(int), &faces[0].a, GL_STATIC_DRAW_ARB);
-	checkGL("glBufferData[F] (init_screenquad)");
-	glBindVertexArray(0);
-}
-
-
-void NVPWindow::createScreenQuadGL ( int* glid, int w, int h )
-{
-	if ( *glid == -1 ) glDeleteTextures ( 1, (GLuint*) glid );
-	glGenTextures ( 1, (GLuint*) glid );
-	glBindTexture ( GL_TEXTURE_2D, *glid );
-	checkGL ( "glBindTexture (createScreenQuadGL)" );
-	glPixelStorei ( GL_UNPACK_ALIGNMENT, 4 );	
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);	
-	glTexImage2D  ( GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);	
-	checkGL ( "glTexImage2D (createScreenQuadGL)" );
-	glBindTexture ( GL_TEXTURE_2D, 0 );
-}
-
-void NVPWindow::clearScreenGL ()
-{
-	glClearDepth ( 1.0 );
-	glClear ( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-}
-
-void NVPWindow::renderScreenQuadGL(int glid, char inv1)
-{
-	renderScreenQuadGL ( glid, -1, (float)0, (float)0, (float)getWidth(), (float)getHeight(), inv1); 
-}
-
-void NVPWindow::compositeScreenQuadGL(int glid1, int glid2, char inv1, char inv2)
-{
-	renderScreenQuadGL( glid1, glid2, (float)0, (float)0, (float)getWidth(), (float)getHeight(), inv1, inv2 );
-}
-
-void NVPWindow::renderScreenQuadGL ( int glid1, int glid2, float x1, float y1, float x2, float y2, char inv1, char inv2 )
-
-{
-	// Prepare pipeline
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-	glDepthMask(GL_FALSE);
-	// Select shader	
-	glBindVertexArray(m_screenquad_vbo[2]);
-	glUseProgram(m_screenquad_prog);
-	checkGL("glUseProgram");
-	// Select VBO	
-	glBindBuffer(GL_ARRAY_BUFFER, m_screenquad_vbo[0]);
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(nvVertex), 0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)12);
-	glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)24);
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_screenquad_vbo[1]);
-	checkGL("glBindBuffer");
-	// Select texture
-	glEnable ( GL_TEXTURE_2D );
-	glProgramUniform4f ( m_screenquad_prog, m_screenquad_ucoords, x1, y1, x2, y2 );
-	glProgramUniform2f ( m_screenquad_prog, m_screenquad_uscreen, (float) getWidth(), (float) getHeight() );
-
-	glActiveTexture ( GL_TEXTURE0 );
-	glBindTexture ( GL_TEXTURE_2D, glid1 );
-
-	glProgramUniform1i(m_screenquad_prog, m_screenquad_utex1, 0);
-	int flags = 0;
-	if (inv1 > 0) flags |= 1;												// y-invert tex1
-
-	if (glid2 >= 0) {
-		flags |= 2;															// enable tex2 compositing
-		if (inv2 > 0) flags |= 4;											// y-invert tex2
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, glid2);
-		glProgramUniform1i(m_screenquad_prog, m_screenquad_utex2, 1);
-	}
-
-	glProgramUniform1i(m_screenquad_prog, m_screenquad_utexflags, flags );	
-
-	// Draw
-	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, 1);
-	checkGL("glDraw");
-	glUseProgram(0);
-
-	glDepthMask(GL_TRUE);
-}*/
 
 int main(int argc, char **argv)
 {

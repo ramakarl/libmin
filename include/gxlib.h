@@ -36,6 +36,7 @@
     GXAPI bool init2D ( const char* fontName );    
     GXAPI void debug2D ( bool tf );    
     GXAPI void clear2D ();
+    GXAPI void destroy2D();
     GXAPI void start2D ( int w, int h, bool bStatic = false );
     GXAPI void start2D ( int w, int h, Vec4F region, bool bStatic = false );
     GXAPI void setview2D ( int w, int h );
@@ -89,7 +90,7 @@
     public:
         gxLib ();
 
-        // initialization
+        // initialization 
         void        createShader2D ();
         void        createShader3D ();
 
@@ -100,6 +101,7 @@
         float       getAspectCorrect()    {return m_sets[m_curr_set].aspect_correct; }
         void        clearSet (int set);
         void        clearSets ();
+        void        destroySets();
         void        expandSet ( gxSet* s, uchar typ, uchar prim, int64_t add_bytes );
         void        attachPrim ( gxSet* s, uchar typ, uchar prim );
         void        finishPrim ( gxSet* s );

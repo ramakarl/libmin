@@ -77,9 +77,24 @@ void glib::setTextSz ( float hgt, float kern )
 	gx.m_text_kern = kern;
 }
 
-void glib::clear2D () {
-
+void glib::clear2D () 
+{
 	gx.clearSet ( gx.m_curr_set );
+}
+
+void glib::destroy2D ()
+{
+	// free all sets from memory
+	gx.destroySets ();	
+
+	// clear font from memory
+	gx.m_font_img.Clear ();	
+	
+	glDeleteProgram ( gx.mSH[ S3D ] );
+	glDeleteProgram ( gx.mSH[ S2D ] );
+
+	gx.mSH[S3D] = 0;
+	gx.mSH[S2D] = 0;
 }
 
 void glib::start2D ( int w, int h, bool bStatic )
@@ -880,6 +895,19 @@ void gxLib::clearSets ()
 		}
 	}
 }
+void gxLib::destroySets()
+{
+	gxSet* s;
+	for (int n = 0; n < m_sets.size(); n++) {
+		s = &m_sets[n];
+		if (s->geom != 0x0) {
+			free ( s->geom );
+		}
+		if (s->vbo != 0) {
+			glDeleteBuffers( 1, (GLuint*) &s->vbo);
+		}
+	}
+}
 
 void gxLib::finishPrim ( gxSet* s )
 {
@@ -1447,7 +1475,7 @@ void gxLib::drawSet ( int g )
 			checkGL ( "drawSet enable blend");
 		#endif
 
-		// write set to single vbo
+		// create & update vbo
 		updateVBO ( s );
 		#ifdef EXTRA_CHECKS
 			checkGL ( "drawSet update vbo");
@@ -1533,7 +1561,7 @@ void gxLib::drawSet ( int g )
 
 			// opengl render
 			#ifdef BUILD_OPENGL
-				// point to section of vbo
+				// point to section of vbo				
 				glVertexAttribPointer( slotPos, 3, GL_FLOAT, GL_FALSE, sizeof(gxVert3D), (void*) (pos + 0) );
 				checkGL ( "glVertAttrPtr pos 3d");
 				glVertexAttribIPointer(slotClr, 1, GL_UNSIGNED_INT,    sizeof(gxVert3D), (void*) (pos + 12) );
@@ -1574,6 +1602,7 @@ void gxLib::drawSet ( int g )
 
 			// opengl render
 			#ifdef BUILD_OPENGL
+
 				// point to section of vbo
 				glVertexAttribPointer( slotPos, 3, GL_FLOAT, GL_FALSE, sizeof(gxVert), (void*) (pos + 0) );
 				checkGL ( "glVertAttrPtr pos 2d");
