@@ -69,23 +69,17 @@ extern "C"
     #include <android/native_window_jni.h>
     #include <android/surface_control.h>
 
-    bool nativeDestroyGL ( )
+    bool nativeDestroyEGL ( )
     {
       dbgprintf ( "nativeDestroyGL()\n");
 
       dbgprintf ( "  nativeDestroyGL: appStopWindow.\n");
       pApp->appStopWindow();      // sets active=false, stops eglSwapBuffers
 
-      OSWindow* win = pApp->m_win;
-      if (win==0x0) {
-        dbgprintf("  ERROR: nativeDestroGL: OSWindow is null.\n");
-        return false;
-      }
-      if (win->_awindow == 0x0) 
-        return true;
+      OSWindow* win = pApp->m_win;  
+      if (win==0x0) return false;
 
-      if (win->_display == EGL_NO_DISPLAY && win->_surface==EGL_NO_SURFACE && win->_context==EGL_NO_CONTEXT)
-        return true;
+      if (win->_display == EGL_NO_DISPLAY) return true;
 
       dbgprintf( "  nativeDestroyGL: Clear context. eglMakeCurrent.\n");
       eglMakeCurrent(win->_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -105,150 +99,109 @@ extern "C"
       win->_surface = EGL_NO_SURFACE;
       win->_context = EGL_NO_CONTEXT;
 
-      if (win->_awindow != 0x0) {
-        dbgprintf("  nativeDestroyGL: Released NativeWindow.\n");
-        ANativeWindow_release(pApp->m_win->_awindow);
-        win->_awindow = 0x0;
-      }      
-
       return true;
     }
 
-    bool nativeRebuildGL ( JNIEnv* env, jclass cself, jobject surface, jobject self)
+    bool nativeRebuildEGL ( ANativeWindow* window )
     {
-      dbgprintf("nativeRebuildGL()\n");
-      if (surface == 0) {
-        dbgprintf("ERROR: nativeRebuildGL: Surface is null.\n");
+      dbgprintf("nativeRebuildEGL()\n");     
+
+      // Assign new window
+      pApp->m_win->_awindow = window;     
+
+      //-- Start OpenGL GLES 3.0. Rebuild surface & context.
+      int wid, hgt;
+      dbgprintf( "  appCreateGL.\n");
+      if (!pApp->appCreateGL(&pApp->m_cflags, wid, hgt)) {
+        dbgprintf("ERROR: appCreateGL failed.\n");
         return false;
       }
-      // Create a new OSwindow container (if needed)
-      if (pApp->m_win == 0x0) {
-        dbgprintf("  nativeRebuildGL: New OS Window containter.\n");
-        pApp->m_win = new OSWindow(pApp);  // create os-specific variables first time
-      }
-      OSWindow* win = pApp->m_win;         // get OSWindow container
+      pApp->m_winSz[0] = wid;
+      pApp->m_winSz[1] = hgt;      
 
-      // Create Window and EGL Context
-      if (win->_awindow == 0x0) {        
-        dbgprintf("  nativeRebuildGL: Getting NativeWindow and Surface.\n");
-        ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
-        if (window == 0x0) { 
-          dbgprintf("ERROR: nativeRebuildGL: Window is null.\n"); 
-          return false; 
-        } 
-
-        // Get the Java VM from environment
-        JavaVM* javaVm;
-        env->GetJavaVM(&javaVm);
-
-        // Get global objects
-        jobject jo = reinterpret_cast<jobject>(env->NewGlobalRef(self));
-        jclass jc = reinterpret_cast<jclass>(env->NewGlobalRef(cself));
-
-        // Assign Android window & objects (from surface)
-        dbgprintf("  nativeRebuildGL: Assigning Java objects.\n");
-        win->_awindow = (ANativeWindow*)window;
-        win->_javavm = (JavaVM*)javaVm;
-        win->_javaGlobalObject = jo;
-        win->_javaGlobalClass = jc;      
-
-        // NativeDestroy any previous context
-        // dbgprintf("  nativeRebuildGL: Clear any previous context...\n");
-        // nativeDestroyGL();
-
-        //-- Start OpenGL GLES 3.0
-        int wid, hgt;
-        dbgprintf("  nativeRebuildGL: appCreateGL.\n");
-        if (!pApp->appCreateGL(&pApp->m_cflags, wid, hgt)) {
-          dbgprintf("ERROR: appCreateGL failed.\n");
-          return false;
-        }
-        pApp->m_winSz[0] = wid;
-        pApp->m_winSz[1] = hgt;
-
-        //-- OpenGL initialization
+      //-- App initialization (ENSURE ONE TIME)
+      if (pApp->m_startup) {      // Call user init() only ONCE per application
+        pApp->m_startup = false;
         dbgprintf("  appInitGL().\n");
         pApp->appInitGL();
-        if (pApp->m_startup) {    // Call user init() only ONCE per application
-          dbgprintf("    init()");    // Calls init2D
-          if (!pApp->init()) { dbgprintf("ERROR: Unable to init() app.\n"); return false; }
-        }
+        dbgprintf("  init()");  // Calls init2D
+        if (!pApp->init()) { dbgprintf("ERROR: Unable to init() app.\n"); return false; }
       }
 
-      //-- Start the app
-      dbgprintf("  appStartWindow.\n");
+      //-- Start the app      
       pApp->appStartWindow();
     
       return true;
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeCreateSurface ( JNIEnv* env, jclass cself, jobject surface, jobject self)
+    Java_com_quantasciences_qtvc_MainActivity_nativeSurfaceCreated ( JNIEnv* env, jclass cself, jobject surface, jobject self)
     {
-      nativeRebuildGL ( env, cself, surface, self );      
+      ANativeWindow* window = ANativeWindow_fromSurface (env, surface);
+      nativeRebuildEGL ( window );
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeChangeSurface(JNIEnv* env, jclass cself, jobject surface, jobject self)
+    Java_com_quantasciences_qtvc_MainActivity_nativeSurfaceChanged (JNIEnv* env, jclass cself, jobject surface, jobject self)
     {
+      glViewport ( 0, 0, pApp->m_winSz[0], pApp->m_winSz[1] );
     }
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeDestroySurface(JNIEnv* env, jclass cself, jobject surface, jobject self)
+    Java_com_quantasciences_qtvc_MainActivity_nativeSurfaceDestroyed (JNIEnv* env, jclass cself, jobject surface, jobject self)
     { 
-      pApp->m_active = false;
-      eglMakeCurrent (pApp->m_win->_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      //nativeDestroyGL();      
+      nativeDestroyEGL();
+      if (pApp->m_win->_awindow) {
+        ANativeWindow_release(pApp->m_win->_awindow);
+        pApp->m_win->_awindow = 0;
+      };
     }
     JNIEXPORT void JNICALL
     Java_com_quantasciences_qtvc_MainActivity_nativeOnPause ( jclass cself )
     {
-      pApp->m_active = false; 
-      eglMakeCurrent(pApp->m_win->_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      //nativeDestroyGL();      
+      nativeDestroyEGL();
+      if (pApp->m_win->_awindow) {
+        ANativeWindow_release(pApp->m_win->_awindow);
+        pApp->m_win->_awindow = 0;
+      };
     }    
     JNIEXPORT void JNICALL
     Java_com_quantasciences_qtvc_MainActivity_nativeOnResume ( JNIEnv* env, jclass cself, jobject surf, jobject self )
-    {
-      OSWindow* win = pApp->m_win; 
-      if (win==0) return;
-      if (win->_display == EGL_NO_DISPLAY) return;
-
-      const EGLint attribs[] = {
-                EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-                EGL_BLUE_SIZE, 8,
-                EGL_GREEN_SIZE, 8,
-                EGL_RED_SIZE, 8,
-                EGL_NONE
-      };
-      EGLint attributes[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
-      EGLConfig config;
-      EGLint numConfigs;
-      EGLSurface surface;
-
-      if (!eglChooseConfig( win->_display, attribs, &config, 1, &numConfigs)) {
-        dbgprintf("ERROR: eglChooseConfig() returned error %d", eglGetError());
-        return;
-      }
-      if (!(surface = eglCreateWindowSurface( win->_display, config, win->_awindow, 0))) {
-        dbgprintf("ERROR: eglCreateWindowSurface() returned error %d", eglGetError());
-        return;
-      }      
-      eglMakeCurrent( win->_display, win->_surface, win->_surface, win->_context );
-      win->_surface = surface;     
-
-      nativeRebuildGL ( env, cself, surf, self );            
+    {          
     }
-
     JNIEXPORT void JNICALL
     Java_com_quantasciences_qtvc_MainActivity_nativeStartup ( JNIEnv *env, jclass cself, jobject self)
     {
+
+      // Create a new OSwindow container
+      if (pApp->m_win == 0x0) {
+        dbgprintf("  nativeRebuildGL: New OS Window containter.\n");
+        pApp->m_win = new OSWindow(pApp);  // create os-specific variables first time
+      }
+      OSWindow* win = pApp->m_win;         // get OSWindow container
+
+        // Get the Java VM from environment
+      JavaVM* javaVm;
+      env->GetJavaVM(&javaVm);
+
+      // Get global objects
+      jobject jo = reinterpret_cast<jobject>(env->NewGlobalRef(self));
+      jclass jc = reinterpret_cast<jclass>(env->NewGlobalRef(cself));
+
+      // Assign Android window & objects
+      dbgprintf("  nativeRebuildGL: Assigning Java objects.\n");      
+      win->_javavm = (JavaVM*)javaVm;
+      win->_javaGlobalObject = jo;
+      win->_javaGlobalClass = jc;
+      win->_awindow = 0x0;
+
+      // App startup()
       pApp->startup (); 
     }
 
     JNIEXPORT void JNICALL
     Java_com_quantasciences_qtvc_MainActivity_nativeRun ( JNIEnv *env, jclass cself)
     {
-        pApp->appRun();
+      pApp->appRun();
     }
 
     JNIEXPORT void JNICALL
@@ -311,9 +264,10 @@ extern "C"
         dbgprintf ( "nativeCleanup\n");
 
         // shutdown native stuff, also calls user shutdown()
+        dbgprintf(  "  appShutdown\n");
         pApp->appShutdown ();
 
-        // destroy global references
+        // destroy global references        
         env->DeleteGlobalRef( pApp->m_win->_javaGlobalClass );
         env->DeleteGlobalRef( pApp->m_win->_javaGlobalObject );
     }
@@ -356,12 +310,9 @@ bool Application::appStart ( const std::string& title, const std::string& shortn
 
 bool Application::appStartWindow (void* arg1, void* arg2, void* arg3, void* arg4)
 {
-    dbgprintf ( "  appStartWindow\n" );
+    dbgprintf("  activate()\n");  
+    if ( !activate(pApp->m_winSz[0], pApp->m_winSz[1]) ) { dbgprintf ( "ERROR: Activate failed.\n"); return false; }
 
-    dbgprintf("    activate()");                // Call user activate() each time window/surface is recreated
-    if ( !activate() ) { dbgprintf ( "ERROR: Activate failed.\n"); return false; }
-
-    m_startup = false;
     m_active = true;                // yes, now active.
 
     return true;
@@ -369,7 +320,6 @@ bool Application::appStartWindow (void* arg1, void* arg2, void* arg3, void* arg4
 
 bool Application::appCreateGL (const Application::ContextFlags *cflags, int& width, int& height)
 {  
-
     const EGLint attribs[] = {
             EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
             EGL_BLUE_SIZE, 8,
@@ -391,7 +341,6 @@ bool Application::appCreateGL (const Application::ContextFlags *cflags, int& wid
         dbgprintf("ERROR: Window is null. Cannot start app.");
         return false;
     }
-
     dbgprintf("    Initializing context");
 
     if ((display = eglGetDisplay(EGL_DEFAULT_DISPLAY)) == EGL_NO_DISPLAY) {

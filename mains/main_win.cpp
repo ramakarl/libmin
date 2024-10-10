@@ -590,21 +590,20 @@ bool Application::appStartWindow (void* arg1, void* arg2, void* arg3, void* arg4
            
     #endif
 
-    //-- User init
+    //-- App init (ONCE)
     if (m_startup) {                // Call user init() only ONCE per application
+        m_startup = false;
         dbgprintf("  init()\n");
         if (!init()) { dbgprintf("ERROR: Unable to init() app.\n"); return false; }
-    }
-    if (!activate()) { dbgprintf("ERROR: Activate failed.\n"); return false; }
-    
+    }       
     // Show the OS Window
     ShowWindow(m_win->_hWnd, SW_SHOW);
-    
-    m_startup = false;
+    appSwapInterval(0);       // vsync off
+
+    // Activate (starts glSwapBuffers)
+    if (!activate(pApp->m_winSz[0], pApp->m_winSz[1])) { dbgprintf("ERROR: Activate failed.\n"); return false; }
     m_active = true;                // yes, now active.
 
-    // Vsync off by default
-    appSwapInterval( 0 );    
     return true;
 }
 

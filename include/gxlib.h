@@ -93,6 +93,7 @@
         // initialization 
         void        createShader2D ();
         void        createShader3D ();
+        void        destroy ();
 
         // building geometry
         gxSet*      addSet ( char st, bool bStatic=false );        
@@ -140,6 +141,8 @@
 
         // opengl
         int		      mSH[S_MAX];					// shaders
+        int         mVS[S_MAX];
+        int         mFS[S_MAX];
 		    int		      mPARAM[S_MAX][SP_MAX];      // shader params
         int         mVAO;                       // VAO
 

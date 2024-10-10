@@ -84,17 +84,11 @@ void glib::clear2D ()
 
 void glib::destroy2D ()
 {
-	// free all sets from memory
-	gx.destroySets ();	
+	gx.destroy();
 
-	// clear font from memory
-	gx.m_font_img.Clear ();	
 	
-	glDeleteProgram ( gx.mSH[ S3D ] );
-	glDeleteProgram ( gx.mSH[ S2D ] );
 
-	gx.mSH[S3D] = 0;
-	gx.mSH[S2D] = 0;
+
 }
 
 void glib::start2D ( int w, int h, bool bStatic )
@@ -846,6 +840,12 @@ void glib::drawAll ()
 //
 gxLib::gxLib ()
 {
+		mVS[S2D] = 0; mFS[S2D] = 0;
+		mVS[S3D] = 0; mFS[S3D] = 0;
+		mSH[S2D] = 0;
+		mSH[S3D] = 0;
+		mVAO = 0;
+
     int start_sz = 256;
 
     // clear sets
@@ -887,6 +887,7 @@ void gxLib::clearSet ( int s )
 	set->size = 0;
 	set->lastpos = -1;
 }
+
 void gxLib::clearSets ()
 {
 	for (int n=0; n < m_sets.size(); n++) {
@@ -895,16 +896,21 @@ void gxLib::clearSets ()
 		}
 	}
 }
+
 void gxLib::destroySets()
 {
 	gxSet* s;
 	for (int n = 0; n < m_sets.size(); n++) {
 		s = &m_sets[n];
+		s->size = 0;
 		if (s->geom != 0x0) {
 			free ( s->geom );
+			s->max = 256; 
+			s->geom = (char*) malloc(256);		// reset to small size
 		}
 		if (s->vbo != 0) {
 			glDeleteBuffers( 1, (GLuint*) &s->vbo);
+			s->vbo = 0;
 		}
 	}
 }
@@ -1019,7 +1025,7 @@ void gxLib::createShader2D ()
 
 		// OpenGL 4.2 Core
 		// -- Cannot use hardware lighting pipeline (e.g. glLightfv, glMaterialfv)
-		GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+		mVS[S2D] = glCreateShader(GL_VERTEX_SHADER);
 		GLchar const * vss =
 			"#version 300 es\n"
 			"#extension GL_ARB_explicit_attrib_location : enable\n"
@@ -1044,13 +1050,13 @@ void gxLib::createShader2D ()
 			"    gl_Position = projMatrix * viewMatrix * modelMatrix * vec4(inVertex,1);\n"
 			"}\n"
 		;
-		glShaderSource(vs, 1, &vss, 0);
-		glCompileShader(vs);
-		glGetShaderInfoLog ( vs, 16384, (GLsizei*) &len, buf );
+		glShaderSource(mVS[S2D], 1, &vss, 0);
+		glCompileShader(mVS[S2D]);
+		glGetShaderInfoLog (mVS[S2D], 16384, (GLsizei*) &len, buf );
 		if ( len > 0 ) dbgprintf  ( "ERROR S_2D vertex shader: %s\n", buf );
 		checkGL( "Compile S_2D vertex shader" );
 
-		GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+		mFS[S2D] = glCreateShader(GL_FRAGMENT_SHADER);
 		GLchar const * fss =
 			"#version 300 es\n"
 			"\n"					
@@ -1070,15 +1076,15 @@ void gxLib::createShader2D ()
 		;
 		
 
-		glShaderSource(fs, 1, &fss, 0);
-		glCompileShader(fs);
-		glGetShaderInfoLog ( fs, 16384, (GLsizei*) &len, buf );
+		glShaderSource(mFS[S2D], 1, &fss, 0);
+		glCompileShader(mFS[S2D]);
+		glGetShaderInfoLog ( mFS[S2D], 16384, (GLsizei*) &len, buf );
 		if ( len > 0 ) dbgprintf  ( "ERROR S_2D fragment shader: %s\n", buf );
 		checkGL( "Compile S_2D fragment shader" );
 
 		mSH[ S2D ] = glCreateProgram();
-		glAttachShader( mSH[ S2D ], vs);
-		glAttachShader( mSH[ S2D ], fs);
+		glAttachShader( mSH[ S2D ], mVS[S2D]);
+		glAttachShader( mSH[ S2D ], mFS[S2D]);
 		checkGL( "Attach program" );
 		glLinkProgram( mSH[ S2D ] );
 		checkGL( "Link program" );
@@ -1105,7 +1111,7 @@ void gxLib::createShader3D ()
 
 	// OpenGL 4.2 Core
 	// -- Cannot use hardware lighting pipeline (e.g. glLightfv, glMaterialfv)
-	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+	mVS[S3D] = glCreateShader(GL_VERTEX_SHADER);
 	GLchar const * vss =
 			"#version 300 es\n"
 			"#extension GL_ARB_explicit_attrib_location : enable\n"
@@ -1216,13 +1222,13 @@ void gxLib::createShader3D ()
 			"}\n"
 		;
 
-	glShaderSource(vs, 1, &vss, 0);
-	glCompileShader(vs);
-	glGetShaderInfoLog ( vs, 16384, (GLsizei*) &len, buf );
+	glShaderSource(mVS[S3D], 1, &vss, 0);
+	glCompileShader(mVS[S3D]);
+	glGetShaderInfoLog (mVS[S3D], 16384, (GLsizei*) &len, buf );
 	if ( len > 0 ) dbgprintf  ( "ERROR CreateS3D vert: %s\n", buf );
 	checkGL( "createShader3D Compile vertex shader" );
 
-	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+	mFS[S3D] = glCreateShader(GL_FRAGMENT_SHADER);
 	GLchar const * fss =
 		"#version 300 es\n"
 		"  precision mediump float;\n"
@@ -1277,15 +1283,15 @@ void gxLib::createShader3D ()
 	// "   outColor = vec4(d, d, d, 1) * vcolor;\n"
 	// "   outColor = vec4(vnorm.x, vnorm.y, vnorm.z, 1) * vcolor;\n"
 
-	glShaderSource(fs, 1, &fss, 0);
-	glCompileShader(fs);
-	glGetShaderInfoLog ( fs, 16384, (GLsizei*) &len, buf );
+	glShaderSource(mFS[S3D], 1, &fss, 0);
+	glCompileShader(mFS[S3D]);
+	glGetShaderInfoLog (mFS[S3D], 16384, (GLsizei*) &len, buf );
 	if ( len > 0 ) dbgprintf  ( "ERROR CreateS3D frag: %s\n", buf );
 	checkGL( "createShader3D Compile fragment shader" );
 
 	mSH[S3D] = glCreateProgram();
-	glAttachShader( mSH[S3D], vs);
-	glAttachShader( mSH[S3D], fs);
+	glAttachShader( mSH[S3D], mVS[S3D]);
+	glAttachShader( mSH[S3D], mFS[S3D]);
 	checkGL( "createShader3D attach program" );
 	glLinkProgram( mSH[S3D] );
 	checkGL( "createShader3D link program" );
@@ -1409,6 +1415,43 @@ bool gxLib::loadFont ( const char * fontName )
 	}
 
 	return true;
+}
+
+void gxLib::destroy()
+{
+	// free all sets from memory
+	dbgprintf("destroy2D. Sets.\n");
+	destroySets();
+
+	// clear font from memory
+	dbgprintf("destroy2D. Fonts.\n");
+	m_font_img.Clear();
+
+	dbgprintf("destroy2D. Shaders.\n");
+	// remove 2D shaders
+	glDetachShader(mSH[S2D], mVS[S2D]);
+	glDetachShader(mSH[S2D], mFS[S2D]);
+	glDeleteShader(mVS[S2D]); 
+	glDeleteShader(mFS[S2D]);
+	// remove 3D shaders
+	glDetachShader(mSH[S3D], mVS[S3D]);
+	glDetachShader(mSH[S3D], mFS[S3D]);	
+	glDeleteShader(mVS[S3D]); 
+	glDeleteShader(mFS[S3D]);
+	mVS[S2D] = 0; mFS[S2D] = 0;
+	mVS[S3D] = 0; mFS[S3D] = 0;
+
+	// delete programs
+	dbgprintf("destroy2D. SH2: %d, SH3: %d, VAO: %d\n", mSH[S2D], mSH[S3D], mVAO);
+	glDeleteProgram(mSH[S3D]);
+	glDeleteProgram(mSH[S2D]);
+	mSH[S3D] = 0;
+	mSH[S2D] = 0;
+	
+	// delete VAO
+	glDeleteVertexArrays(1, (GLuint*)&mVAO);
+	mVAO = 0;
+
 }
 
 void gxLib::drawSets ()
@@ -1668,7 +1711,7 @@ void gxLib::updateVBO ( gxSet* s )
 {
 	#ifdef BUILD_OPENGL
 		// generate new vbo	
-		if ( s->vbo==0 ) {
+		if ( s->vbo == 0 ) {
 			glGenBuffers ( 1, (GLuint*) &s->vbo );
 			checkGL ( "updateVBO:glGenBuffers" );
 		}
