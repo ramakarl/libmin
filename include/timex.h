@@ -129,17 +129,17 @@
 
 		#include <string>	
 		#ifdef _MSC_VER
-			#define MSEC_SCALAR		1000000i64
-			#define SEC_SCALAR		1000000000i64
-			#define MIN_SCALAR		60000000000i64
-			#define HR_SCALAR		3600000000000i64
-			#define	DAY_SCALAR		86400000000000i64
-			#define F_YEAR_MULT		33177600i64
-			#define F_MONTH_MULT	2764800i64
-			#define F_DAY_MULT		86400i64
-			#define F_HR_MULT		3600i64
-			#define F_MIN_MULT		60i64
-			#define F_SEC_MULT		1i64
+			#define MSEC_SCALAR		       1000000i64
+			#define SEC_SCALAR        1000000000i64
+			#define MIN_SCALAR       60000000000i64
+			#define HR_SCALAR      3600000000000i64
+			#define	DAY_SCALAR    86400000000000i64
+			#define F_YEAR_MULT   33177600i64
+			#define F_MONTH_MULT  2764800i64
+			#define F_DAY_MULT    86400i64
+			#define F_HR_MULT		  3600i64
+			#define F_MIN_MULT    60i64
+			#define F_SEC_MULT    1i64
 			#pragma warning ( disable : 4522 )
 			#pragma warning ( disable : 4996 )		// sprintf warning
 		#endif

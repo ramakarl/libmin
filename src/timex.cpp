@@ -441,7 +441,7 @@
 		//      MSEC_SCALAR =         1
 		//      SEC_SCALAR =      1,000
 		//      MIN_SCALAR =     60,000
-		//		HR_SCALAR =   3,600,000
+		//		  HR_SCALAR =   3,600,000
 		//      DAY_SCALAR = 86,400,000
 		//
 		//   7:14:03, 32 msec 	
@@ -828,32 +828,32 @@
 
 	void TimeX::AdvanceMinutes ( float n)
 	{
-		m_CurrTime += (sjtime) MIN_SCALAR * n;
+		m_CurrTime += (sjtime) (double(MIN_SCALAR) * n);
 	}
 
 	void TimeX::AdvanceHours ( float n )
 	{
-		m_CurrTime += (sjtime) HR_SCALAR * n;	
+		m_CurrTime += (sjtime) (double(HR_SCALAR) * n);
 	}
 
 	void TimeX::AdvanceDays ( float n )
 	{
-		m_CurrTime += (sjtime) DAY_SCALAR * n;	
+		m_CurrTime += (sjtime) (double(DAY_SCALAR) * n);
 	}
 
 	void TimeX::AdvanceSec ( float n )
 	{
-		m_CurrTime += (sjtime) SEC_SCALAR * n;	
+		m_CurrTime += (sjtime) (double(SEC_SCALAR) * n);
 	}
 
 	void TimeX::AdvanceMins ( float n)
 	{
-		m_CurrTime += (sjtime) MIN_SCALAR * n;
+		m_CurrTime += (sjtime) (double(MIN_SCALAR) * n);
 	}	
 
 	void TimeX::AdvanceMSec ( float n )
 	{
-		m_CurrTime += (sjtime) MSEC_SCALAR * n;	
+		m_CurrTime += (sjtime) (double(MSEC_SCALAR) * n);
 	}
 
 	TimeX& TimeX::operator= ( const TimeX& op )	{ m_CurrTime = op.m_CurrTime; return *this; }
