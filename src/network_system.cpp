@@ -391,6 +391,15 @@ NetworkSystem::NetworkSystem ( const char* trace_file_name )
 	
 	m_eventPool = 0x0;			// default heap (not accelerated)
 
+	// default timings
+	m_reconnectInterval = 5000;		// 5 seconds
+	m_reconnectLimit = 10;				// 10x tries
+	m_processInterval = 200;	 	  // 200 msec, packet interval
+
+	TimeX curr_time;
+	curr_time.SetTimeNSec();
+	m_lastClientConnectCheck = curr_time;
+	m_lastNetProcess = curr_time;
 
 	netPrintf(PRINT_VERBOSE, "SERIALIZED HEADER SIZE: %d\n", Event::staticSerializedHeaderSize());
 	
@@ -847,6 +856,11 @@ void NetworkSystem::netServerCheckConnectionHandshakes ( )
 
 void NetworkSystem::netServerProcessIO ( )
 {
+	TimeX current_time;
+	current_time.SetTimeNSec();
+	if (current_time.GetElapsedMSec(m_lastNetProcess) < m_processInterval) return;
+	m_lastNetProcess = current_time;
+
 	TRACE_ENTER ( (__func__) );
 	fd_set sockReadSet;
 	fd_set sockWriteSet;
@@ -1260,6 +1274,11 @@ void NetworkSystem::netClientCheckConnectionHandshakes ( )
 	
 void NetworkSystem::netClientProcessIO ( )
 {
+	TimeX current_time;
+	current_time.SetTimeNSec();
+	if (current_time.GetElapsedMSec(m_lastNetProcess) < m_processInterval) return;
+	m_lastNetProcess = current_time;
+
 	TRACE_ENTER ( (__func__) );
 	fd_set sockReadSet;
 	fd_set sockWriteSet;
@@ -1467,7 +1486,7 @@ int NetworkSystem::netAddSocket ( int side, int mode, int state, bool block, Net
 	#endif
 
 	// inital packet buf
-	s.pktMax = 65536;			// fixed size
+	s.pktMax = 8192;			// fixed size
 	s.pktBuf = (char*) malloc ( s.pktMax );		
 	s.pktPtr = s.pktBuf;
 	s.pktLen = 0;

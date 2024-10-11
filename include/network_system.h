@@ -248,6 +248,8 @@ private: // State
 	int m_readyServices;
 	timeval m_rcvSelectTimout;	
 	TimeX m_lastClientConnectCheck;
+	TimeX m_lastNetProcess;
+	int m_processInterval;
 	std::vector< NetSock > m_socks;
 	
 	// Event related
