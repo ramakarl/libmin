@@ -42,7 +42,7 @@
     GXAPI void setview2D ( int w, int h );
     GXAPI void setview2D ( int w, int h, Matrix4F& model, Matrix4F& view, Matrix4F& proj );      
     GXAPI void setAspectCorrect ( float a );
-    GXAPI void setMatrices2D ( int grp, Matrix4F& model, Matrix4F& view, Matrix4F& proj );    
+    GXAPI void setMatrices ( Matrix4F& model, Matrix4F& view, Matrix4F& proj, int s=-1 );    
     GXAPI void setTextSz ( float hgt, float kern );
     GXAPI void setTextPix ( float hgt, Vec4F view );
     GXAPI bool getTextDim (std::string msg, Vec4F view, Vec2F& px, Vec2F& sz );
@@ -75,7 +75,8 @@
     GXAPI void drawText3D ( Vec3F a, float sz, char* msg, Vec4F clr  );
     GXAPI void drawCube3D (Vec3F a, Vec3F b, Vec4F clr );
     GXAPI void drawSphere3D (Vec3F p, float r, Vec4F clr, bool solid=true);    
-    GXAPI void selfDraw3D ( Camera3D* cam );
+    GXAPI void selfStartDraw3D ( Camera3D* cam );
+    GXAPI void selfSetModel3D (Matrix4F& model);
     GXAPI void selfSetLight3D ( Vec3F pos, Vec4F clr );
     GXAPI void selfSetTexture ( int glid=-1 );
     GXAPI void selfSetMaterial ( Vec3F Ka, Vec3F Kd, Vec3F Ks, float Ns, float Tf);

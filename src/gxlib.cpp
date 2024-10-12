@@ -6,7 +6,7 @@
 
 #include "gxlib.h"
 
-// #define EXTRA_CHECKS			// debug with GL checks
+ #define EXTRA_CHECKS			// debug with GL checks
 
 using namespace glib;
 
@@ -147,7 +147,7 @@ void glib::setview2D (int w, int h)
   model.Identity();
   proj.Identity();
 
-	setMatrices2D ( gx.m_curr_set, model, view, proj );   
+	setMatrices ( model, view, proj );   
 }
 
 // set view matrices explicitly
@@ -156,13 +156,14 @@ void glib::setview2D ( int w, int h, Matrix4F& model, Matrix4F& view, Matrix4F& 
 	gx.m_Xres = w;
 	gx.m_Yres = h;
 
-	setMatrices2D( gx.m_curr_set, model, view, proj );
+	setMatrices ( model, view, proj );
 }
 
-void glib::setMatrices2D ( int s, Matrix4F& model, Matrix4F& view, Matrix4F& proj )
+void glib::setMatrices ( Matrix4F& model, Matrix4F& view, Matrix4F& proj, int s )
 {	
 	// assign 2D view matrices to a cmd set
-  gxSet* set = gx.getSet(s);
+  if (s==-1) s = gx.m_curr_set;
+  gxSet* set = gx.getSet( s);
 	if (set==0x0) return;
 
   memcpy ( set->model, model.GetDataF(), 16 * sizeof(float) );
@@ -734,7 +735,7 @@ void glib::drawText3D ( Vec3F a, float sz, char* msg, Vec4F clr )
 
 
 
-void glib::selfDraw3D ( Camera3D* cam ) 
+void glib::selfStartDraw3D ( Camera3D* cam ) 
 {		
 	#ifdef BUILD_OPENGL
 		glEnable ( GL_DEPTH_TEST );
@@ -763,6 +764,11 @@ void glib::selfDraw3D ( Camera3D* cam )
 		Vec3F c = cam->getPos();
 		glUniform3f ( gx.mPARAM[S3D][SP_CAMPOS], c.x, c.y, c.z );
 
+		// default env map
+		glActiveTexture(GL_TEXTURE0 + 1);
+		glBindTexture(GL_TEXTURE_2D, gx.m_white_img.getGLID() );
+		glUniform1i( gx.mPARAM[S3D][SP_ENVMAP], 1);
+		
 		// assume no texture
 		selfSetTexture ();	
 	#endif
@@ -806,6 +812,11 @@ void glib::selfSetModelMtx ( Matrix4F& mtx )
 		#endif
 	#endif	
 }
+void glib::selfSetModel3D(Matrix4F& model)
+{
+	glUniformMatrix4fv(gx.mPARAM[S3D][SP_MODEL], 1, GL_FALSE, model.GetDataF());
+}
+
 
 void glib::selfEndDraw3D ()
 {
@@ -1272,12 +1283,17 @@ void gxLib::createShader3D ()
 		"       vec3 dclr = diff_clr * max( 0.0f, dot ( vnorm, lgtdir )); \n"
 		"       outColor = vec4( eclr + lightclr * (amb_clr + dclr * imgclr.xyz + sclr), imgclr.w );\n"				
 		"    }\n"		
+		//"    outColor = vec4( 1,0,0,1 );\n"
 		//"    outColor = vec4( eclr, imgclr.w );\n"
 		//"    outColor = vec4( lightclr * (amb_clr + dclr * imgclr.xyz + sclr), imgclr.w );\n"		
 		//"    outColor = vec4( diff_clr, imgclr.w );\n"		
 		//"    outColor = vec4( vnorm, imgclr.w );\n"		
 		"}\n"
 	;
+
+	/* "void main () {\n"
+		"  outColor = vec4(1, 0, 0, 1); \n"
+		"}\n"; */
 
 	//"   float d = 0.1f + 0.9f * clamp( dot ( vnorm, normalize(lightpos-vpos) ), 0.f, 1.f); \n"
 	// "   outColor = vec4(d, d, d, 1) * vcolor;\n"
