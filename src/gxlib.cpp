@@ -71,12 +71,6 @@ void glib::debug2D (bool tf)
 	gx.m_debug = tf;
 }
 
-void glib::setTextSz ( float hgt, float kern )
-{
-	gx.m_text_hgt = hgt;
-	gx.m_text_kern = kern;
-}
-
 void glib::clear2D () 
 {
 	gx.clearSet ( gx.m_curr_set );
@@ -85,10 +79,14 @@ void glib::clear2D ()
 void glib::destroy2D ()
 {
 	gx.destroy();
+}
 
-	
-
-
+// setViewRegion
+// - used to determine font size, etc.
+// - can occur outside of start2D/end2D
+void glib::setViewRegion(Vec4F v, Vec4F r) 
+{ 
+	gx.m_View = v; gx.m_Region = r; 
 }
 
 void glib::start2D ( int w, int h, bool bStatic )
@@ -98,30 +96,18 @@ void glib::start2D ( int w, int h, bool bStatic )
 	gx.m_curr_num = 0;
 	
 	gxSet* set = gx.addSet ( '2', bStatic );	
-	set->clip_region.Set ( 0, 0, w, h );		// default clip
-	set->aspect_correct = 1.0;							// default text aspect
+	set->region.Set ( 0, 0, w, h );		// default view & region
+	set->view.Set( 0, 0, w, h );
+	set->text_aspect = 1.0;						// default text aspect
 
 	setview2D ( w, h );
 }
 
-void glib::start2D ( int w, int h, Vec4F region, bool bStatic )
-{
-	gxSet s;
-	gx.m_curr_prim = PRIM_NONE;
-	gx.m_curr_num = 0;
-	
-	gxSet* set = gx.addSet ( '2', bStatic );	
-	set->clip_region = region;
-	set->aspect_correct = 1.0;
-
-	setview2D ( w, h );
-}
-
-void glib::setAspectCorrect(float a)
+void glib::setTextAspect (float a)
 {
 	gxSet* s = gx.getCurrSet();
 	if (s==0x0) return;
-	s->aspect_correct = a;
+	s->text_aspect = a;
 }
 
 void glib::end2D ()
@@ -140,23 +126,32 @@ void glib::setview2D (int w, int h)
   gx.m_Xres = w;
   gx.m_Yres = h;
 
+	gxSet* s = gx.getCurrSet();
+	if (s == 0x0) return;
+	s->view.Set(0, 0, w, h);				// default, screen-space view
+	s->region.Set (0, 0, w, h);
+
 	Matrix4F proj, view, model;
 	view.Scale ( 2.0/w, -2.0/h, 1.0 );	
   model.Translate ( -w/2.0, -h/2.0, 0 );
   view *= model;
   model.Identity();
   proj.Identity();
-
 	setMatrices ( model, view, proj );   
 }
 
 // set view matrices explicitly
-void glib::setview2D ( int w, int h, Matrix4F& model, Matrix4F& view, Matrix4F& proj )
+void glib::setview2D ( int w, int h, Vec4F view, Vec4F region, Matrix4F& model, Matrix4F& viewmtx, Matrix4F& projmtx )
 {
 	gx.m_Xres = w;
 	gx.m_Yres = h;
 
-	setMatrices ( model, view, proj );
+	gxSet* s = gx.getCurrSet();
+	if (s == 0x0) return;
+	s->view = view;							// custom view & region
+	s->region = region;
+
+	setMatrices ( model, viewmtx, projmtx );		// custom matrices
 }
 
 void glib::setMatrices ( Matrix4F& model, Matrix4F& view, Matrix4F& proj, int s )
@@ -166,9 +161,9 @@ void glib::setMatrices ( Matrix4F& model, Matrix4F& view, Matrix4F& proj, int s 
   gxSet* set = gx.getSet( s);
 	if (set==0x0) return;
 
-  memcpy ( set->model, model.GetDataF(), 16 * sizeof(float) );
-	memcpy ( set->view,  view.GetDataF(), 16 * sizeof(float) );
-	memcpy ( set->proj,  proj.GetDataF(), 16 * sizeof(float) );	
+  memcpy ( set->model_mtx, model.GetDataF(), 16 * sizeof(float) );
+	memcpy ( set->view_mtx,  view.GetDataF(), 16 * sizeof(float) );
+	memcpy ( set->proj_mtx,  proj.GetDataF(), 16 * sizeof(float) );
 }
 
 inline void vclr ( gxVert* v, Vec4F clr, float a=1)
@@ -208,6 +203,98 @@ void glib::drawFill ( Vec2F a, Vec2F b, Vec4F clr )
 	// repeat last for jump
 	v->x = a.x; v->y = b.y; v->z = 0; vclr(v,clr); v++;
 }
+
+void glib::drawRoundedRect (Vec2F a, Vec2F b, Vec4F clr, float r )
+{
+	int du = 15;
+	int sec = (90/du)+1;
+  // # pnts = 4 arcs * 2 pnts/sec * # sec 
+	gxVert* v = gx.allocGeom2D( 4*2*sec + 2, PRIM_LINES);
+
+	int n=0;
+	Vec2F pl, p, c;
+	pl = a + Vec2F(1 * r, 0);  
+	for (int u = 0; u <= 90; u += du) {					// top left arc
+		p = Vec2F(a.x+r,a.y+r) + Vec2F(-gx.sin_table[u * 100] * r, -gx.cos_table[u * 100] * r);
+		v->x = pl.x; v->y = pl.y; v->z = 0; vclr(v, clr); v++; n++;
+		v->x = p.x; v->y = p.y; v->z = 0; vclr(v, clr); v++; n++;
+		pl = p;
+	}	
+	for (int u = 90; u <= 180; u += du) {				// bottom left arc
+		p = Vec2F(a.x+r, b.y-r) + Vec2F(-gx.sin_table[u * 100] * r, -gx.cos_table[u * 100] * r);
+		v->x = pl.x; v->y = pl.y; v->z = 0; vclr(v, clr); v++; n++;
+		v->x = p.x; v->y = p.y; v->z = 0; vclr(v, clr); v++; n++;
+		pl = p;
+	}
+	for (int u = 180; u <= 270; u += du) {
+		p = Vec2F(b.x-r, b.y-r) + Vec2F(-gx.sin_table[u * 100] * r, -gx.cos_table[u * 100] * r);
+		v->x = pl.x; v->y = pl.y; v->z = 0; vclr(v, clr); v++; n++;
+		v->x = p.x; v->y = p.y; v->z = 0; vclr(v, clr); v++; n++;
+		pl = p;
+	}
+	for (int u = 270; u <= 360; u += du) {
+		p = Vec2F(b.x-r, a.y+r) + Vec2F(-gx.sin_table[u * 100] * r, -gx.cos_table[u * 100] * r);
+		v->x = pl.x; v->y = pl.y; v->z = 0; vclr(v, clr); v++; n++; 
+		v->x = p.x; v->y = p.y; v->z = 0; vclr(v, clr); v++; n++;
+		pl = p;
+	}
+	// last edge
+	v->x = p.x; v->y = p.y; v->z = 0; vclr(v, clr); v++; n++;
+	v->x = a.x+r; v->y = a.y; v->z = 0; vclr(v, clr); v++; n++;		// terminal point
+
+	assert ( n == 4*2*sec + 2 );
+}
+
+void glib::drawRoundedFill(Vec2F a, Vec2F b, Vec4F clr, float r)
+{
+	int n = 0;
+	int du = 15;
+	int sec = (90/du)+1;		// sections per arc
+  // # pnts = 4 arcs * 3 pnts/sec * # sec/arc + 4 jump pnts
+	gxVert* v = gx.allocGeom2D( 4*3*sec+ 4, PRIM_TRI);			
+
+	Vec2F p;
+	Vec2F c (a.x+r, a.y);				// fan pnt (all tris touch this pnt)
+	
+  // repeat first jump
+	v->x = a.x + r;	v->y = a.y + r; v->z = 0;		vclr(v, clr); v++; n++;		
+	// first edge
+	v->x = a.x + r;	v->y = a.y + r; v->z = 0;	vclr(v, clr); v++;	n++;
+	v->x = a.x + r; v->y = a.y + 0; v->z = 0; vclr(v, clr); v++;	n++;
+
+	for (int u = 0; u <= 90; u += du) {	
+		p = Vec2F(a.x+r, a.y+r) + Vec2F(-gx.sin_table[u * 100] * r, -gx.cos_table[u * 100] * r);		
+		v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++;		// 2x fan = rim pnt -> center -> out		
+		v->x = c.x; v->y = c.y; v->z = 0;		vclr(v, clr); v++;
+		v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++; n += 3;
+	}
+	for (int u = 90; u <= 180; u += du) {	
+		p = Vec2F(a.x+r, b.y-r) + Vec2F(-gx.sin_table[u * 100] * r, -gx.cos_table[u * 100] * r);
+		v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++;		// 2x fan = rim pnt -> center -> out		
+		v->x = c.x; v->y = c.y; v->z = 0;		vclr(v, clr); v++;
+		v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++; n += 3; 
+	}
+	for (int u = 180; u <= 270; u += du) {		// segs
+		p = Vec2F(b.x-r, b.y-r) + Vec2F(-gx.sin_table[u * 100] * r, -gx.cos_table[u * 100] * r);
+		v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++;		// 2x fan = rim pnt -> center -> out		
+		v->x = c.x; v->y = c.y; v->z = 0;		vclr(v, clr); v++;
+		v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++; n += 3; 
+	}
+	for (int u = 270; u <= 360; u += du) {		// segs
+		p = Vec2F(b.x-r, a.y+r) + Vec2F(-gx.sin_table[u * 100] * r, -gx.cos_table[u * 100] * r);
+		v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++;		// 2x fan = rim pnt -> center -> out		
+		v->x = c.x; v->y = c.y; v->z = 0;		vclr(v, clr); v++;
+		v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++; n += 3; 
+	}
+	// repeat last jump
+	v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++; n++;
+	
+	assert( n == 4*3*sec+4 );
+
+}
+
+
+
 void glib::drawGradient ( Vec2F a, Vec2F b, Vec4F c0, Vec4F c1, Vec4F c2, Vec4F c3 )
 {
 	gxVert* v = gx.allocGeom2D ( 6, PRIM_TRI );
@@ -234,7 +321,7 @@ void glib::drawCircle ( Vec2F a, float r, Vec4F clr  )
 	Vec2F pl, p, c;
 	pl = a + Vec2F(1 * r, 0);
 	for (int u=0; u <= 360; u += du ) {
-		p = a + Vec2F( gx.cos_table[u*100] * r, gx.sin_table[u*100] * r / gx.getAspectCorrect() );		
+		p = a + Vec2F( gx.cos_table[u*100] * r, gx.sin_table[u*100] * r / gx.getTextAspect() );		
 		v->x = pl.x; v->y = pl.y; v->z = 0; vclr (v,clr); v++;
 		v->x = p.x ; v->y = p.y ; v->z = 0; vclr (v,clr); v++;
 		pl = p;
@@ -260,7 +347,7 @@ void glib::drawCircleFill (Vec2F a, float r, Vec4F clr)
 	v->x = pl.x; v->y = pl.y; v->z = 0; vclr(v, clr); v++;		n++;
 
 	for (int u = 0; u <= 360; u += du) {		// segs
-		p = a + Vec2F(gx.cos_table[u * 100] * r, gx.sin_table[u * 100] * r / gx.getAspectCorrect() );
+		p = a + Vec2F(gx.cos_table[u * 100] * r, gx.sin_table[u * 100] * r / gx.getTextAspect() );
 		
 		// 2x fan = rim pnt -> center -> out		
 		v->x = p.x; v->y = p.y; v->z = 0;		vclr(v, clr); v++;
@@ -294,6 +381,64 @@ void glib::drawImg ( ImageX* img, Vec2F a, Vec2F b, Vec4F clr )
 }
 
 
+//------------------------------ FONT RENDERING
+
+// gxLib FONTS:
+// 
+//       world hgt = points --> point_factor --> pixels --> world
+// 
+// Eqn:  world hgt = points * point_factor * pix_per_pnt * pnt_to_world
+// Defs:
+// - world         = Desired size of font in world units. See: setTextSz()
+// - point_factor  = Device points adjustment (in pnts/10 pnt). eg. val 7 means render 10 pnt at 7 pnt actual.
+// - pix_per_pnt   = Converts points to pixels (in pix/pnt). See: setTextDevice()
+//                   Device dependent. Set by device-specific initialization.
+// - pnt_to_world  = Converts pixels to world unit (in units/pnt). See: setTextPnts(), getPntToWorld
+//                   World scale dependent. Set when establishing view.
+// Notes:
+// - If you want to render at world size, use setTextSz ( hgt_world ) -- no conversion needed
+// - If you want to render at point size, use setTextPnts ( hgt_pnt ) -- does above conversion
+// - When rendering to screen, there is no world. The last term in eqn (pnt_per_world) is 1.
+// 
+// Common devices:
+//   Mobile (Galaxy S10)      = 7.154 pix_per_pnt
+//   Desktop (Philips 4K 27") = 1.792 pix_per_pnt
+//
+
+float glib::getPntToWorld ()
+{
+	gxSet* s = gx.getCurrSet(); if (s==0) return 1;
+
+  // pnt_to_world = point factor --> pixels --> world
+  //  (actual measure of pnt_to_world is in: units/pixels)
+	return (gx.m_BasePnt/10.0) * gx.m_PixPerPnt * fabs((s->view.w - s->view.y) / (s->region.w - s->region.y));
+}
+Vec4F glib::getView()			{ return gx.m_sets[gx.m_curr_set].view; }
+Vec4F glib::getRegion()		{ return gx.m_sets[gx.m_curr_set].region; }
+
+// set device pixels per point
+// - PixPerPnt = pixels per point for given device. eg. mobile = 7.154 pix/pnt
+// - BasePnt   = point adjust factor. eg. 7 pnt means render 10 pnt at 7 pnt actual
+void glib::setTextDevice (float pix_per_pnt, float base_pnt)
+{
+	gx.m_PixPerPnt = pix_per_pnt;
+	gx.m_BasePnt = base_pnt;
+}
+
+// set desired font hgt in world units
+//
+void glib::setTextSz (float hgt_world, float kern)
+{
+	gx.m_text_hgt = hgt_world;
+	gx.m_text_kern = kern;
+}
+
+void glib::setTextPnts (float hgt_pnts, float kern )
+{
+	gx.m_text_hgt = hgt_pnts * getPntToWorld();	
+	gx.m_text_kern = kern * getPntToWorld();
+}
+
 void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 {
 	int len = (int) msg.size();
@@ -302,25 +447,29 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 
 	gxVert* v = gx.allocImg2D ( len*6, PRIM_TRI, &gx.m_font_img );
 
+	if (msg.substr(0, 4) == "Welc") {
+		bool stop =true;
+	}
+
 	// get current font
 	gxFont& font = gx.getCurrFont ();		
 	float lX = a.x;
 	float lY = a.y;
 	float lLinePosX = a.x;
-	float lLinePosY = a.y;		
-	int c = 0;
-	char ch = msg.at(0);
+	float lLinePosY = a.y;			
+	char ch;
 	
-	// text_hgt = desired height of font in world units
-	// text_kern = spacing between letters in world units
-  // font.ascent = height of font in pixels
-
-	float asp_correct = gx.getAspectCorrect ();
-	float textDel = gx.m_text_hgt / font.ascent;	// world:font ratio
-	float textStartPy = textDel;										// start location in pixels
+	// Font rendering:
+  // - font glyph contains type dimension in bitmap pixel units
+  // - fontPixToWorld = converts from font bitmap pixel to world units = text_hgt / font.ascent;
+  // - text_hgt    = already contains point -> pixel -> world conversions
+  // - text_aspect = text aspect adjustment (y only)
+  
+	float fontPixToWorld = gx.m_text_hgt / font.ascent;			
+	float text_aspect = gx.getTextAspect();
 	int cused = 0;
 
-	for (; c < len; c++ ) {
+	for (int c=0; c < len; c++ ) {
 		ch = msg.at(c);
 		if ( ch == '\n' ) {
 			// line return
@@ -331,10 +480,10 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 		} else if ( ch >= 0 && ch <= 128 ) {
 			// printable character
 			gxGlyph& gly = font.glyphs[ ch ];
-			float pX = lX + gly.offX * textDel;
-			float pY = lY - (gly.offY * textDel / asp_correct);
-			float pW = gly.width * textDel;
-			float pH = gly.height * textDel / asp_correct;
+			float pX = lX + gly.offX * fontPixToWorld;
+			float pY = lY + (gly.offY * fontPixToWorld / text_aspect);
+			float pW = gly.width * fontPixToWorld;
+			float pH = gly.height * fontPixToWorld * -1.0 / text_aspect;
 	
 			// GRP_TRITEX is a triangle strip!
 			// repeat first point (jump), zero alpha
@@ -349,7 +498,7 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 			// repeat last point (jump), zero alpha
 			v->x = pX+pW;	v->y = pY-pH;	v->z = 0;			vclr(v,clr, 0);		v->tx = gly.u + gly.du; v->ty = gly.v; v++;
 	
-			lX += (gly.advance + gx.m_text_kern) * textDel;
+			lX += (gly.advance + gx.m_text_kern) * fontPixToWorld;
 			lY += 0;			
 			cused++;
 
@@ -367,33 +516,41 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	}
 }
 
-bool glib::getTextDim (std::string msg, Vec4F view, Vec2F& px, Vec2F& sz )
+Vec2F glib::getTextDim ( char mode, float hgt, std::string msg )
 {
 	int len = (int) msg.size();
-	if (len == 0)	{	px.Set(0,0); sz.Set(0,0);	return false; }
+	if (len == 0)	return Vec2F(0, 0);						// no text
 
+	float text_hgt = hgt;
+	if (mode == 'p') {
+		text_hgt = hgt * (gx.m_BasePnt / 10.0) * gx.m_PixPerPnt * fabs((gx.m_View.w - gx.m_View.y) / (gx.m_Region.w - gx.m_Region.y));
+	}	
 	// get current font
-	gxFont& font = gx.getCurrFont();	
-	float textDel = gx.m_text_hgt / font.ascent;		// glyph scale
+	gxFont& font = gx.getCurrFont();
+	if (font.ascent == 0)	return Vec2F(0, 0);					// we don't have a font yet
+	float fontPixToWorld = text_hgt / font.ascent;		// font to world scale
 	
-	// world size of text
-	gxGlyph& gly = font.glyphs[ 'a' ];				// estimate width using fix char	
-	sz.x = len * (gly.advance + gx.m_text_kern) * textDel;
-	sz.y = font.ascent * textDel;
+	// world size width of text
+	float lX = 0, lMax = 0;	
+	char ch;
+	for (int c=0; c < len; c++) {
+		ch = msg.at(c);
+		if (ch == '\n') {
+			lX = 0;
+		}	else if (ch >= 0 && ch <= 128) {			
+			lX += (font.glyphs[ch].advance + gx.m_text_kern) * fontPixToWorld;
+			if (lX > lMax) lMax = lX;
+		}
+	}
+	Vec2F sz;
+	sz.x = lMax;	
+	sz.y = font.ascent * fontPixToWorld;
 
 	// world space to pixels
-	px = sz * Vec2F( float(gx.m_Xres) / (view.z - view.x), float(gx.m_Yres) / (view.w - view.y) );
+	// px = sz * Vec2F( float(s->region.z - s->region.x) / (view.z - view.x), float(region.w - region.y) / (view.w - view.y) );
 
-	return true;
+	return sz;
 }
-
-void glib::setTextPix(float hgt, Vec4F view)
-{
-	gxFont& font = gx.getCurrFont();
-
-	gx.m_text_hgt = hgt * (view.w-view.y) / gx.m_Yres;
-}
-
 
 void glib::start3D ( Camera3D* cam, bool bStatic )
 {
@@ -423,9 +580,9 @@ void glib::setView3D ( Camera3D* cam )
 	ident.Identity ();
 	s->cam_from = cam->getPos();
 	s->cam_to = cam->getToPos();
-	memcpy ( s->model, ident.GetDataF(), 16 * sizeof(float) );
-	memcpy ( s->view, cam->getViewMatrix().GetDataF(), 16 * sizeof(float) );
-	memcpy ( s->proj, cam->getProjMatrix().GetDataF(), 16 * sizeof(float) );
+	memcpy ( s->model_mtx, ident.GetDataF(), 16 * sizeof(float) );
+	memcpy ( s->view_mtx, cam->getViewMatrix().GetDataF(), 16 * sizeof(float) );
+	memcpy ( s->proj_mtx, cam->getProjMatrix().GetDataF(), 16 * sizeof(float) );
 }
 
 void glib::setMaterial ( Vec3F Ka, Vec3F Kd, Vec3F Ks, float Ns, float Tf)
@@ -859,6 +1016,9 @@ gxLib::gxLib ()
 
     int start_sz = 256;
 
+		// default device (Desktop)
+		setTextDevice ( 1.8, 10.0 );			// 1.8 pix/pnt, 10 pnt as 10 pnt
+
     // clear sets
 		m_sets.clear();    
 }
@@ -876,7 +1036,8 @@ gxSet* gxLib::addSet ( char st, bool bStatic )
 		newset.geom = (char*) malloc ( 256 );
 		newset.lastpos = -1;
 		newset.vbo = 0;
-		newset.clip_region.Set ( 0, 0, 0, 0 );
+		newset.view.Set (0, 0, 0, 0);
+		newset.region.Set ( 0, 0, 0, 0 );
 		m_sets.push_back ( newset );
 		m_curr_set = n;
 	} 
@@ -1498,8 +1659,8 @@ void gxLib::drawSet ( int g )
 	// opengl render setup
 	#ifdef BUILD_OPENGL
 		// viewport clipping
-		if ( s->clip_region.z != 0 ) {	
-			glViewport ( s->clip_region.x, s->clip_region.y, s->clip_region.z, s->clip_region.w );
+		if ( s->region.z != 0 ) {	
+			glViewport ( s->region.x, s->region.y, s->region.z, s->region.w );
 		}
 		// bind shader	
 		glUseProgram ( mSH[ sh ] );	
@@ -1541,9 +1702,9 @@ void gxLib::drawSet ( int g )
 		#endif
 	
 		// update view matrices
-		glUniformMatrix4fv ( mPARAM[sh][SP_PROJ],  1, GL_FALSE, s->proj );
-		glUniformMatrix4fv ( mPARAM[sh][SP_MODEL], 1, GL_FALSE, s->model );
-		glUniformMatrix4fv ( mPARAM[sh][SP_VIEW],  1, GL_FALSE, s->view );
+		glUniformMatrix4fv ( mPARAM[sh][SP_PROJ],  1, GL_FALSE, s->proj_mtx );
+		glUniformMatrix4fv ( mPARAM[sh][SP_MODEL], 1, GL_FALSE, s->model_mtx );
+		glUniformMatrix4fv ( mPARAM[sh][SP_VIEW],  1, GL_FALSE, s->view_mtx );
 		#ifdef EXTRA_CHECKS
 			checkGL ( "drawSet matrices");
 		#endif

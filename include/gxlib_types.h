@@ -82,7 +82,8 @@
     struct gxSet {
         char        stype;          // set type, '2'=2D, '3'=3D
         bool        sstatic;        // is set static
-        Vec4F       clip_region;    // window region (clipping)
+        Vec4F       region;         // window region (clipping)
+        Vec4F       view;           // 2D world view
         int64_t     lastpos;        // marker pos
         int64_t     size, max;      // buffer size        
         char*       geom;           // CPU buffer
@@ -91,10 +92,11 @@
         int         calls, primcnt;
         float       mem;
 
-        float       model[16];
-        float       view[16];
-        float       proj[16];
-        float       aspect_correct;
+        float       model_mtx[16];
+        float       view_mtx[16];
+        float       proj_mtx[16];
+        // float       aspect_correct;
+        float       text_aspect;
         Vec3F       lightpos, lightclr;
         Vec3F       diffclr, ambclr, specclr;
         Vec3F       cam_from, cam_to;

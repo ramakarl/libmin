@@ -6,28 +6,32 @@
 
 using namespace glib;
 
-// icon-scale
-#define ICON_FIT      100
-#define ICON_AUTO     101
-#define ICON_STRETCH  102
+// Scaling
+#define SCALE_FIT      100
+#define SCALE_AUTO     101
+#define SCALE_STRETCH  102
 
-// icon-place
-#define ICON_CENTER   210
-#define ICON_LEFT     211
-#define ICON_RIGHT    212
-#define ICON_TOP      213
-#define ICON_BOTTOM   214
+// Placement
+#define PLACE_PERC     100      // 0-100, place by %
+#define PLACE_CENTER   210
+#define PLACE_LEFT     211
+#define PLACE_RIGHT    212
+#define PLACE_TOP      213
+#define PLACE_BOTTOM   214
 
 g2TextBox::g2TextBox ()
 {
-  m_textclr.Set(1,1,1,1);
+  m_text_clr.Set(1,1,1,1);
   m_text = "";
-  m_textsz = 16;
+  m_text_size = 10;      // default 10 pnt
+  m_text_placex = PLACE_LEFT;
+  m_text_placey = PLACE_CENTER;
+  m_text_margin.Set(2,2,2,2);   // 2% margin
   m_icon = 0;
-  m_icon_scalex = ICON_FIT;
-  m_icon_scaley = ICON_FIT;
-  m_icon_placex = ICON_CENTER;
-  m_icon_placey = ICON_CENTER;
+  m_icon_scalex = SCALE_FIT;
+  m_icon_scaley = SCALE_FIT;
+  m_icon_placex = PLACE_CENTER;
+  m_icon_placey = PLACE_CENTER;
 }
 
 void g2TextBox::LayoutIcon ()
@@ -53,31 +57,31 @@ void g2TextBox::LayoutIcon ()
 
   // icon scaling
   // fit horizontal
-  if ( m_icon_scalex <= ICON_FIT ) {
+  if ( m_icon_scalex <= SCALE_FIT ) {
     rx *= (m_icon_scalex/100.0f);   // fractional fit
-    if ( (m_icon_scaley <= ICON_FIT && iasp > rasp) || m_icon_scaley==ICON_AUTO)  {
+    if ( (m_icon_scaley <= SCALE_FIT && iasp > rasp) || m_icon_scaley==SCALE_AUTO)  {
       ry = rx / iasp;               // perserve aspect
     }
   }
   // fit vertical
-  if ( m_icon_scaley <= ICON_FIT )
+  if ( m_icon_scaley <= SCALE_FIT )
     ry *= (m_icon_scaley/100.0f);   // fractional fit
-    if ( (m_icon_scalex <= ICON_FIT && iasp < rasp) || m_icon_scalex==ICON_AUTO) {
+    if ( (m_icon_scalex <= SCALE_FIT && iasp < rasp) || m_icon_scalex==SCALE_AUTO) {
       rx = ry * iasp;               // perserve aspect
     }
   
   // icon positioning
   float px, py;    
   switch ( m_icon_placex ) {
-  case ICON_CENTER:   px = 0.5f;    break;
-  case ICON_LEFT:     px = 0.0f;    break;
-  case ICON_RIGHT:    px = 1.0f;    break;
-  default:            px = m_icon_placex/100.0f;    break;
+  case PLACE_CENTER:   px = 0.5f;    break;
+  case PLACE_LEFT:     px = 0.0f;    break;
+  case PLACE_RIGHT:    px = 1.0f;    break;
+  default:             px = m_icon_placex/100.0f;    break;
   };
   switch ( m_icon_placey ) {
-  case ICON_CENTER:   py = 0.5f;    break;
-  case ICON_TOP:      py = 0.0f;    break;
-  case ICON_BOTTOM:   py = 1.0f;    break;
+  case PLACE_CENTER:   py = 0.5f;    break;
+  case PLACE_TOP:      py = 0.0f;    break;
+  case PLACE_BOTTOM:   py = 1.0f;    break;
   default:            py = m_icon_placey/100.0f;    break;
   };
   // set top-left corner (positioning)
@@ -89,22 +93,95 @@ void g2TextBox::LayoutIcon ()
   m_icon_pos.w = m_icon_pos.y + ry;
 }
 
+
+std::string g2TextBox::getPrintedText(Vec4F& clr)
+{
+  if (!m_text.empty()) {
+    clr = m_text_clr;
+    return m_text;
+  } else {
+    clr = Vec4F(.1,.1,.1,1);
+    return m_text_empty;
+  }
+}
+
+
+void g2TextBox::LayoutText ()
+{
+  // Text Layout   
+  
+  // item specs
+  Vec4F area = m_pos;                                       // text area defaults to item region
+  area.x += m_text_margin.x * (m_pos.z-m_pos.x) / 100.0f;   // adjust area by text margin
+  area.z -= m_text_margin.z * (m_pos.z-m_pos.x) / 100.0f;
+  area.y += m_text_margin.y * (m_pos.w-m_pos.y) / 100.0f;
+  area.w -= m_text_margin.w * (m_pos.w-m_pos.y) / 100.0f;
+    
+  // text positioning
+  float px, py;
+  switch (m_text_placex) {
+  case PLACE_LEFT:     px = 0.0f;    break;
+  case PLACE_CENTER:   px = 0.5f;    break;  
+  case PLACE_RIGHT:    px = 1.0f;    break;
+  default:             px = m_icon_placex / 100.0f;    break;
+  };
+  switch (m_text_placey) {  
+  case PLACE_TOP:      py = 0.0f;    break;
+  case PLACE_CENTER:   py = 0.5f;    break;
+  case PLACE_BOTTOM:   py = 1.0f;    break;
+  default:             py = m_icon_placey / 100.0f;    break;
+  };  
+  Vec4F clr;
+  Vec2F sz = getTextDim( 'p', m_text_size, getPrintedText(clr) );
+
+  // set top-left corner of text
+  m_text_pos.x = area.x + (area.z-area.x) * px - sz.x*px;
+  m_text_pos.y = area.y + (area.w-area.y) * py - sz.y*py;
+}
+
+
+
 void g2TextBox::UpdateLayout ( Vec4F p )
 {
   // update self 
   m_pos = p;
 
-  m_pos = SetMargins ( p, m_minx, m_maxx, m_miny, m_maxy );    
+  m_pos = SetMargins ( p, m_minx, m_maxx, m_miny, m_maxy );
 
   LayoutIcon ();
+
+  LayoutText ();
 }
 
+// Item properties
+//
 void g2TextBox::SetProperty ( std::string key, std::string val )
 {
   std::string horiz, vert;
 
-  if ( key.compare("color")==0 ) {
-    m_textclr = strToVec4 ( val, ',' );
+  if ( key.compare("textclr")==0 || key.compare("text color")==0 ) {
+    m_text_clr = strToVec4 ( val, ',' );
+
+  } else if (key.compare("text empty") == 0 ) {
+    m_text_empty = val;
+
+  } else if (key.compare( "textsz") == 0 || key.compare("text size") == 0) {
+    m_text_size = strToF(val);
+
+  } else if (key.compare( "text align") == 0) {
+
+    vert = val; horiz = strSplitLeft(vert, "|");
+
+    // parse horiz pos
+    if (horiz.compare("center") == 0)     { m_text_placex = PLACE_CENTER; }
+    else if (horiz.compare("left") == 0)  { m_text_placex = PLACE_LEFT; }
+    else if (horiz.compare("right") == 0) { m_text_placex = PLACE_RIGHT; }
+    else { m_text_placex = strToI(strSplitLeft(horiz, "%")); }
+    // parse vert pos
+    if (vert.compare("center") == 0)      { m_text_placey = PLACE_CENTER; }
+    else if (vert.compare("top") == 0)    { m_text_placey = PLACE_TOP; }
+    else if (vert.compare("bottom") == 0) { m_text_placey = PLACE_BOTTOM; }
+    else { m_text_placey = strToI(strSplitLeft(vert, "%")); }
 
   } else if ( key.compare("text")==0 ) {
     m_text = val;
@@ -119,15 +196,15 @@ void g2TextBox::SetProperty ( std::string key, std::string val )
     vert = val; horiz = strSplitLeft ( vert, "|" );
     
     // parse horiz scaling
-    if (horiz.compare("auto")==0)           { m_icon_scalex = ICON_AUTO; } 
-    else if (horiz.compare("fit")==0)       { m_icon_scalex = ICON_FIT;  }
-    else if (horiz.compare("stretch")==0)   { m_icon_scalex = ICON_STRETCH; }
+    if (horiz.compare("auto")==0)           { m_icon_scalex = SCALE_AUTO; } 
+    else if (horiz.compare("fit")==0)       { m_icon_scalex = SCALE_FIT;  }
+    else if (horiz.compare("stretch")==0)   { m_icon_scalex = SCALE_STRETCH; }
     else                                    { m_icon_scalex = strToI ( strSplitLeft( horiz, "%" )); }    
 
     // parse vert scaling
-    if (vert.compare("auto")==0)            { m_icon_scaley = ICON_AUTO; }
-    else if (vert.compare("fit")==0)        { m_icon_scaley = ICON_FIT;  }
-    else if (vert.compare("stretch")==0)    { m_icon_scaley = ICON_STRETCH; }
+    if (vert.compare("auto")==0)            { m_icon_scaley = SCALE_AUTO; }
+    else if (vert.compare("fit")==0)        { m_icon_scaley = SCALE_FIT;  }
+    else if (vert.compare("stretch")==0)    { m_icon_scaley = SCALE_STRETCH; }
     else                                    { m_icon_scaley = strToI ( strSplitLeft( vert, "%" )); }    
 
   } else if ( key.compare("icon-place")==0 ) {
@@ -135,15 +212,15 @@ void g2TextBox::SetProperty ( std::string key, std::string val )
     vert = val; horiz = strSplitLeft ( vert, "|" );
     
     // parse horiz pos
-    if (horiz.compare("center")==0)         { m_icon_placex = ICON_CENTER; }
-    else if (horiz.compare("left")==0)      { m_icon_placex = ICON_LEFT; }
-    else if (horiz.compare("right")==0)     { m_icon_placex = ICON_RIGHT; } 
+    if (horiz.compare("center")==0)         { m_icon_placex = PLACE_CENTER; }
+    else if (horiz.compare("left")==0)      { m_icon_placex = PLACE_LEFT; }
+    else if (horiz.compare("right")==0)     { m_icon_placex = PLACE_RIGHT; } 
     else                                    { m_icon_placex = strToI ( strSplitLeft( horiz, "%" )); }    
 
     // parse vert pos
-    if (vert.compare("center")==0)          { m_icon_placey = ICON_CENTER; }
-    else if (vert.compare("top")==0)        { m_icon_placey = ICON_TOP; }
-    else if (vert.compare("bottom")==0)     { m_icon_placey = ICON_BOTTOM; } 
+    if (vert.compare("center")==0)          { m_icon_placey = PLACE_CENTER; }
+    else if (vert.compare("top")==0)        { m_icon_placey = PLACE_TOP; }
+    else if (vert.compare("bottom")==0)     { m_icon_placey = PLACE_BOTTOM; } 
     else                                    { m_icon_placey = strToI ( strSplitLeft( vert, "%" )); }    
     
   } else {    
@@ -153,7 +230,11 @@ void g2TextBox::SetProperty ( std::string key, std::string val )
 
 void g2TextBox::drawBackgrd (bool dbg)
 {  
-  drawFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr );
+  if (m_rounded) {
+    drawRoundedFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr );
+  } else {
+    drawFill (Vec2F(m_pos.x, m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr);
+  }
 }
 
 void g2TextBox::drawBorder (bool dbg)
@@ -163,27 +244,38 @@ void g2TextBox::drawBorder (bool dbg)
     return;
   }
   if ( m_borderclr.w > 0 ) {
-    drawRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_borderclr );
+    if (m_rounded) {
+      drawRoundedRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_borderclr );
+    } else {
+      drawRect (Vec2F(m_pos.x, m_pos.y), Vec2F(m_pos.z, m_pos.w), m_borderclr);
+    }
   }
 }
 
 void g2TextBox::drawForegrd ( bool dbg)
 {
-  char msg[512];
-
   // icon
   if ( m_icon != 0x0 ) {
     drawImg ( m_icon, Vec2F(m_icon_pos.x, m_icon_pos.y), Vec2F(m_icon_pos.z, m_icon_pos.w), Vec4F(1,1,1,1) );    
   }
 
   // text
-  if (dbg) {
-    strncpy (msg, m_name.c_str(), 512);    
-  } else {
-    strncpy (msg, m_text.c_str(), 512);   // item text
-  }
-  setTextSz ( m_textsz, 0 );
-  drawText ( Vec2F(m_pos.x, m_pos.y), msg, Vec4F(1,1,1,1));
+  //
+  Vec4F clr;  
+  std::string txt = getPrintedText (clr);  
+  setTextPnts ( m_text_size, 0 );  
+  drawText( Vec2F(m_text_pos.x, m_text_pos.y), txt, clr);  
+
+  //-- debugging text area
+  /* Vec4F area = m_pos;                                       // text area defaults to item region
+  area.x += m_text_margin.x * (m_pos.z - m_pos.x) / 100.0f;   // adjust area by text margin
+  area.z -= m_text_margin.z * (m_pos.z - m_pos.x) / 100.0f;
+  area.y += m_text_margin.y * (m_pos.w - m_pos.y) / 100.0f;
+  area.w -= m_text_margin.w * (m_pos.w - m_pos.y) / 100.0f;
+  drawRect ( Vec2F(area.x, area.y), Vec2F(area.z,area.w), Vec4F(1,1,0,1) );
+  drawLine ( Vec2F(( area.x+area.z)*0.5, area.y), Vec2F((area.x + area.z) * 0.5, area.w), Vec4F(1,0.5,0,1)); 
+  drawLine ( Vec2F(area.x, (area.y+area.w)*0.5),  Vec2F(area.z, (area.y + area.w) * 0.5), Vec4F(1, 0.5, 0, 1));
+  */
 }
 
 

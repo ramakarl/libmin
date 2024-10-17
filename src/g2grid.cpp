@@ -39,12 +39,6 @@ void g2Grid::UpdateLayout ( Vec4F p )
 
     // child regions
     Vec4F pos = m_pos;    
-
-    // 2D grid 
-    if (m_layout[0].active && m_layout[1].active) {        
-        printf ( "ERROR: 2D grids not yet supported.\n");
-        exit(-3);
-    }
       
     // 1D grid layout
     int L = (m_layout[G_LX].active ? G_LX : G_LY);      

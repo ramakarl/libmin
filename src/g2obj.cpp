@@ -10,9 +10,13 @@ g2Obj::g2Obj ()
 {
   m_backclr = Vec4F(0, 0, 0, 0);
   m_borderclr = Vec4F(0, 0, 0, 0);
+  m_rounded = false;
   m_debug = false;
 }
 
+// Common properties
+//  (all object types)
+//
 void g2Obj::SetProperty ( std::string key, std::string val )
 {
   if ( key.compare("backclr")==0 ) {
@@ -20,6 +24,10 @@ void g2Obj::SetProperty ( std::string key, std::string val )
 
   } else if ( key.compare("borderclr")==0 ) {
     m_borderclr = strToVec4 ( val, ',' );
+
+  } else if ( key.compare("style")==0 ) {
+
+    if (val.compare("rounded")==0) m_rounded = true;
 
   } else if ( key.compare("margins")==0 ) {
 

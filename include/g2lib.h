@@ -49,7 +49,7 @@
         //int getCurrPage () { return (m_curr_page < m_pages.size()) ? m_pages [ m_curr_page ] : -1; }
 
         // Layout & Render
-        void LayoutAll (float xres, float yres);
+        void LayoutAll ( Vec4F view, Vec4F region );
         void Render (int w, int h);
 
     public:
@@ -60,6 +60,8 @@
         std::vector< int >          m_active_pages;
 
         std::vector<std::string>    m_spec;         // original spec (temporary)
+        
+        Vec4F                       m_layout_area;
     };
 
     // Global singleton

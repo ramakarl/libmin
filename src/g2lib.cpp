@@ -58,13 +58,27 @@ void g2Lib::LoadSpec ( std::string fname )
     bool is_table;
     std::vector<std::string> words;
     std::string table_secs, table_wids;
-    std::string name, item, label, entry;
+    std::string name, item, label, entry, itype, iempty;
+
     for (int n=0; n < m_objdefs.size(); n++) {
         // get object def
         name = m_objdefs[n].name;        
         is_table = hasVal ( name, "opt", "table" );        
 
-        if (is_table) {          
+        if (is_table) {   
+       
+          // layout arrangement
+          std::string xlayout             = getVal(name, "item X layout");
+          std::string ylayout             = getVal(name, "item Y layout");
+          if (xlayout.empty() && ylayout.empty()) xlayout = "30% | 70%";
+
+          // item properties
+          std::string item_backclr        = getVal ( name, "item backclr" );          
+          std::string item_color          = getVal ( name, "item color");
+          std::string item_label_backclr  = getVal ( name, "item label backclr");
+          std::string item_label_color    = getVal ( name, "item label color");          
+          std::string item_style          = getVal ( name, "item style");
+          
           // retrieve list of table items
           std::vector<std::string> itemlist;
           if ( getValList ( name, "item", itemlist ) > 0 ) {            
@@ -73,23 +87,43 @@ void g2Lib::LoadSpec ( std::string fname )
             float pct = 100.0 / itemlist.size();
             table_secs = "";
             table_wids = "";
+
             for (int j=0; j < itemlist.size(); j++) {
               getWords ( itemlist[j], words );
               item = words[0]+":item";
-              label = words[0]+":label";
+              label = words[0]+":label";              
               entry = words[0];
+              itype = "text";   // entry type
+              iempty = "";
+              if (words.size()>=2) itype = words[1];
+              if (words.size()>=3) iempty = words[2];
               table_secs = table_secs + " | " + item;
               table_wids = table_wids + " | " + fToStr(pct)+"%";
+              // item spec
               AddSpec ( item +" | is a | grid" );
-              AddSpec ( item +" | has | X layout | 30% | 70%" );
-              AddSpec ( item +" | has | sections | "+label+" | "+entry );
+              AddSpec ( item +" | has | margins | 0% | 0% | 2% | 2%");
+              if (!xlayout.empty()) {
+                AddSpec ( item +" | has | X layout | " + xlayout );
+              } else {
+                AddSpec ( item + " | has | Y layout | " + ylayout);
+              }
+              AddSpec ( item +" | has | sections | "+label+" | "+entry );              
+              // lable spec
               AddSpec ( label +" | is a | item" );
               AddSpec ( label +" | has | text | "+entry );
+              if (!item_label_backclr.empty())  AddSpec(label + " | has | backclr | " + item_label_backclr);
+              if (!item_label_color.empty())    AddSpec(label + " | has | textclr | " + item_label_color);
+              if (!item_style.empty())    AddSpec(label + " | has | style | " + item_style);
+              // entry spec
+              AddSpec( entry + " | is a | item");              
+              if (!item_backclr.empty())  AddSpec(entry + " | has | backclr | " + item_backclr);
+              if (!item_color.empty())    AddSpec(entry + " | has | color | " + item_color );
+              if (!item_style.empty())    AddSpec(entry + " | has | style | " + item_style);
+              if (!iempty.empty())        AddSpec(entry + " | has | text empty | " + iempty );
             }
             // build table sections
             AddSpec ( name + " | has | sections " + table_secs );
-            AddSpec ( name + " | has | Y layout " + table_wids );
-            
+            AddSpec ( name + " | has | Y layout " + table_wids );            
           }
         }
     }
@@ -135,6 +169,7 @@ void g2Lib::AddSpec ( std::string lin )
 
 void g2Lib::ParseSpecToDef ( std::string lin ) 
 {  
+  bool bError = false;
   std::vector<std::string> words;
   
   // convert spec to words
@@ -143,16 +178,24 @@ void g2Lib::ParseSpecToDef ( std::string lin )
   // build object definition (not actual object)
   if (words.size() > 0 ) {
 
-      // ensure there are 4
-      while (words.size()<4)
-          words.push_back ("X");
-      
       // definition
       if (words[1].compare ( "is a")==0) {
-          SetDef ( words[0], words[2] );
+          if (words.size() == 3) {
+            SetDef ( words[0], words[2] );
+          } else {
+            bError = true;
+          }
       } 
+      // property
       if (words[1].compare ( "has")==0 || words[1].compare( "action")==0 ) {
-          SetKeyVal ( words[0], words[2], words[3] );
+          if (words.size() == 4) {
+            SetKeyVal ( words[0], words[2], words[3] );
+          } else {
+            bError = true;
+          }
+      }
+      if (bError) {
+        dbgprintf ( "ERROR: ParsingSpec: %s\n", lin.c_str() );
       }
   }
 }
@@ -404,6 +447,12 @@ bool g2Lib::BuildLayout ( g2Obj* obj, uchar ly )
     //    
     layout->active = true;
 
+    // 2D grid 
+    if (grid->m_layout[0].active && grid->m_layout[1].active) {
+      printf("ERROR: 2D grids not yet supported.\n");
+      exit(-3);
+    }
+
     for (int n=0; val.length()>0; n++) {
 
         sz_str = strSplitLeft ( val, "|" );
@@ -460,13 +509,15 @@ void g2Lib::BuildSections ( g2Obj* obj, uchar ly )
     }
 }
 
-void g2Lib::LayoutAll (float xres, float yres)
+void g2Lib::LayoutAll ( Vec4F view, Vec4F region )
 {
     if ( m_objlist.size() == 0) { 
       dbgprintf ( "WARNING: g2 Layout has 0 objects.\n" );
       return; 
     }
     
+    setViewRegion ( view, region );
+
     // layout all active pages
     //
     int id;
@@ -476,7 +527,7 @@ void g2Lib::LayoutAll (float xres, float yres)
 
       g2Obj* curr = m_objlist[ id ];
     
-      curr->UpdateLayout ( Vec4F(0, 0, xres, yres) );
+      curr->UpdateLayout ( region );
 
       //-- debugging
       /*int ow, oh;
@@ -504,7 +555,7 @@ void g2Lib::Render (int w, int h)
     
       g2Obj* curr = m_objlist[ id ];
 
-      start2D ( w, h );
+      start2D ( w, h );      
 
       // setview2D ( curr->m_pos.z, curr->m_pos.w );
 

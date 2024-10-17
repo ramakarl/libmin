@@ -27,11 +27,18 @@
         virtual void drawBorder (bool dbg);
         virtual void drawForegrd (bool dbg);
 
+        std::string getPrintedText(Vec4F& clr);
+
         void LayoutIcon ();
+        void LayoutText ();
 
         std::string   m_text;
-        Vec4F         m_textclr;
-        float         m_textsz;
+        std::string   m_text_empty;
+        Vec4F         m_text_clr;
+        Vec4F         m_text_margin;
+        float         m_text_size;
+        uchar         m_text_placex, m_text_placey;
+        Vec4F         m_text_pos;
 
         ImageX*       m_icon;        
         uchar         m_icon_scalex, m_icon_scaley;   // 0-100 => %

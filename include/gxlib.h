@@ -34,22 +34,28 @@
 
     // 2D Interface Functions
     GXAPI bool init2D ( const char* fontName );    
+    GXAPI void setViewRegion(Vec4F v, Vec4F r); 
     GXAPI void debug2D ( bool tf );    
     GXAPI void clear2D ();
     GXAPI void destroy2D();
-    GXAPI void start2D ( int w, int h, bool bStatic = false );
-    GXAPI void start2D ( int w, int h, Vec4F region, bool bStatic = false );
+    GXAPI void start2D ( int w, int h, bool bStatic = false );    
     GXAPI void setview2D ( int w, int h );
-    GXAPI void setview2D ( int w, int h, Matrix4F& model, Matrix4F& view, Matrix4F& proj );      
-    GXAPI void setAspectCorrect ( float a );
-    GXAPI void setMatrices ( Matrix4F& model, Matrix4F& view, Matrix4F& proj, int s=-1 );    
-    GXAPI void setTextSz ( float hgt, float kern );
-    GXAPI void setTextPix ( float hgt, Vec4F view );
-    GXAPI bool getTextDim (std::string msg, Vec4F view, Vec2F& px, Vec2F& sz );
+    GXAPI void setview2D ( int w, int h, Vec4F view, Vec4F region, Matrix4F& model, Matrix4F& viewmtx, Matrix4F& projmtx );        
+    GXAPI void setMatrices ( Matrix4F& model, Matrix4F& view, Matrix4F& proj, int s=-1 );        
+    GXAPI Vec4F getView();
+    GXAPI Vec4F getRegion();
+    GXAPI void setTextDevice ( float pix_per_pnt, float base_pnt );
+    GXAPI void setTextAspect ( float a );
+    GXAPI void setTextSz ( float hgt, float kern=0);
+    GXAPI void setTextPnts ( float hgt_pnt, float kern=0);    
+    GXAPI float getPntToWorld ();    
+    GXAPI Vec2F getTextDim(char mode, float sz, std::string msg);
     GXAPI void end2D ();    
     GXAPI void drawLine ( Vec2F a, Vec2F b, Vec4F clr );
     GXAPI void drawRect ( Vec2F a, Vec2F b, Vec4F clr );
     GXAPI void drawFill ( Vec2F a, Vec2F b, Vec4F clr );
+    GXAPI void drawRoundedRect (Vec2F a, Vec2F b, Vec4F clr, float radius=10);
+    GXAPI void drawRoundedFill (Vec2F a, Vec2F b, Vec4F clr, float radius=10);
     GXAPI void drawGradient ( Vec2F a, Vec2F b, Vec4F c0, Vec4F c1, Vec4F c2, Vec4F c3 );
     GXAPI void drawCircle ( Vec2F a, float r, Vec4F clr  );
     GXAPI void drawCircleFill (Vec2F a, float r, Vec4F clr);
@@ -98,9 +104,9 @@
 
         // building geometry
         gxSet*      addSet ( char st, bool bStatic=false );        
-        gxSet*      getCurrSet ()         {return getSet(m_curr_set);}   
-        gxSet*      getSet (int set)      {return (set < m_sets.size()) ? &m_sets[set] : 0x0;}
-        float       getAspectCorrect()    {return m_sets[m_curr_set].aspect_correct; }
+        gxSet*      getCurrSet ()      {return (m_curr_set < m_sets.size()) ? &m_sets[m_curr_set] : 0x0;}
+        gxSet*      getSet (int set)   {return (set < m_sets.size()) ? &m_sets[set] : 0x0;}
+        float       getTextAspect()    {return m_sets[m_curr_set].text_aspect; }        
         void        clearSet (int set);
         void        clearSets ();
         void        destroySets();
@@ -122,9 +128,8 @@
         void        drawSets ();
         
         // member vars
-        int         m_Xres, m_Yres;
-        Vec4F       m_view2D;
-        bool        m_debug;
+        int         m_Xres, m_Yres;        
+        Vec4F       m_View, m_Region;
 
         // primitive sets
         std::vector<gxSet>    m_sets;
@@ -136,12 +141,16 @@
         int         m_curr_num;
 
         // text drawing
-        float		    m_text_hgt, m_text_kern;
+        float		    m_text_hgt, m_text_kern;    // pnt units (eg. 10pt font)
+        float       m_text_world_per_pnt;
         gxFont      m_font;
         ImageX      m_font_img, m_white_img;
 
+        float       m_PixPerPnt;                // device specific
+        float       m_BasePnt;                  // device specific
+
         // opengl
-        int		      mSH[S_MAX];					// shaders
+        int		      mSH[S_MAX];					    // shaders
         int         mVS[S_MAX];
         int         mFS[S_MAX];
 		    int		      mPARAM[S_MAX][SP_MAX];      // shader params
@@ -150,6 +159,8 @@
         // sin/cos tables
         float       cos_table[36001];
         float       sin_table[36001];
+
+        bool        m_debug;
 
     };
     
