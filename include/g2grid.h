@@ -27,9 +27,14 @@
         virtual void drawBorder (bool dbg);
         virtual void drawForegrd (bool dbg);
         virtual void drawChildren ( uchar what, bool dbg=false );
+        virtual bool OnMouse(AppEnum button, AppEnum state, int mods, int x, int y);
+        virtual bool OnMotion(AppEnum button, int x, int y, int dx, int dy);
+        virtual bool FindParent(g2Obj* obj, g2Obj*& parent, Vec3I& id );
+        virtual int  Traverse(std::vector<g2Obj*>& list);        
 
         g2Layout* getLayout(uchar ly)   {return &m_layout[ly];}
         void getDimensions ( uchar L, float sz, Vec4F& pos, Vec4F& adv );
+        g2Obj* getChild( Vec3I id );        
 
         g2Layout        m_layout[2];       
     };

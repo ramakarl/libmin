@@ -116,6 +116,8 @@ void g2Lib::LoadSpec ( std::string fname )
               if (!item_style.empty())    AddSpec(label + " | has | style | " + item_style);
               // entry spec
               AddSpec( entry + " | is a | item");              
+              AddSpec( entry + " | has | opt | editable");
+
               if (!item_backclr.empty())  AddSpec(entry + " | has | backclr | " + item_backclr);
               if (!item_color.empty())    AddSpec(entry + " | has | color | " + item_color );
               if (!item_style.empty())    AddSpec(entry + " | has | style | " + item_style);
@@ -141,9 +143,7 @@ void g2Lib::LoadSpec ( std::string fname )
             printf ("  %s: %s\n", m_objdefs[n].keys[j].c_str(), m_objdefs[n].vals[j].c_str() );
         }
     }
-    printf ( "----\n" ); */
-
-    
+    printf ( "----\n" ); */    
 }
 
 void g2Lib::getWords ( std::string str, std::vector<std::string>& words, int maxw )
@@ -502,6 +502,7 @@ void g2Lib::BuildSections ( g2Obj* obj, uchar ly )
                 obj_ref = AddObj ( obj_name, 'i' );                
             }           
             //printf ("%s (%p) ref by %s (%p)\n", obj_name.c_str(), obj_ref, obj->m_name.c_str(), obj );
+            if (obj_ref != 0x0) obj_ref->SetParent( grid );
 
             layout->sections.push_back ( obj_ref );
         }
@@ -540,6 +541,83 @@ void g2Lib::LayoutAll ( Vec4F view, Vec4F region )
     }
 }
 
+bool g2Lib::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
+{ 
+  // Top-level entry point GUI interaction
+  // - must return true if it handles the event
+  for (int p = 0; p < m_active_pages.size(); p++) {      
+    int id = m_active_pages[p];
+    g2Obj* curr = m_objlist[id];      
+    if (curr->OnMouse (button, state, mods, x, y ))
+      return true;
+  }  
+
+  return false;
+}
+
+bool g2Lib::OnMotion(AppEnum button, int x, int y, int dx, int dy)
+{
+  for (int p = 0; p < m_active_pages.size(); p++) {
+    int id = m_active_pages[p];
+    g2Obj* curr = m_objlist[id];
+    if (curr->OnMotion(button, x, y, dx, dy))
+      return true;
+  }
+  return false;
+}
+
+int g2Lib::Traverse(std::vector<g2Obj*>& list)
+{
+  for (int p = 0; p < m_active_pages.size(); p++) {
+    int id = m_active_pages[p];
+    g2Obj* curr = m_objlist[id];
+    if (curr != 0x0) curr->Traverse ( list );
+  }
+  return list.size();
+}
+
+int getNextWrap(int curr, int dir, int siz)
+{
+  int next;
+  if (dir == 1)   { next = (curr == siz - 1) ? 0 : curr + 1; }
+  if (dir == -1)  { next = (curr == 0) ? siz - 1 : curr - 1; }
+  return next;
+}
+
+bool g2Lib::OnKeyboard(int key, AppEnum action, int mods, int x, int y)
+{
+  int sel, next;
+
+  // selection
+  if (m_selected != 0x0) {
+    
+    // tab - advance to next editable entry field
+    if (key == KEY_TAB) {  
+      if (action == AppEnum::BUTTON_RELEASE) return false;
+      int dir = (mods==1) ? -1 : 1;       // check for shift+tab
+
+      // retreive full graph
+      std::vector<g2Obj*> list;
+      Traverse ( list );
+
+      // locate current selection
+      for (sel = 0; sel < list.size(); sel++) {
+        if (list[sel]==m_selected) break;
+      }      
+      // get next editable item
+      for (next = getNextWrap(sel, dir, list.size()); !list[next]->isEditable() && next != sel; ) {
+        next = getNextWrap(next, dir, list.size());
+      }        
+      m_selected = 0x0;
+      if (next != sel ) m_selected = list[next];
+      return true;
+    }
+
+    // pass key to input item
+    return m_selected->OnKeyboard ( key, action, mods, x, y );
+  }
+  return false;  
+}
 
 void g2Lib::Render (int w, int h)
 {
@@ -555,14 +633,19 @@ void g2Lib::Render (int w, int h)
     
       g2Obj* curr = m_objlist[ id ];
 
+      
       start2D ( w, h );      
-
-      // setview2D ( curr->m_pos.z, curr->m_pos.w );
-
+      
+      // all objects
       curr->drawBackgrd ( curr->m_debug );     
       curr->drawForegrd ( curr->m_debug ); 
       curr->drawBorder  ( curr->m_debug ); 
 
+      // selection
+      if (m_selected != 0x0 ) {
+        m_selected->drawSelected ( curr->m_debug );        
+      }
+  
       end2D();
     }
 }

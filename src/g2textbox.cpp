@@ -2,6 +2,7 @@
 #include "string_helper.h"
 #include "imagex.h"
 #include "g2textbox.h"
+#include "g2lib.h"
 #include "gxlib.h"
 
 using namespace glib;
@@ -21,13 +22,23 @@ using namespace glib;
 
 g2TextBox::g2TextBox ()
 {
+  m_isButton = false;  
+  m_button_state = 0;
+  m_button_toggleable = false;
+  
   m_text_clr.Set(1,1,1,1);
   m_text = "";
   m_text_size = 10;      // default 10 pnt
   m_text_placex = PLACE_LEFT;
   m_text_placey = PLACE_CENTER;
   m_text_margin.Set(2,2,2,2);   // 2% margin
+
+  m_isEditable = false;  
+  m_edit_pos.Set(0,0,0,0);
+  m_selection.Set(-1,-1,0,0);
+
   m_icon = 0;
+  m_icon_on = 0;
   m_icon_scalex = SCALE_FIT;
   m_icon_scaley = SCALE_FIT;
   m_icon_placex = PLACE_CENTER;
@@ -100,7 +111,7 @@ std::string g2TextBox::getPrintedText(Vec4F& clr)
     clr = m_text_clr;
     return m_text;
   } else {
-    clr = Vec4F(.1,.1,.1,1);
+    clr = Vec4F(.4,.4,.4, 1);
     return m_text_empty;
   }
 }
@@ -159,7 +170,12 @@ void g2TextBox::SetProperty ( std::string key, std::string val )
 {
   std::string horiz, vert;
 
-  if ( key.compare("textclr")==0 || key.compare("text color")==0 ) {
+  if (key.compare("opt") == 0) {
+    if (val.compare("editable")==0)  m_isEditable = true;
+    if (val.compare("button")==0)    m_isButton = true;
+    if (val.compare("toggleable") == 0) m_button_toggleable = true;
+
+  } else if ( key.compare("textclr")==0 || key.compare("text color")==0 ) {
     m_text_clr = strToVec4 ( val, ',' );
 
   } else if (key.compare("text empty") == 0 ) {
@@ -188,8 +204,11 @@ void g2TextBox::SetProperty ( std::string key, std::string val )
 
   } else if ( key.compare("icon")==0 ) {
 
-    g2Obj::LoadImg ( m_icon, val );  
-    // printf ( "loaded: %s <- %s\n", m_name.c_str(), val.c_str() );
+    g2Obj::LoadImg ( m_icon, val );      
+
+  } else if (key.compare("icon on") == 0) {
+
+    g2Obj::LoadImg( m_icon_on, val);
 
   } else if ( key.compare("icon-scale")==0 ) {
     
@@ -242,7 +261,7 @@ void g2TextBox::drawBorder (bool dbg)
   if (dbg) {
     drawRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(1,0.5,0,1) );
     return;
-  }
+  }  
   if ( m_borderclr.w > 0 ) {
     if (m_rounded) {
       drawRoundedRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_borderclr );
@@ -254,9 +273,19 @@ void g2TextBox::drawBorder (bool dbg)
 
 void g2TextBox::drawForegrd ( bool dbg)
 {
-  // icon
-  if ( m_icon != 0x0 ) {
-    drawImg ( m_icon, Vec2F(m_icon_pos.x, m_icon_pos.y), Vec2F(m_icon_pos.z, m_icon_pos.w), Vec4F(1,1,1,1) );    
+  // button icon  
+  if (m_button_state == 0) {    
+    if (m_icon != 0x0) {      // down/off icon
+      drawImg(m_icon, Vec2F(m_icon_pos.x, m_icon_pos.y), Vec2F(m_icon_pos.z, m_icon_pos.w), Vec4F(1, 1, 1, 1));
+    }
+  } else {    
+    if (m_icon_on != 0x0) {   // up/on icon
+      drawImg( m_icon_on, Vec2F(m_icon_pos.x, m_icon_pos.y), Vec2F(m_icon_pos.z, m_icon_pos.w), Vec4F(1, 1, 1, 1));
+    } else {
+      if (m_icon!=0x0) drawImg(m_icon, Vec2F(m_icon_pos.x, m_icon_pos.y), Vec2F(m_icon_pos.z, m_icon_pos.w), Vec4F(1, 1, 1, 1));
+      drawFill( Vec2F(m_pos.x, m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(1, 1, 1, .6));
+    }
+    if (!m_button_toggleable) m_button_state--;   // countdown non-toggleable buttons
   }
 
   // text
@@ -276,6 +305,164 @@ void g2TextBox::drawForegrd ( bool dbg)
   drawLine ( Vec2F(( area.x+area.z)*0.5, area.y), Vec2F((area.x + area.z) * 0.5, area.w), Vec4F(1,0.5,0,1)); 
   drawLine ( Vec2F(area.x, (area.y+area.w)*0.5),  Vec2F(area.z, (area.y + area.w) * 0.5), Vec4F(1, 0.5, 0, 1));
   */
+  
+  if (m_isEditable && g2.m_selected == this) {
+    // selected text
+    if (m_selection.y >= 0) {
+      drawFill(Vec2F(int(m_text_pos.x + m_selection.z), m_pos.y + 5), Vec2F(int(m_text_pos.x + m_selection.w) + 2, m_pos.w - 5), Vec4F(0, 0, 0.4, 1));
+      txt = m_text.substr ( m_selection.x, m_selection.y - m_selection.x );
+      drawText(Vec2F(int(m_text_pos.x + m_selection.z), m_text_pos.y), txt, Vec4F(1,1,1,1) );
+    }
+    // cursor  
+    drawFill ( Vec2F( int(m_text_pos.x+m_edit_pos.z), m_pos.y+5), Vec2F( int(m_text_pos.x + m_edit_pos.z)+2, m_pos.w-5), Vec4F(0,0,0,1));
+  }
+ 
+}
+
+void g2TextBox::drawSelected(bool dbg)
+{
+  if (m_isEditable) {        
+    if (m_rounded) {
+      drawRoundedRect(Vec2F(m_pos.x, m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(1, 1, 1, 1));
+    } else {
+      drawRect(Vec2F(m_pos.x, m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(1, 1, 1, 1));
+    }
+  }
+}
+
+bool g2TextBox::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
+{
+  g2Obj* obj;
+
+  if ( m_isEditable || m_isButton ) {
+    if (button==AppEnum::BUTTON_LEFT && state==AppEnum::BUTTON_PRESS) {
+      // select box
+      if ( x > m_pos.x && y > m_pos.y && x < m_pos.z && y < m_pos.w ) {
+        
+        // editable
+        if (m_isEditable) {          
+          if (g2.m_selected != this) {              
+              m_edit_pos.x = m_text.length();   // set cursor
+          }
+        }
+        // make selected
+        g2.m_selected = this;        
+
+        // button action
+        if (m_isButton) {
+          if (m_button_toggleable) {
+            m_button_state = 1-m_button_state;
+          } else {
+            m_button_state = 240;      // deactivation countdown
+          }
+        }
+        return true;
+      }
+    }
+  }
+  return false;
+}
+bool g2TextBox::OnKeyboard (int key, AppEnum action, int mods, int x, int y)
+{
+  if ( !m_isEditable ) return false;
+  if ( action==AppEnum::BUTTON_RELEASE ) return false;
+  
+  if ( key > 400 ) return false;      // ignore explicit shift/ctrl/alt
+
+  Vec2F sz;
+  int dir;
+  bool caught = false;
+  dbgprintf ( "key: %d, act: %d, mods: %d\n", (int) key, action, mods );
+
+  // handle key
+  switch (key) {
+  case 263: case 262:         // left/right
+    dir = (key == 263) ? -1 : 1;
+    if (mods == 1) {
+      if (m_selection.y==-1) m_selection.Set(m_edit_pos.x, m_edit_pos.x, 0, 0);
+      m_edit_pos.x += dir;
+      if (m_edit_pos.x <= m_selection.y)  m_selection.x = m_edit_pos.x;
+      else                                m_selection.y = m_edit_pos.x;
+      dbgprintf ("%d %d\n", int(m_selection.x), int(m_selection.y) );      
+    } else {
+      m_selection.Set(-1,-1,0,0);
+      m_edit_pos.x += dir;
+    }    
+    break;
+  case 265: case 264:         // up/down
+    dir = (key == 265) ? -1 : 1;
+    break;
+  case 268:                   // home
+    if (mods==1) {
+      m_selection.x = 0;      // select to home
+      if (m_selection.y < 0) m_selection.y = m_edit_pos.x;
+    } else {
+      m_selection.Set(-1, -1, 0, 0);
+    }
+    m_edit_pos.y = 0;
+    m_edit_pos.x = 0;          
+    break;
+  case 269:                   // end
+    if (mods == 1) {
+      if (m_selection.x < 0) m_selection.x = m_edit_pos.x;
+      m_selection.y = m_text.length();
+    } else {
+      m_selection.Set(-1, -1, 0, 0);
+    }
+    m_edit_pos.x = m_text.length();
+    break;  
+  case 8:                     // backspace
+    if (m_selection.y >= 0) {
+      m_text = m_text.substr(0, m_selection.x) + m_text.substr(m_selection.y);   // delete selection
+      m_edit_pos.x = m_selection.x;
+      m_selection.Set(-1, -1, 0, 0);
+    } else if (m_edit_pos.x > 0) {
+      m_text = m_text.substr(0, m_edit_pos.x-1) + m_text.substr(m_edit_pos.x);    
+      m_edit_pos.x--;
+    }
+    break;
+  case 127:                   // delete
+    if (m_selection.y >= 0) {
+      m_text = m_text.substr(0, m_selection.x ) + m_text.substr(m_selection.y);   // delete selection
+      m_edit_pos.x = m_selection.x;
+      m_selection.Set(-1, -1, 0, 0);
+    } else if (m_edit_pos.x < m_text.length() ) {
+      m_text = m_text.substr(0, m_edit_pos.x) + m_text.substr(m_edit_pos.x + 1);  // delete char
+    }
+    break;
+  default:
+    if (m_selection.y >= 0) {
+      m_text = m_text.substr(0, m_selection.x) + m_text.substr(m_selection.y);   // delete selection
+      m_edit_pos.x = m_selection.x;
+      m_selection.Set(-1, -1, 0, 0);
+    }
+    if (m_edit_pos.x >= m_text.length() ) {
+      m_text += key;
+    } else {
+      m_text = m_text.substr(0, m_edit_pos.x) + std::string(1, key) + m_text.substr(m_edit_pos.x);
+    } 
+    m_edit_pos.x++;
+    caught = true;
+    break;
+  };
+  // enable selection
+  if (m_selection.y >= 0 && m_selection.x >= 0) {
+    if (m_selection.x > m_selection.y) {int tmp = m_selection.y; m_selection.y = m_selection.x; m_selection.x = tmp; }
+    if (m_selection.x < 0) m_selection.x = 0;    
+    if (m_selection.y > m_text.length() ) m_selection.y = m_text.length();
+    sz = getTextDim('p', m_text_size, m_text.substr(0, m_selection.x));
+    m_selection.z = sz.x;
+    sz = getTextDim('p', m_text_size, m_text.substr(0, m_selection.y));
+    m_selection.w = sz.x;
+  }
+
+  // recalculate width & cursor
+  if (m_edit_pos.x < 0) m_edit_pos.x = 0;
+  if (m_edit_pos.x > m_text.length() ) m_edit_pos.x = m_text.length();
+  sz = getTextDim('p', m_text_size, m_text.substr(0, m_edit_pos.x) );
+  m_edit_pos.z = sz.x;      // cursor pos (in pixels)
+ 
+  return caught;
 }
 
 

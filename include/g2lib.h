@@ -15,12 +15,18 @@
     #include "gxlib.h"
     #include "gxlib_types.h"
     #include "g2obj.h"
+    #include "main_includes.h"      // AppEnum
   
     namespace glib {
 
     class GXAPI g2Lib {
     public:
-        g2Lib () {};
+        g2Lib () { m_selected = 0x0; }
+
+        // Interaction (top-level)
+        bool OnMouse ( AppEnum button, AppEnum state, int mods, int x, int y);
+        bool OnMotion ( AppEnum button, int x, int y, int dx, int dy ); 
+        bool OnKeyboard ( int key, AppEnum action, int mods, int x, int y);
         
         // Layout Spec
         void LoadSpec ( std::string fname );
@@ -34,13 +40,15 @@
         int getValList ( std::string name, std::string key, std::vector<std::string>& list );
         bool hasVal ( std::string name, std::string key, std::string val );
         void getWords ( std::string str, std::vector<std::string>& words, int maxw=1000 );
+        g2Obj* getSelected () { return m_selected; }
+        int Traverse(std::vector<g2Obj*>& list);        
 
         // Build GUI
         void BuildAll ();
         bool BuildLayout ( g2Obj* obj, uchar ly );        
         void BuildSections ( g2Obj* obj, uchar ly );        
         g2Obj* AddObj ( std::string name, uchar typ );
-        g2Obj* FindObj ( std::string name );
+        g2Obj* FindObj ( std::string name );    
 
         // Pages
         void AddPage (int id);
@@ -60,8 +68,8 @@
         std::vector< int >          m_active_pages;
 
         std::vector<std::string>    m_spec;         // original spec (temporary)
-        
-        Vec4F                       m_layout_area;
+                
+        g2Obj*                      m_selected;
     };
 
     // Global singleton

@@ -26,12 +26,22 @@
         virtual void drawBackgrd (bool dbg);
         virtual void drawBorder (bool dbg);
         virtual void drawForegrd (bool dbg);
+        virtual void drawSelected (bool dbg);
+        virtual bool OnMouse(AppEnum button, AppEnum state, int mods, int x, int y);
+        virtual bool OnKeyboard (int key, AppEnum action, int mods, int x, int y);
+        virtual bool isEditable() { return m_isEditable; }
 
         std::string getPrintedText(Vec4F& clr);
 
         void LayoutIcon ();
         void LayoutText ();
 
+        // button properties
+        bool          m_isButton;
+        char          m_button_state;
+        bool          m_button_toggleable;
+
+        // text properties        
         std::string   m_text;
         std::string   m_text_empty;
         Vec4F         m_text_clr;
@@ -39,8 +49,15 @@
         float         m_text_size;
         uchar         m_text_placex, m_text_placey;
         Vec4F         m_text_pos;
+        Vec4F         m_selection;
 
+        // edit properties
+        bool          m_isEditable;           
+        Vec4F         m_edit_pos;     // x=char, y=start char, z=pixel offset
+
+        // icon properties
         ImageX*       m_icon;        
+        ImageX*       m_icon_on;
         uchar         m_icon_scalex, m_icon_scaley;   // 0-100 => %
         uchar         m_icon_placex, m_icon_placey;
         Vec4F         m_icon_pos; 

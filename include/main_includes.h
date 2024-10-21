@@ -62,75 +62,77 @@
 
 	// non-character keys (non printing)
 	#define	KEY_UNKNOWN     		-1
-	#define KEY_BACKSPACE          8			// keys with ascii equivalents
-	#define KEY_TAB                9	
-	#define KEY_ENTER              13	
-	#define KEY_ESCAPE             27
-	#define KEY_DELETE             127
+	#define KEY_BACKSPACE         8			// keys with ascii equivalents
+	#define KEY_TAB               9	
+	#define KEY_ENTER             13	
+	#define KEY_ESCAPE            27
+	#define KEY_DELETE            127
 
-	#define KEY_WORLD_1            161			// virtual keys (non-ascii)
-	#define KEY_WORLD_2            162
-	#define KEY_INSERT             260	
-	#define KEY_RIGHT              262
-	#define KEY_LEFT               263
-	#define KEY_DOWN               264
-	#define KEY_UP                 265
-	#define KEY_PAGE_UP            266
-	#define KEY_PAGE_DOWN          267
-	#define KEY_HOME               268
-	#define KEY_END                269
-	#define KEY_CAPS_LOCK          280
-	#define KEY_SCROLL_LOCK        281
-	#define KEY_NUM_LOCK           282
-	#define KEY_PRINT_SCREEN       283
-	#define KEY_PAUSE              284
-	#define KEY_F1                 290
-	#define KEY_F2                 291
-	#define KEY_F3                 292
-	#define KEY_F4                 293
-	#define KEY_F5                 294
-	#define KEY_F6                 295
-	#define KEY_F7                 296
-	#define KEY_F8                 297
-	#define KEY_F9                 298
-	#define KEY_F10                299
-	#define KEY_F11                300
-	#define KEY_F12                301
-	#define KEY_F13                302
-	#define KEY_F14                303
-	#define KEY_F15                304
-	#define KEY_F16                305
-	#define KEY_F17                306
-	#define KEY_F18                307
-	#define KEY_F19                308
-	#define KEY_F20                309
-	#define KEY_KP_0               320
-	#define KEY_KP_1               321
-	#define KEY_KP_2               322
-	#define KEY_KP_3               323
-	#define KEY_KP_4               324
-	#define KEY_KP_5               325
-	#define KEY_KP_6               326
-	#define KEY_KP_7               327
-	#define KEY_KP_8               328
-	#define KEY_KP_9               329
-	#define KEY_KP_DECIMAL         330
-	#define KEY_KP_DIVIDE          331
-	#define KEY_KP_MULTIPLY        332
-	#define KEY_KP_SUBTRACT        333
-	#define KEY_KP_ADD             334
-	#define KEY_KP_ENTER          335
+	#define KEY_WORLD_1           161			// virtual keys (non-ascii)
+	#define KEY_WORLD_2           162
+	#define KEY_INSERT            260	
+	#define KEY_RIGHT             262
+	#define KEY_LEFT              263
+	#define KEY_DOWN              264
+	#define KEY_UP                265
+	#define KEY_PAGE_UP           266
+	#define KEY_PAGE_DOWN         267
+	#define KEY_HOME              268
+	#define KEY_END               269
+	#define KEY_CAPS_LOCK         280
+	#define KEY_SCROLL_LOCK       281
+	#define KEY_NUM_LOCK          282
+	#define KEY_PRINT_SCREEN      283
+	#define KEY_PAUSE             284
+	#define KEY_F1                290
+	#define KEY_F2                291
+	#define KEY_F3                292
+	#define KEY_F4                293
+	#define KEY_F5                294
+	#define KEY_F6                295
+	#define KEY_F7                296
+	#define KEY_F8                297
+	#define KEY_F9                298
+	#define KEY_F10               299
+	#define KEY_F11               300
+	#define KEY_F12               301
+	#define KEY_F13               302
+	#define KEY_F14               303
+	#define KEY_F15               304
+	#define KEY_F16               305
+	#define KEY_F17               306
+	#define KEY_F18               307
+	#define KEY_F19               308
+	#define KEY_F20               309
+	#define KEY_KP_0              320
+	#define KEY_KP_1              321
+	#define KEY_KP_2              322
+	#define KEY_KP_3              323
+	#define KEY_KP_4              324
+	#define KEY_KP_5              325
+	#define KEY_KP_6              326
+	#define KEY_KP_7              327
+	#define KEY_KP_8              328
+	#define KEY_KP_9              329
+	#define KEY_KP_DECIMAL        330
+	#define KEY_KP_DIVIDE         331
+	#define KEY_KP_MULTIPLY       332
+	#define KEY_KP_SUBTRACT       333
+	#define KEY_KP_ADD            334
+	#define KEY_KP_ENTER					335
 	#define KEY_KP_EQUAL          336
-	#define KEY_LEFT_SHIFT        340
-	#define KEY_LEFT_CONTROL      341
-	#define KEY_LEFT_ALT          342
-	#define KEY_LEFT_SUPER        343
-	#define KEY_RIGHT_SHIFT       344
-	#define KEY_RIGHT_CONTROL     345
-	#define KEY_RIGHT_ALT         346
-	#define KEY_RIGHT_SUPER       347
-	#define KEY_MENU              348
-	#define KMOD_SHIFT            0x0001
+	
+	#define KEY_MOD								400				// any key > 400 is a direct mod (press of a mod key)
+	#define KEY_LEFT_SHIFT				401
+	#define KEY_LEFT_CONTROL      402
+	#define KEY_LEFT_ALT          403
+	#define KEY_LEFT_SUPER        404
+	#define KEY_RIGHT_SHIFT       405
+	#define KEY_RIGHT_CONTROL     406
+	#define KEY_RIGHT_ALT         407
+	#define KEY_RIGHT_SUPER       408
+	#define KEY_MENU              409
+	#define KMOD_SHIFT            0x0001		// flags for mod keys
 	#define KMOD_CONTROL          0x0002
 	#define KMOD_ALT              0x0004
 	#define KMOD_SUPER            0x0008

@@ -405,9 +405,9 @@ LRESULT CALLBACK WinProc (HWND m_hWnd,
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN: {        
         const int scancode = (lParam >> 16) & 0xff;
-        const int key = sysTranslateKey(wParam, lParam);        
+        const int key = sysTranslateKey(wParam, lParam);             
         pApp->setMods( sysGetKeyMods() );
-        pApp->appSetKeyPress(key, true);
+        pApp->appSetKeyPress(key, true);        
         pApp->keyboard( key, AppEnum::BUTTON_PRESS, pApp->getMods(), pApp->getX(), pApp->getY());
         break;
     }

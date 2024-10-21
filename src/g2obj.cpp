@@ -12,6 +12,7 @@ g2Obj::g2Obj ()
   m_borderclr = Vec4F(0, 0, 0, 0);
   m_rounded = false;
   m_debug = false;
+  m_isModal = false;
 }
 
 // Common properties
@@ -19,7 +20,10 @@ g2Obj::g2Obj ()
 //
 void g2Obj::SetProperty ( std::string key, std::string val )
 {
-  if ( key.compare("backclr")==0 ) {
+  if (key.compare("opt") == 0) {
+    if (val.compare("modal")==0) m_isModal = true;
+
+  } else if ( key.compare("backclr")==0 ) {
     m_backclr = strToVec4 ( val, ',' );
 
   } else if ( key.compare("borderclr")==0 ) {

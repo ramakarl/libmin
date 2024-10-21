@@ -97,7 +97,49 @@ void g2Grid::UpdateLayout ( Vec4F p )
     }
 }
 
+bool g2Grid::FindParent ( g2Obj* obj, g2Obj*& parent, Vec3I& id )
+{
+  g2Obj* curr; 
+  for (int L = 0; L <= 1; L++) {
+    if (m_layout[L].active) {
+      for (int n = 0; n < m_layout[L].sections.size(); n++) {
+        curr = m_layout[L].sections[n];
+        if ( curr==0x0 ) continue;
+        if ( curr==obj ) {
+          parent = this;  
+          id.Set ( L, n, 0);
+          return true;
+        }
+        if (curr->FindParent(obj, parent, id ))
+          return true;        
+      }
+    }
+  }
+  return false;
+}
 
+g2Obj* g2Grid::getChild ( Vec3I id )
+{
+  int L = id.x; 
+  int n = id.y;
+  if ( n >= m_layout[L].sections.size() ) return 0x0;
+  return m_layout[L].sections[n];
+}
+
+int g2Grid::Traverse(std::vector<g2Obj*>& list)
+{
+  list.push_back ( this );
+  g2Obj* curr;
+  for (int L = 0; L <= 1; L++) {
+    if (m_layout[L].active) {
+      for (int n = 0; n < m_layout[L].sections.size(); n++) {
+        curr = m_layout[L].sections[n];
+        if (curr != 0x0) curr->Traverse ( list );
+      } 
+    }
+  }
+  return list.size();
+}
 
 void g2Grid::drawChildren ( uchar what, bool dbg )
 {
@@ -160,4 +202,44 @@ void g2Grid::drawForegrd (bool dbg)
     }
 
     drawChildren ( 'f', dbg );
+}
+
+bool g2Grid::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
+{
+  g2Obj* obj;
+  
+  // check all children first  
+  for (int L = 0; L <= 1; L++) {        // L = horizontal & vertical = {G_LX, G_LY}    
+    if (m_layout[L].active) {      
+      for (int n = 0; n < m_layout[L].sections.size(); n++) {     // sections of grid
+        obj = m_layout[L].sections[n];
+        if (obj != 0x0) {
+          if (obj->OnMouse ( button, state, mods, x, y ))
+            return true;
+        }
+      }
+    }      
+  }
+  // Modal grids capture mouse activity 
+  // - even if they do nothing with it, prevents underlying activity
+  if (m_isModal) {
+    if (state == AppEnum::BUTTON_PRESS) {      
+      if (x > m_pos.x && y > m_pos.y && x < m_pos.z && y < m_pos.w) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool g2Grid::OnMotion(AppEnum button, int x, int y, int dx, int dy)
+{
+  // Modal grids capture mouse activity 
+  // - even if they do nothing with it, prevents underlying activity
+  if (m_isModal) {    
+    if (x > m_pos.x && y > m_pos.y && x < m_pos.z && y < m_pos.w) {
+      return true;
+    }    
+  }
+  return false;
 }
