@@ -117,9 +117,8 @@ void g2Lib::LoadSpec ( std::string fname )
               // entry spec
               AddSpec( entry + " | is a | item");              
               AddSpec( entry + " | has | opt | editable");
-
               if (!item_backclr.empty())  AddSpec(entry + " | has | backclr | " + item_backclr);
-              if (!item_color.empty())    AddSpec(entry + " | has | color | " + item_color );
+              if (!item_color.empty())    AddSpec(entry + " | has | textclr | " + item_color );
               if (!item_style.empty())    AddSpec(entry + " | has | style | " + item_style);
               if (!iempty.empty())        AddSpec(entry + " | has | text empty | " + iempty );
             }

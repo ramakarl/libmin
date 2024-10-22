@@ -362,6 +362,7 @@ bool g2TextBox::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
   }
   return false;
 }
+
 bool g2TextBox::OnKeyboard (int key, AppEnum action, int mods, int x, int y)
 {
   if ( !m_isEditable ) return false;
@@ -372,25 +373,29 @@ bool g2TextBox::OnKeyboard (int key, AppEnum action, int mods, int x, int y)
   Vec2F sz;
   int dir;
   bool caught = false;
-  dbgprintf ( "key: %d, act: %d, mods: %d\n", (int) key, action, mods );
+  // dbgprintf ( "key: %d, act: %d, mods: %d\n", (int) key, action, mods );
 
   // handle key
   switch (key) {
   case 263: case 262:         // left/right
     dir = (key == 263) ? -1 : 1;
     if (mods == 1) {
-      if (m_selection.y==-1) m_selection.Set(m_edit_pos.x, m_edit_pos.x, 0, 0);
-      m_edit_pos.x += dir;
-      if (m_edit_pos.x <= m_selection.y)  m_selection.x = m_edit_pos.x;
-      else                                m_selection.y = m_edit_pos.x;
-      dbgprintf ("%d %d\n", int(m_selection.x), int(m_selection.y) );      
+      if (m_selection.y==-1) {
+        m_edit_pos.w = m_edit_pos.x;      // save selection start
+        m_selection.Set(m_edit_pos.x, m_edit_pos.x, 0, 0);
+      }      
+      m_edit_pos.x += dir;      
+      if (m_edit_pos.x < m_edit_pos.w)  m_selection.x = m_edit_pos.x;
+      else                              m_selection.y = m_edit_pos.x;      
     } else {
       m_selection.Set(-1,-1,0,0);
-      m_edit_pos.x += dir;
+      m_edit_pos.x += dir;      
     }    
+    caught = true;
     break;
   case 265: case 264:         // up/down
     dir = (key == 265) ? -1 : 1;
+    caught = true;
     break;
   case 268:                   // home
     if (mods==1) {
@@ -400,7 +405,8 @@ bool g2TextBox::OnKeyboard (int key, AppEnum action, int mods, int x, int y)
       m_selection.Set(-1, -1, 0, 0);
     }
     m_edit_pos.y = 0;
-    m_edit_pos.x = 0;          
+    m_edit_pos.x = 0;         
+    caught = true;
     break;
   case 269:                   // end
     if (mods == 1) {
@@ -410,6 +416,7 @@ bool g2TextBox::OnKeyboard (int key, AppEnum action, int mods, int x, int y)
       m_selection.Set(-1, -1, 0, 0);
     }
     m_edit_pos.x = m_text.length();
+    caught = true;
     break;  
   case 8:                     // backspace
     if (m_selection.y >= 0) {
@@ -420,6 +427,7 @@ bool g2TextBox::OnKeyboard (int key, AppEnum action, int mods, int x, int y)
       m_text = m_text.substr(0, m_edit_pos.x-1) + m_text.substr(m_edit_pos.x);    
       m_edit_pos.x--;
     }
+    caught = true;
     break;
   case 127:                   // delete
     if (m_selection.y >= 0) {
@@ -445,6 +453,7 @@ bool g2TextBox::OnKeyboard (int key, AppEnum action, int mods, int x, int y)
     caught = true;
     break;
   };
+
   // enable selection
   if (m_selection.y >= 0 && m_selection.x >= 0) {
     if (m_selection.x > m_selection.y) {int tmp = m_selection.y; m_selection.y = m_selection.x; m_selection.x = tmp; }
