@@ -31,7 +31,8 @@
         virtual bool OnKeyboard (int key, AppEnum action, int mods, int x, int y);
         virtual bool isEditable() { return m_isEditable; }
 
-        std::string getPrintedText(Vec4F& clr);
+        std::string   getPrintedText(Vec4F& clr);
+        void          UpdateCursor();
 
         void LayoutIcon ();
         void LayoutText ();

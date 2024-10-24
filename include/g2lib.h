@@ -21,7 +21,7 @@
 
     class GXAPI g2Lib {
     public:
-        g2Lib () { m_selected = 0x0; }
+        g2Lib () { m_selected = 0x0; m_keyboard = 0; }
 
         // Interaction (top-level)
         bool OnMouse ( AppEnum button, AppEnum state, int mods, int x, int y);
@@ -59,6 +59,8 @@
         // Layout & Render
         void LayoutAll ( Vec4F view, Vec4F region );
         void Render (int w, int h);
+        char getKeyboardRequest()   { return m_keyboard; }
+        void setKeyboard(char k)    { m_keyboard = k; }
 
     public:
         std::vector< g2Def >        m_objdefs;      // object specs
@@ -69,7 +71,8 @@
 
         std::vector<std::string>    m_spec;         // original spec (temporary)
                 
-        g2Obj*                      m_selected;
+        g2Obj*                      m_selected;     // selected object
+        char                        m_keyboard;     // keyboard request
     };
 
     // Global singleton

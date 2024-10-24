@@ -591,7 +591,7 @@ bool g2Lib::OnKeyboard(int key, AppEnum action, int mods, int x, int y)
   if (m_selected != 0x0) {
     
     // tab - advance to next editable entry field
-    if (key == KEY_TAB) {  
+    if (key == KEY_TAB || key == KEY_ENTER ) {  
       if (action == AppEnum::BUTTON_RELEASE) return false;
       int dir = (mods==1) ? -1 : 1;       // check for shift+tab
 

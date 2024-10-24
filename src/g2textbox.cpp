@@ -4,6 +4,7 @@
 #include "g2textbox.h"
 #include "g2lib.h"
 #include "gxlib.h"
+#include "event_system.h"
 
 using namespace glib;
 
@@ -314,7 +315,7 @@ void g2TextBox::drawForegrd ( bool dbg)
       drawText(Vec2F(int(m_text_pos.x + m_selection.z), m_text_pos.y), txt, Vec4F(1,1,1,1) );
     }
     // cursor  
-    drawFill ( Vec2F( int(m_text_pos.x+m_edit_pos.z), m_pos.y+5), Vec2F( int(m_text_pos.x + m_edit_pos.z)+2, m_pos.w-5), Vec4F(0,0,0,1));
+    drawFill ( Vec2F( int(m_text_pos.x+m_edit_pos.z)-1, m_pos.y+5), Vec2F( int(m_text_pos.x + m_edit_pos.z)+2, m_pos.w-5), Vec4F(1,1,1,1));
   }
  
 }
@@ -330,6 +331,8 @@ void g2TextBox::drawSelected(bool dbg)
   }
 }
 
+
+
 bool g2TextBox::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
 {
   g2Obj* obj;
@@ -341,9 +344,25 @@ bool g2TextBox::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
         
         // editable
         if (m_isEditable) {          
-          if (g2.m_selected != this) {              
-              m_edit_pos.x = m_text.length();   // set cursor
+          
+          // set cursor in text
+          if (m_text.length() > 0) {
+            Vec2F sz(0, 0);
+            int p = 0;
+            // identify char in text matching cursor x
+            std::string teststr = std::string(1, m_text.at(p));
+            for (; m_text_pos.x + sz.x < x && p < m_text.length(); p++) {
+              sz = getTextDim('p', m_text_size, teststr);        // check width
+              if (p < m_text.length()-1) teststr += std::string(1, m_text.at(p+1));  // add next char
+            }
+            m_edit_pos.x = p;
+            if (p >= m_text.length()) m_edit_pos.x = m_text.length();
+            UpdateCursor();
+          } else {
+            m_edit_pos.x = 0;
           }
+          // open keyboard
+          if (g2.m_selected != this) g2.m_keyboard = 'o';  
         }
         // make selected
         g2.m_selected = this;        
@@ -361,6 +380,28 @@ bool g2TextBox::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
     }
   }
   return false;
+}
+
+void g2TextBox::UpdateCursor ()
+{
+  Vec2F sz; 
+
+  // enable selection
+  if (m_selection.y >= 0 && m_selection.x >= 0) {
+    if (m_selection.x > m_selection.y) { int tmp = m_selection.y; m_selection.y = m_selection.x; m_selection.x = tmp; }
+    if (m_selection.x < 0) m_selection.x = 0;
+    if (m_selection.y > m_text.length()) m_selection.y = m_text.length();
+    sz = getTextDim('p', m_text_size, m_text.substr(0, m_selection.x));
+    m_selection.z = sz.x;
+    sz = getTextDim('p', m_text_size, m_text.substr(0, m_selection.y));
+    m_selection.w = sz.x;
+  }
+
+  // recalculate width & cursor
+  if (m_edit_pos.x < 0) m_edit_pos.x = 0;
+  if (m_edit_pos.x > m_text.length()) m_edit_pos.x = m_text.length();
+  sz = getTextDim('p', m_text_size, m_text.substr(0, m_edit_pos.x));
+  m_edit_pos.z = sz.x;      // cursor pos (in pixels)
 }
 
 bool g2TextBox::OnKeyboard (int key, AppEnum action, int mods, int x, int y)
@@ -454,22 +495,7 @@ bool g2TextBox::OnKeyboard (int key, AppEnum action, int mods, int x, int y)
     break;
   };
 
-  // enable selection
-  if (m_selection.y >= 0 && m_selection.x >= 0) {
-    if (m_selection.x > m_selection.y) {int tmp = m_selection.y; m_selection.y = m_selection.x; m_selection.x = tmp; }
-    if (m_selection.x < 0) m_selection.x = 0;    
-    if (m_selection.y > m_text.length() ) m_selection.y = m_text.length();
-    sz = getTextDim('p', m_text_size, m_text.substr(0, m_selection.x));
-    m_selection.z = sz.x;
-    sz = getTextDim('p', m_text_size, m_text.substr(0, m_selection.y));
-    m_selection.w = sz.x;
-  }
-
-  // recalculate width & cursor
-  if (m_edit_pos.x < 0) m_edit_pos.x = 0;
-  if (m_edit_pos.x > m_text.length() ) m_edit_pos.x = m_text.length();
-  sz = getTextDim('p', m_text_size, m_text.substr(0, m_edit_pos.x) );
-  m_edit_pos.z = sz.x;      // cursor pos (in pixels)
+  UpdateCursor();
  
   return caught;
 }

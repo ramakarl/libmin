@@ -557,7 +557,7 @@ void Application::appHandleEvent (guiEvent g)
             break;
         case AppEnum::SOFT_KEY_PRESS:
             appSetKeyPress( (int) g.xtarget, true);
-            keyboardchar( (uchar) g.xtarget, 0, 0, 0 );
+            keyboard ( (uchar) g.xtarget, AppEnum::BUTTON_PRESS, 0, m_mouseX, m_mouseY );
             break;
     }
   //  dbgprintf("Event: %d, b:%d,%d x:%f, y:%f, dx:%f, dy:%f\n", g.typeOrdinal, m_mouseButton, m_mouseState, m_mouseX, m_mouseY, m_dX, m_dY);
