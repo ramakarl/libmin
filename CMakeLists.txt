@@ -35,7 +35,6 @@ add_definitions ( -DLIBMIN_EXPORTS)		# we are building the libmin.dll. create ex
 add_definitions ( -DBUILD_PNG)			# always build PNG
 add_definitions ( -DBUILD_TIF)			# always build TIF
 
-
 _REQUIRE_GL ()
 
 _REQUIRE_GLEW ()	       
@@ -62,22 +61,27 @@ endif()
 
 OPTION (BUILD_CUDA "Build with CUDA" OFF)
 if (BUILD_CUDA) 
+
+        # enable_lanague(CUDA)
+	        
 	if (NOT CUDA_TOOLKIT_ROOT_DIR) 
 		set ( CUDA_TOOLKIT_ROOT_DIR "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2" CACHE PATH "CUDA Toolkit path")
 	endif()
 
-	find_package(CUDA)
-	if ( CUDA_FOUND )
-		message( STATUS "--> Using package CUDA (ver ${CUDA_VERSION})") 
+	find_package(CUDAToolkit)
+	if ( CUDAToolkit_FOUND )
+		message( STATUS "--> Using package CUDA (ver ${CUDAToolkit_VERSION})") 
 		add_definitions(-DUSE_CUDA)    
-		include_directories(${CUDA_TOOLKIT_INCLUDE})
-		LIST(APPEND LIBRARIES_OPTIMIZED ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} )
-		LIST(APPEND LIBRARIES_DEBUG ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} )
-		LIST(APPEND PACKAGE_SOURCE_FILES ${CUDA_TOOLKIT_INCLUDE} )
-		source_group(CUDA FILES ${CUDA_TOOLKIT_INCLUDE} ) 
+		include_directories(${CUDAToolkit_INCLUDE_DIRS})
+		LIST(APPEND LIBRARIES_OPTIMIZED ${CUDAToolkit_CUDA_LIBRARY} ${CUDAToolkit_CUDART_LIBRARY} )
+		LIST(APPEND LIBRARIES_DEBUG ${CUDAToolkit_CUDA_LIBRARY} ${CUDAToolkit_CUDART_LIBRARY} )
+		LIST(APPEND PACKAGE_SOURCE_FILES ${CUDAToolkit_INCLUDE_DIRS} )
+		source_group(CUDA FILES ${CUDAToolkit_INCLUDE_DIRS} ) 
 		if (USE_NVTX)
 		  add_definitions(-DUSE_NVTX)
 		endif()
+	        # set(CUDA_PTX_COMPILATION ON)
+		
 	else()
  		message ( FATAL_ERROR "---> Unable to find package CUDA")
 	endif()
@@ -165,18 +169,22 @@ set (_bin_path "${CMAKE_INSTALL_PREFIX}/bin/" )
 file (MAKE_DIRECTORY "${_inc_path}" )
 file (MAKE_DIRECTORY "${_bin_path}" )
 
+message ( STATUS "LIBEXT Root:   ${LIBEXT_ROOT}" )
+
 if (BUILD_OPENGL)
+	include_directories( "${LIBEXT_ROOT}/include" )
 	file (COPY "${LIBEXT_ROOT}/include/GL" DESTINATION ${_inc_path} )
 	file (COPY "${LIBEXT_ROOT}/include/GL/glew.c" DESTINATION ${_inc_path} )
 endif()
 if (BUILD_CUDA)
-    message ( STATUS "CUDA Files: ${CUDA_FILES}")
-	install ( FILES ${CUDA_FILES} DESTINATION ${_inc_path} )
+   message ( STATUS "CUDA Files: ${CUDA_FILES}")
+   install ( FILES ${CUDA_FILES} DESTINATION ${_inc_path} )
 endif()
 
 install ( FILES ${GLEW_FILES} DESTINATION ${_bin_path} )
 
 # header files
+message ( STATUS "Include files: ${LIBMIN_ROOT_INC} --> ${_inc_path}" )
 _INSTALL ( FILES ${INCLUDE_FILES} DESTINATION ${_inc_path} )
 
 # pdb & dlls (windows)

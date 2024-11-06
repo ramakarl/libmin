@@ -143,7 +143,7 @@
 			Vec3F getAxis()		{ return Vec3F(X,Y,Z); }
 
 			// Output this Quaternion to an euler angle (radians)
-			void toEuler(Vec3F& euler) const;
+			void toEuler(Vec3F& euler);
 
 			// Rotate a vector by this Quaternion
 			Vec3F rotateVec(Vec3F v);

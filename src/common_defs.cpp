@@ -307,8 +307,14 @@ void checkMem(xlong& total, xlong& used, xlong& app)
         }
 
     #elif defined(__linux__)
-        void checkGL(const char* msg, bool debug) {}
-        void checkMem(xlong& total, xlong& used, xlong& app) {}
+        void checkGL(const char* msg, bool debug) {
+	    GLenum errCode = 0;
+            errCode = glGetError();
+            if ( errCode != GL_NO_ERROR || debug ) {
+                const char* errString = glErrorString(errCode);
+                dbgprintf("GL: %s, code: %x (%s)\n", msg, errCode, errString );
+            }
+	}
 
     #elif defined(_WIN32)
 
@@ -322,6 +328,8 @@ void checkMem(xlong& total, xlong& used, xlong& app)
             }
         }
 
+    #endif
+    
     //-------------------------------------------- Texture interface
 
     //-- screen shader 
@@ -581,7 +589,6 @@ void checkMem(xlong& total, xlong& used, xlong& app)
 
     }
 
-    #endif
 
 #else
     //-- not using opengl

@@ -294,23 +294,23 @@ function ( _REQUIRE_CUDA use_cuda_default kernel_path)
         endif()        
         message( STATUS "  Searching for CUDA..") 
 
-        find_package(CUDA QUIET)
+        find_package(CUDAToolkit QUIET)
 
-        if ( CUDA_FOUND )
+        if ( CUDAToolkit_FOUND )
             ##########################################
             # Link CUDA
             #
 	        message( STATUS "  ---> Using package CUDA (ver ${CUDA_VERSION})") 
             add_definitions(-DBUILD_CUDA)    
 	        add_definitions(-DUSE_CUDA)    
-	        include_directories(${CUDA_TOOLKIT_INCLUDE})
-	        LIST(APPEND LIBRARIES_OPTIMIZED ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} )
-	        LIST(APPEND LIBRARIES_DEBUG ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} )
-	        LIST(APPEND PACKAGE_SOURCE_FILES ${CUDA_TOOLKIT_INCLUDE} )    
+	        include_directories(${CUDAToolkit_INCLUDE_DIRS})
+	        LIST(APPEND LIBRARIES_OPTIMIZED ${CUDAToolkit_CUDA_LIBRARY} ${CUDAToolkit_CUDART_LIBRARY} )
+	        LIST(APPEND LIBRARIES_DEBUG ${CUDAToolkit_CUDA_LIBRARY} ${CUDAToolkit_CUDART_LIBRARY} )
+	        LIST(APPEND PACKAGE_SOURCE_FILES ${CUDAToolkit_INCLUDE_DIRS} )    
             set(LIBRARIES_OPTIMIZED ${LIBRARIES_OPTIMIZED} PARENT_SCOPE)
             set(LIBRARIES_DEBUG ${LIBRARIES_DEBUG} PARENT_SCOPE)
             set(PACKAGE_SOURCE_FILES ${PACKAGE_SOURCE_FILES} PARENT_SCOPE)
-	        source_group(CUDA FILES ${CUDA_TOOLKIT_INCLUDE} ) 	        
+	        source_group(CUDA FILES ${CUDAToolkit_INCLUDE_DIRS} )
 
             ##########################################
             # Compile PTX Files
@@ -335,9 +335,9 @@ function ( _REQUIRE_CUDA use_cuda_default kernel_path)
             message ( STATUS "Requested CUDA arch: ${CUDA_ARCH}, code: ${CUDA_CODE}")             
             # parent cmake can specify: ADDITIONAL_CUDA_INCLUDES, CUDA_ARCH and CUDA_CODE
             if ( USE_DEBUG_PTX )
-	            _COMPILEPTX ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${CMAKE_CURRENT_SOURCE_DIR},${LIBMIN_INC_DIR},${ADDITIONAL_CUDA_INCLUDES}" OPTIONS --ptx -arch=${CUDA_ARCH} -code=${CUDA_CODE} -dc -Xptxas -v -G -g --use_fast_math --maxrregcount=32 )
+	            _COMPILEPTX ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${CMAKE_CURRENT_SOURCE_DIR},${LIBMIN_ROOT_INC},${ADDITIONAL_CUDA_INCLUDES}" OPTIONS --ptx -arch=${CUDA_ARCH} -code=${CUDA_CODE} -dc -Xptxas -v -G -g --use_fast_math --maxrregcount=32 )
             else()
-	            _COMPILEPTX ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${CMAKE_CURRENT_SOURCE_DIR},${LIBMIN_INC_DIR},${ADDITIONAL_CUDA_INCLUDES}" OPTIONS --ptx -arch=${CUDA_ARCH} -code=${CUDA_CODE} -dc -Xptxas -v -O3 --use_fast_math --maxrregcount=32 )
+	            _COMPILEPTX ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${CMAKE_CURRENT_SOURCE_DIR},${LIBMIN_ROOT_INC},${ADDITIONAL_CUDA_INCLUDES}" OPTIONS --ptx -arch=${CUDA_ARCH} -code=${CUDA_CODE} -dc -Xptxas -v -O3 --use_fast_math --maxrregcount=32 )
             endif()
             set (CUDA_FILES ${CUDA_FILES} PARENT_SCOPE)
             set (CUDA_PTX ${CUDA_PTX} PARENT_SCOPE)
@@ -377,66 +377,94 @@ FUNCTION( _COMPILEPTX )
   unset ( PTX_FILES_PATH CACHE )  
   
   if ( WIN32 ) 
-		# Windows - PTX compile
-		file ( MAKE_DIRECTORY "${_COMPILEPTX_TARGET_PATH}/Debug" )
-		file ( MAKE_DIRECTORY "${_COMPILEPTX_TARGET_PATH}/Release" )
-		string (REPLACE ";" " " _COMPILEPTX_OPTIONS "${_COMPILEPTX_OPTIONS}")  
-		separate_arguments( _OPTS WINDOWS_COMMAND "${_COMPILEPTX_OPTIONS}" )
-		message ( STATUS "NVCC Options: ${_COMPILEPTX_OPTIONS}" )  
-		message ( STATUS "NVCC Include: ${_COMPILEPTX_INCLUDE}" )
+
+     # Windows - PTX compile
+     #
+	file ( MAKE_DIRECTORY "${_COMPILEPTX_TARGET_PATH}/Debug" )
+	file ( MAKE_DIRECTORY "${_COMPILEPTX_TARGET_PATH}/Release" )
+	string (REPLACE ";" " " _COMPILEPTX_OPTIONS "${_COMPILEPTX_OPTIONS}")  
+	separate_arguments( _OPTS WINDOWS_COMMAND "${_COMPILEPTX_OPTIONS}" )
+	message ( STATUS "NVCC Options: ${_COMPILEPTX_OPTIONS}" )  
+	message ( STATUS "NVCC Include: ${_COMPILEPTX_INCLUDE}" )
 
         set ( INCL "-I\"${_COMPILEPTX_INCLUDE}\"" )
 
-		# Custom build rule to generate ptx files from cuda files
-		FOREACH( input ${_COMPILEPTX_SOURCES} )
-			get_filename_component( input_ext ${input} EXT )									# Input extension
-			get_filename_component( input_without_ext ${input} NAME_WE )						# Input base
-			if ( ${input_ext} STREQUAL ".cu" )			
+	# Custom build rule to generate ptx files from cuda files
+	FOREACH( input ${_COMPILEPTX_SOURCES} )
+		get_filename_component( input_ext ${input} EXT )									# Input extension
+		get_filename_component( input_without_ext ${input} NAME_WE )						# Input base
+		if ( ${input_ext} STREQUAL ".cu" )			
 				
-				# Set output names
-				set( output "${input_without_ext}.ptx" )							# Output name
-				set( output_with_path "${_COMPILEPTX_TARGET_PATH}/$(Configuration)/${input_without_ext}.ptx" )	# Output with path
-				set( output_with_quote "\"${output_with_path}\"" )
-				LIST( APPEND PTX_FILES ${output} )		# Append to output list
-				LIST( APPEND PTX_FILES_PATH ${output_with_path} )
+		# Set output names
+		set( output "${input_without_ext}.ptx" )							# Output name
+		set( output_with_path "${_COMPILEPTX_TARGET_PATH}/$(Configuration)/${input_without_ext}.ptx" )	# Output with path
+		set( output_with_quote "\"${output_with_path}\"" )
+		LIST( APPEND PTX_FILES ${output} )		# Append to output list
+		LIST( APPEND PTX_FILES_PATH ${output_with_path} )
     
-				message( STATUS "NVCC Compile: ${CUDA_NVCC_EXECUTABLE} ${MACHINE} --ptx ${_COMPILEPTX_OPTIONS} ${input} ${INCL} -o ${output_with_path} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}")
-    
-				add_custom_command(
-					OUTPUT  ${output_with_path}
-					MAIN_DEPENDENCY ${input}
-					COMMAND ${CUDA_NVCC_EXECUTABLE} ${MACHINE} --ptx ${_OPTS} ${input} ${INCL} -o ${output_with_quote} WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-				)			
-			endif()
-		ENDFOREACH( )
-  else ()
-		# Linux - PTX compile
-    file ( MAKE_DIRECTORY "${_COMPILEPTX_TARGET_PATH}" )
-    FOREACH(input ${_COMPILEPTX_SOURCES})
-      get_filename_component( input_ext ${input} EXT )									# Input extension
-      get_filename_component( input_without_ext ${input} NAME_WE )						# Input base
-      if ( ${input_ext} STREQUAL ".cu" )			
-        # Set output names
-        set( output "${input_without_ext}.ptx" ) # Output name
-        set( output_with_path "${_COMPILEPTX_TARGET_PATH}/${input_without_ext}.ptx" )	# Output with path
+		message( STATUS "NVCC Compile: ${CUDA_NVCC_EXECUTABLE} ${MACHINE} --ptx ${_COMPILEPTX_OPTIONS} ${input} ${INCL} -o ${output_with_path} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}")
+  
+		add_custom_command(
+			OUTPUT  ${output_with_path}
+			MAIN_DEPENDENCY ${input}
+			COMMAND ${CUDA_NVCC_EXECUTABLE} ${MACHINE} --ptx ${_OPTS} ${input} ${INCL} -o ${output_with_quote} WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+			)			
+		endif()
+	ENDFOREACH( )
 
-        set( compile_target_ptx "${input_without_ext}_PTX")
-        set( custom_command_var "${input_without_ext}_OUTPUT")
-        # compile ptx
-        cuda_compile_ptx(custom_command_var ${input} OPTIONS "${DEBUG_FLAGS}")
-        # This will only configure file generation, we need to add a target to
-        # generate a file cuda_generated_<counter>_${input_without_ext}.ptx
-        # Add custom command to rename to simply ${input_without_ext}.ptx
-        add_custom_command(OUTPUT ${output_with_path}
+  else ()
+    
+    # Linux - PTX compile
+    #    
+    if (CMAKE_CUDA_COMPILER)
+
+      message ( STATUS "NVCC INCLUDE: ${_COMPILEPTX_INCLUDE}" )
+      add_library ( PTX_FILES OBJECT ${_COMPILEPTX_SOURCES})
+      set_property (TARGET PTX_FILES PROPERTY CUDA_PTX_COMPILATION ON )
+      string (REPLACE "," ";" _COMPILEPTX_INCLUDE "${_COMPILEPTX_INCLUDE}")  
+      FOREACH(input ${_COMPILEPTX_SOURCES} )
+        get_filename_component( input_ext ${input} EXT )
+        get_filename_component( input_without_ext ${input} NAME_WE )
+        set( output "${input_without_ext}.ptx" )
+        set( output_with_path "${_COMPILEPTX_TARGET_PATH}/CMakeFiles/PTX_FILES.dir/source/${input_without_ext}.ptx" )
+        LIST(APPEND PTX_FILES ${output})
+        LIST(APPEND PTX_FILES_PATH ${output_with_path})
+      ENDFOREACH()
+      FOREACH(input ${_COMPILEPTX_INCLUDE})
+        message ( STATUS "  PTX INCLUDE: ${input}")
+        target_include_directories ( PTX_FILES PRIVATE ${input} )        
+      ENDFOREACH()
+
+    else()      
+
+      file ( MAKE_DIRECTORY "${_COMPILEPTX_TARGET_PATH}" )
+      FOREACH(input ${_COMPILEPTX_SOURCES})
+        get_filename_component( input_ext ${input} EXT )									# Input extension
+        get_filename_component( input_without_ext ${input} NAME_WE )						# Input base
+        if ( ${input_ext} STREQUAL ".cu" )			
+          # Set output names
+          set( output "${input_without_ext}.ptx" ) # Output name
+          set( output_with_path "${_COMPILEPTX_TARGET_PATH}/${input_without_ext}.ptx" )	# Output with path
+
+          set( compile_target_ptx "${input_without_ext}_PTX")
+          set( custom_command_var "${input_without_ext}_OUTPUT")
+          # compile ptx
+          cuda_compile_ptx(custom_command_var ${input} OPTIONS "${DEBUG_FLAGS}")
+          # This will only configure file generation, we need to add a target to
+          # generate a file cuda_generated_<counter>_${input_without_ext}.ptx
+          # Add custom command to rename to simply ${input_without_ext}.ptx
+          add_custom_command(OUTPUT ${output_with_path}
                           COMMAND ${CMAKE_COMMAND} -E rename ${custom_command_var} ${output_with_path}
                           DEPENDS ${custom_command_var})
-        add_custom_target(${compile_target_ptx} ALL DEPENDS ${input} ${output_with_path} SOURCES ${input})
+          add_custom_target(${compile_target_ptx} ALL DEPENDS ${input} ${output_with_path} SOURCES ${input})
 
-        # Add this output file to list of generated ptx files
-        LIST(APPEND PTX_FILES ${output})
-        LIST(APPEND PTX_FILES_PATH ${output_with_path} )
-      endif()
-    ENDFOREACH()
+          # Add this output file to list of generated ptx files  
+          LIST(APPEND PTX_FILES ${output})
+          LIST(APPEND PTX_FILES_PATH ${output_with_path} )
+        endif()
+      ENDFOREACH()
+    endif()
+
   endif()
 
   set( ${_COMPILEPTX_GENERATED} ${PTX_FILES} PARENT_SCOPE)
@@ -513,33 +541,23 @@ function( _INSTALL )
 
   file ( MAKE_DIRECTORY "${_INSTALL_DESTINATION}/" )
 
-  if ( WIN32 )      
-      # Windows - copy to desintation at post-build      
-      foreach (_file ${_INSTALL_FILES} )	
-          get_filename_component ( _path "${_file}" DIRECTORY )               
-          if ( "${_path}" STREQUAL "" )		   
-            set ( _fullpath "${_INSTALL_SOURCE}${_file}")            
-          else ()
-            set ( _fullpath "${_file}" )            
-          endif()
-          message ( STATUS "Install: ${_fullpath} -> ${_INSTALL_DESTINATION}" )
-          add_custom_command(
-             TARGET ${PROJNAME} POST_BUILD
-             COMMAND ${CMAKE_COMMAND} -E copy ${_fullpath} ${_INSTALL_DESTINATION}
-          )                   
- 	      list ( APPEND OUT_LIST "${_fullpath}" )
-      endforeach()    
-  else ()
-      # Linux 
-      if ( _INSTALL_SOURCE )	   
-	    foreach ( _file ${_INSTALL_FILES} )
-             list ( APPEND OUT_LIST "${_INSTALL_SOURCE}${_file}" )
-        endforeach()
-      else()
-	     list ( APPEND OUT_LIST ${_INSTALL_FILES} )
-      endif() 
-      install ( FILES ${OUT_LIST} DESTINATION ${_INSTALL_DESTINATION} )
-  endif( )
+  #-- POST-BUILD FILE COPY
+  #
+  foreach (_file ${_INSTALL_FILES} )	
+    get_filename_component ( _path "${_file}" DIRECTORY )               
+    if ( "${_path}" STREQUAL "" )		   
+      set ( _fullpath "${_INSTALL_SOURCE}${_file}")            
+    else ()
+      set ( _fullpath "${_file}" )            
+    endif()
+    message ( STATUS "Install: ${_fullpath} -> ${_INSTALL_DESTINATION}" )
+    add_custom_command(
+       TARGET ${PROJNAME} POST_BUILD
+       COMMAND ${CMAKE_COMMAND} -E copy ${_fullpath} ${_INSTALL_DESTINATION}
+    )                   
+    list ( APPEND OUT_LIST "${_fullpath}" )
+  endforeach()    
+  
   set ( ${_INSTALL_OUTPUT} ${OUT_LIST} PARENT_SCOPE )
    
 endfunction()
@@ -577,7 +595,7 @@ function( _INSTALL_PTX )
       get_filename_component ( _ptxbase ${_file} NAME_WE )
       string ( SUBSTRING ${_ptxbase} 27 -1 _ptxname )
       set ( _fixed "${_ptxpath}/${_ptxname}.ptx" )
-      add_custom_command ( TARGET ${PROJNAME} PRE_LINK
+      add_custom_command ( TARGET ${PROJNAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy  ${_file} ${_fixed}
         )      
       list ( APPEND PTX_FIXED ${_fixed} )
