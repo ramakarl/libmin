@@ -131,6 +131,7 @@
 		bool appCreateGL (const Application::ContextFlags *cflags, int& width, int& height);
 		bool appInitGL ();
 		void appRun();
+		bool appPollEvents ();
 		void appSwapBuffers();
 		void appPostRedisplay(int n=1) { m_renderCnt=n; }
 		void appResizeWindow ( int w, int h );

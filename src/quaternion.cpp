@@ -304,7 +304,7 @@ void Quaternion::toAngleAxis(f32& angle, Vec3F& axis) const
 }
 
 // Convert quaternion rotation to Euler (XYZ) angles
-inline void Quaternion::toEuler(Vec3F& euler) const
+void Quaternion::toEuler(Vec3F& euler)
 {
 	const f64 test = (X * Y + Z * W);
 

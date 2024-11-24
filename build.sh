@@ -1,8 +1,8 @@
 cmake CMakeLists.txt \
     -B../build/libmin \
-    -DBUILD_CUDA=false \
-    -DBUILD_OPENSSL=true \
-    -DBUILD_BCRYPT=true \
+    -DBUILD_CUDA=true \
+    -DBUILD_OPENSSL=false \
+    -DBUILD_BCRYPT=false \
     -DBUILD_OPENGL=true \
     -DBUILD_GLEW=true
 
