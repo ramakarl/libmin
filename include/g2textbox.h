@@ -27,6 +27,7 @@
         virtual void drawBorder (bool dbg);
         virtual void drawForegrd (bool dbg);
         virtual void drawSelected (bool dbg);
+        virtual void OnSelect(int x, int y);
         virtual bool OnMouse(AppEnum button, AppEnum state, int mods, int x, int y);
         virtual bool OnKeyboard (int key, AppEnum action, int mods, int x, int y);
         virtual bool isEditable() { return m_isEditable; }

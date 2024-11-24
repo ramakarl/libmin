@@ -307,7 +307,7 @@ void g2TextBox::drawForegrd ( bool dbg)
   drawLine ( Vec2F(area.x, (area.y+area.w)*0.5),  Vec2F(area.z, (area.y + area.w) * 0.5), Vec4F(1, 0.5, 0, 1));
   */
   
-  if (m_isEditable && g2.m_selected == this) {
+  if (m_isEditable && g2.getSelected() == this) {
     // selected text
     if (m_selection.y >= 0) {
       drawFill(Vec2F(int(m_text_pos.x + m_selection.z), m_pos.y + 5), Vec2F(int(m_text_pos.x + m_selection.w) + 2, m_pos.w - 5), Vec4F(0, 0, 0.4, 1));
@@ -331,6 +331,43 @@ void g2TextBox::drawSelected(bool dbg)
   }
 }
 
+void g2TextBox::OnSelect (int x, int y)
+{
+  // editable
+  if (m_isEditable) {
+
+    // set cursor in text
+    if (m_text.length() > 0) {
+      Vec2F sz(0, 0);
+      int p = 0;
+      // identify char in text matching cursor x
+      std::string teststr = std::string(1, m_text.at(p));
+      for (; m_text_pos.x + sz.x < x && p < m_text.length(); p++) {
+        sz = getTextDim('p', m_text_size, teststr);        // check width
+        if (p < m_text.length() - 1) teststr += std::string(1, m_text.at(p + 1));  // add next char
+      }
+      m_edit_pos.x = p;
+      if (p >= m_text.length()) m_edit_pos.x = m_text.length();
+      UpdateCursor();
+    }
+    else {
+      m_edit_pos.x = 0;
+    }
+    // open keyboard
+    if (g2.m_selected != this) g2.m_keyboard = 'o';
+  }  
+
+  // button action
+  if (m_isButton) {
+    if (m_button_toggleable) {
+      m_button_state = 1 - m_button_state;
+    }
+    else {
+      m_button_state = 120;      // deactivation countdown
+    }
+  }
+}
+
 
 
 bool g2TextBox::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
@@ -339,42 +376,11 @@ bool g2TextBox::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
 
   if ( m_isEditable || m_isButton ) {
     if (button==AppEnum::BUTTON_LEFT && state==AppEnum::BUTTON_PRESS) {
-      // select box
+      // select textbox
       if ( x > m_pos.x && y > m_pos.y && x < m_pos.z && y < m_pos.w ) {
-        
-        // editable
-        if (m_isEditable) {          
-          
-          // set cursor in text
-          if (m_text.length() > 0) {
-            Vec2F sz(0, 0);
-            int p = 0;
-            // identify char in text matching cursor x
-            std::string teststr = std::string(1, m_text.at(p));
-            for (; m_text_pos.x + sz.x < x && p < m_text.length(); p++) {
-              sz = getTextDim('p', m_text_size, teststr);        // check width
-              if (p < m_text.length()-1) teststr += std::string(1, m_text.at(p+1));  // add next char
-            }
-            m_edit_pos.x = p;
-            if (p >= m_text.length()) m_edit_pos.x = m_text.length();
-            UpdateCursor();
-          } else {
-            m_edit_pos.x = 0;
-          }
-          // open keyboard
-          if (g2.m_selected != this) g2.m_keyboard = 'o';  
-        }
-        // make selected
-        g2.m_selected = this;        
 
-        // button action
-        if (m_isButton) {
-          if (m_button_toggleable) {
-            m_button_state = 1-m_button_state;
-          } else {
-            m_button_state = 240;      // deactivation countdown
-          }
-        }
+        g2.OnSelect ( this, x, y );
+
         return true;
       }
     }

@@ -583,6 +583,13 @@ int getNextWrap(int curr, int dir, int siz)
   return next;
 }
 
+void g2Lib::OnSelect (g2Obj* obj, int x, int y)
+{
+  if (obj !=0x0 ) obj->OnSelect( x, y );
+
+  m_selected = obj;
+}
+
 bool g2Lib::OnKeyboard(int key, AppEnum action, int mods, int x, int y)
 {
   int sel, next;
@@ -607,12 +614,15 @@ bool g2Lib::OnKeyboard(int key, AppEnum action, int mods, int x, int y)
       for (next = getNextWrap(sel, dir, list.size()); !list[next]->isEditable() && next != sel; ) {
         next = getNextWrap(next, dir, list.size());
       }        
-      m_selected = 0x0;
-      if (next != sel ) m_selected = list[next];
+      if (next != sel) {
+        OnSelect (list[next], 0, 0);        
+      } else {
+        OnSelect (0x0, 0, 0);
+      }
       return true;
     }
 
-    // pass key to input item
+    // send key to selected item
     return m_selected->OnKeyboard ( key, action, mods, x, y );
   }
   return false;  

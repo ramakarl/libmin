@@ -27,6 +27,7 @@
         bool OnMouse ( AppEnum button, AppEnum state, int mods, int x, int y);
         bool OnMotion ( AppEnum button, int x, int y, int dx, int dy ); 
         bool OnKeyboard ( int key, AppEnum action, int mods, int x, int y);
+        void OnSelect ( g2Obj* obj, int x, int y );
         
         // Layout Spec
         void LoadSpec ( std::string fname );

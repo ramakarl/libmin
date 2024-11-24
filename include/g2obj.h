@@ -53,6 +53,7 @@
         virtual void drawBorder (bool dbg)  {};
         virtual void drawForegrd (bool dbg) {};      
         virtual void drawSelected (bool dbg) {};
+        virtual void OnSelect (int x, int y) {};
         virtual bool OnMouse(AppEnum button, AppEnum state, int mods, int x, int y) { return false; }
         virtual bool OnMotion(AppEnum button, int x, int y, int dx, int dy)         { return false; }
         virtual bool OnKeyboard(int  key, AppEnum action, int mods, int x, int y)   { return false; }
