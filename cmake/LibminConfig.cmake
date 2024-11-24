@@ -289,18 +289,18 @@ function ( _REQUIRE_CUDA use_cuda_default kernel_path)
     OPTION (BUILD_CUDA "Build with CUDA" ${use_cuda_default})
 
     if (BUILD_CUDA) 
-        if (NOT CUDA_TOOLKIT_ROOT_DIR) 
-	        set ( CUDA_TOOLKIT_ROOT_DIR "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2" CACHE PATH "CUDA Toolkit path")
+        
+        if (NOT CUDA_TOOLKIT_VERSION) 
+	        set ( CUDA_TOOLKIT_VERSION "10.2" CACHE PATH "CUDA Toolkit version")
         endif()        
         message( STATUS "  Searching for CUDA..") 
 
-        find_package(CUDAToolkit QUIET)
-
+        find_package(CUDAToolkit "${CUDA_TOOLKIT_VERSION}" REQUIRED EXACT QUIET)
         if ( CUDAToolkit_FOUND )
             ##########################################
             # Link CUDA
             #
-	        message( STATUS "  ---> Using package CUDA (ver ${CUDA_VERSION})") 
+	        message( STATUS "  ---> Using package CUDA (ver ${CUDAToolkit_VERSION})") 
             add_definitions(-DBUILD_CUDA)    
 	        add_definitions(-DUSE_CUDA)    
 	        include_directories(${CUDAToolkit_INCLUDE_DIRS})
@@ -402,7 +402,7 @@ FUNCTION( _COMPILEPTX )
 		LIST( APPEND PTX_FILES ${output} )		# Append to output list
 		LIST( APPEND PTX_FILES_PATH ${output_with_path} )
     
-		message( STATUS "NVCC Compile: ${CUDA_NVCC_EXECUTABLE} ${MACHINE} --ptx ${_COMPILEPTX_OPTIONS} ${input} ${INCL} -o ${output_with_path} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}")
+		message( STATUS "NVCC Compile: ${CUDA_NVCC_EXECUTABLE} --ptx ${_COMPILEPTX_OPTIONS} ${input} ${INCL} -o ${output_with_path} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}")
   
 		add_custom_command(
 			OUTPUT  ${output_with_path}

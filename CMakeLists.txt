@@ -63,12 +63,13 @@ OPTION (BUILD_CUDA "Build with CUDA" OFF)
 if (BUILD_CUDA) 
 
         # enable_lanague(CUDA)
-	        
-	if (NOT CUDA_TOOLKIT_ROOT_DIR) 
-		set ( CUDA_TOOLKIT_ROOT_DIR "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2" CACHE PATH "CUDA Toolkit path")
+	
+	# NOTE: When running cmake, use -T cuda=10.2, for cmake-gui specify a Configure time (clear cache)
+    if (NOT CUDA_TOOLKIT_VERSION) 
+		set ( CUDA_TOOLKIT_VERSION "10.2" )
 	endif()
-
-	find_package(CUDAToolkit)
+	
+	find_package(CUDAToolkit "${CUDA_TOOLKIT_VERSION}" REQUIRED EXACT)
 	if ( CUDAToolkit_FOUND )
 		message( STATUS "--> Using package CUDA (ver ${CUDAToolkit_VERSION})") 
 		add_definitions(-DUSE_CUDA)    
@@ -80,8 +81,7 @@ if (BUILD_CUDA)
 		if (USE_NVTX)
 		  add_definitions(-DUSE_NVTX)
 		endif()
-	        # set(CUDA_PTX_COMPILATION ON)
-		
+	    # set(CUDA_PTX_COMPILATION ON)		
 	else()
  		message ( FATAL_ERROR "---> Unable to find package CUDA")
 	endif()
@@ -133,6 +133,10 @@ if( WIN32 AND NOT GLUT_FOUND)
 endif()
 
 add_library (${PROJNAME} ${LIB_TYPE} ${ALL_SOURCE_FILES} ${CUDA_FILES} ${PTX_FILES} )
+
+if (BUILD_CUDA) 
+  target_link_libraries( ${PROJNAME} CUDA::cuda_driver)
+endif()
 
 # debug and relase libs
 set ( CMAKE_DEBUG_POSTFIX "d" CACHE STRING "" )
