@@ -389,6 +389,12 @@ FUNCTION( _COMPILEPTX )
 
         set ( INCL "-I\"${_COMPILEPTX_INCLUDE}\"" )
 
+    if (NOT DEFINED CUDA_NVCC_EXECUTABLE ) 
+        message ( "WARNING: CUDA_NVCC_EXECTUABLE is being set from CUDAToolkit." )
+        set (CUDA_NVCC_EXECUTABLE "${CUDAToolkit_NVCC_EXECUTABLE}")
+    endif()
+    message( STATUS "NVCC Executable: ${CUDA_NVCC_EXECUTABLE}" )
+
 	# Custom build rule to generate ptx files from cuda files
 	FOREACH( input ${_COMPILEPTX_SOURCES} )
 		get_filename_component( input_ext ${input} EXT )									# Input extension
@@ -400,14 +406,14 @@ FUNCTION( _COMPILEPTX )
 		set( output_with_path "${_COMPILEPTX_TARGET_PATH}/$(Configuration)/${input_without_ext}.ptx" )	# Output with path
 		set( output_with_quote "\"${output_with_path}\"" )
 		LIST( APPEND PTX_FILES ${output} )		# Append to output list
-		LIST( APPEND PTX_FILES_PATH ${output_with_path} )
-    
-		message( STATUS "NVCC Compile: ${CUDA_NVCC_EXECUTABLE} --ptx ${_COMPILEPTX_OPTIONS} ${input} ${INCL} -o ${output_with_path} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}")
+		LIST( APPEND PTX_FILES_PATH ${output_with_path} )    
+
+		message( STATUS "NVCC Compile: ${_COMPILEPTX_OPTIONS} ${input} ${INCL} -o ${output_with_path} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}")
   
 		add_custom_command(
 			OUTPUT  ${output_with_path}
 			MAIN_DEPENDENCY ${input}
-			COMMAND ${CUDA_NVCC_EXECUTABLE} ${MACHINE} --ptx ${_OPTS} ${input} ${INCL} -o ${output_with_quote} WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+			COMMAND ${CUDA_NVCC_EXECUTABLE} --ptx ${_OPTS} ${input} ${INCL} -o ${output_with_quote} WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 			)			
 		endif()
 	ENDFOREACH( )
