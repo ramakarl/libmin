@@ -301,10 +301,10 @@ void Camera3D::SetMatrices (const float* view_mtx, const float* proj_mtx, Vec3F 
 void Camera3D::updateProj ()
 {
 	// construct projection matrix  --- MATCHES OpenGL's gluPerspective function (DO NOT MODIFY)
-	float sy = (float) 1.0 / tan ( mFov * DEGtoRAD/2.0f );	
+	float sy = (float) tan ( mFov * DEGtoRAD/2.0f );	
 	proj_matrix = 0.0f;
-	proj_matrix(0,0) = sy / mAspect;				// matches OpenGL definition
-	proj_matrix(1,1) = sy;
+	proj_matrix(0,0) = 1.0 / (sy * mAspect);		// matches OpenGL definition
+	proj_matrix(1,1) = 1.0 / sy;
 	proj_matrix(2,2) = -(mFar + mNear)/(mFar - mNear);			// C
 	proj_matrix(2,3) = -(2.0f*mFar * mNear)/(mFar - mNear);		// D
 	proj_matrix(3,2) = -1.0f;
@@ -508,13 +508,13 @@ Vec3F Camera3D::inverseRayProj(float x, float y, float z)
 }
 
 Vec3F Camera3D::inverseRay (float x, float y, float xres, float yres, float z)
-{	
-	float sx = (float) tan ( mFov * DEGtoRAD/2.0f);
-	float sy = sx * yres / xres;
+{		
+	float sy = (float) tan(mFov * DEGtoRAD / 2.0f);
+	float sx = sy * mAspect;
 	float tu, tv;
 	tu = mTile.x + x * (mTile.z-mTile.x) / xres;		// *NOTE*. If mXres=0 you must call cam.setSize(w,h) with screen res.
 	tv = mTile.y + y * (mTile.w-mTile.y) / yres;
-	Vec4F pnt ( (tu-0.5f)*sx , (0.5f-tv)*sy, -z, 1 );
+	Vec4F pnt ( (tu-0.5f)*2.0*sx , (0.5f-tv)*2.0*sy, -z, 1 );
 	// x = 2*near/sx
 	// y = 2*near/sy;
 
@@ -524,7 +524,6 @@ Vec3F Camera3D::inverseRay (float x, float y, float xres, float yres, float z)
 
 	return pnt;
 }
-
 
 Vec4F Camera3D::project ( Vec3F& p, Matrix4F& vm )
 {

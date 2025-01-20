@@ -315,12 +315,12 @@ void DataPtr::Commit ()
       switch (mUseType) {
       case DT_UCHAR:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_R8,    mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_BYTE, mCpu );  break;
       case DT_USHORT: glTexImage2D ( GL_TEXTURE_2D, 0, GL_R16F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_SHORT,mCpu );  break;
-      case DT_INT:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_INT,  mCpu );  break;
-      case DT_UCHAR3:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGB,  GL_UNSIGNED_BYTE, mCpu );  break;
-	  case DT_USHORT3:glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB16I,	mUseRX, mUseRY, 0, GL_RGB,	GL_UNSIGNED_SHORT, mCpu );	break;
-      case DT_UCHAR4:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGBA,  GL_UNSIGNED_BYTE, mCpu );  break;
+      case DT_INT:    glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,   mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_INT,  mCpu );  break;
+      case DT_UCHAR3: glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGB,  GL_UNSIGNED_BYTE, mCpu );  break;
+	    case DT_USHORT3:glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGB16I,	mUseRX, mUseRY, 0, GL_RGB,	GL_UNSIGNED_SHORT, mCpu );	break;
+      case DT_UCHAR4: glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA8,  mUseRX, mUseRY, 0, GL_RGBA,  GL_UNSIGNED_BYTE, mCpu );  break;
       case DT_FLOAT:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,  mUseRX, mUseRY, 0, GL_RED,  GL_FLOAT, mCpu);      break;
-      case DT_FLOAT4:  glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA32F, mUseRX, mUseRY, 0, GL_RGBA,  GL_FLOAT, mCpu);    break;
+      case DT_FLOAT4: glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA32F, mUseRX, mUseRY, 0, GL_RGBA,  GL_FLOAT, mCpu);    break;
       };
 	  #ifdef USE_CUDA
         if (mUseFlags & DT_CUINTEROP) {

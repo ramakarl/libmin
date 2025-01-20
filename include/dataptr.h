@@ -114,7 +114,7 @@
 		bool			bCpu=false, bGpu=false;
 		char*			mCpu=NULL;
 		
-		int				mGLID=0;				// OpenGL
+		int				mGLID=-1;						// OpenGL
 
 		#ifdef USE_CUDA
 		  // CUDA data storage

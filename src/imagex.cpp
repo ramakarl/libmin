@@ -98,8 +98,8 @@ void ImageX::Commit ( uchar use_flags )
 {	
 	if (use_flags == 0) use_flags = m_UseFlags;
 	if ( !(use_flags & DT_GLTEX) ) use_flags |= DT_GLTEX;
-	SetUsage ( use_flags );			// reserves GLID
-	m_Pix.Commit();							// assumes allocated on gpu
+	SetUsage ( use_flags );			// reserves GLID - this already does commit. See m_Pix.UpdateUsage
+	//m_Pix.Commit();							// assumes allocated on gpu
 }
 void ImageX::Map()
 {

@@ -235,6 +235,16 @@
 		void TransferData ( char* buf );					// Copy data from external source. Size & format must already be set.
 		void SetFormatFunc ()					{ SetFormatFunc ( mFmt ); }
 		void SetFormatFunc ( ImageOp::Format eFormat );
+		void SetDirtyRegion ( Vec4F dr )		{ 
+			if (dr.x<0) dr.x=0;
+			if (dr.y<0) dr.y=0;
+			if (dr.x >= mXres) dr.x = mXres - 1;
+			if (dr.y >= mYres) dr.y = mYres - 1;
+			if (dr.z>=mXres) dr.z = mXres-1;
+			if (dr.w>=mYres) dr.w = mYres-1;
+			mDirtyRegion = dr; 
+		}
+		Vec4F getDirtyRegion ()							{ return mDirtyRegion; }
 
 	private:
 		// Pixel accessors
@@ -266,6 +276,8 @@
 		unsigned char		mBitsPerPix;			// BPP = Bits-per-Pixel
 		unsigned long		mBytesPerRow;			// Bytes per Row = BPP*Xres >> 3. Size = mBPP*Xres*Yres >> 3
 		bool						mAutocommit;			// Automatically update on GPU after each func
+
+		Vec4F						mDirtyRegion;
 	
 		int							mXres, mYres;			// Image Resolution
 
