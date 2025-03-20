@@ -65,14 +65,15 @@
 	HELPAPI bool strToVec3(std::string& str, uchar lsep, uchar insep, uchar rsep, float* vec);
 	HELPAPI bool strToVec4(std::string& str, uchar lsep, uchar insep, uchar rsep, float* vec);
 	HELPAPI Vec3F strToVec3(std::string str, uchar sep);
-	HELPAPI Vec4F strToVec4(std::string str, uchar sep);	
+	HELPAPI Vec4F strToVec4(std::string str, uchar sep);		
 	HELPAPI std::string vecToStr ( Vec4F v );
 
 	//----------- Boolean returns
 	
 	HELPAPI bool		strSplit ( std::string str, std::string sep, std::string& left, std::string& right );		// "left,right" --> left="left", right="right", str=unchanged
 	HELPAPI bool		strSplitLeft(std::string str, std::string sep, std::string& key, std::string& val);			// "left,right" --> key="left", val="right", str=unchanged
-	HELPAPI bool		strParseOut(std::string str, std::string lsep, std::string rsep, std::string& value, std::string& remain); // "data<1492> | time", <> --> result 1492, str="date | time"
+	HELPAPI bool		strParseOutDelim(std::string str, std::string lsep, std::string rsep, std::string& value, std::string& remain); // "data<1492> | time", <> --> result 1492, str="date | time"
+	HELPAPI	bool		strParseOutStr(std::string str, std::string lstr, std::string rstr, std::string& value, std::string& remain);
 	HELPAPI bool		strParseChars(std::string str, std::string lsep, std::string& value, std::string& remain);
 	HELPAPI bool		strParseKeyVal(std::string& str, uchar lsep, uchar rsep, std::string& key, std::string& val); // "obj<car>,more" --> key="obj", val="car", str="more"
 	HELPAPI bool		strFileSplit(std::string str, std::string& path, std::string& name, std::string& ext);
@@ -81,7 +82,7 @@
 	//----------- String returns	
 	HELPAPI std::string strSplitLeft ( std::string& str, std::string sep );											// "left,right" --> return "left", str="right"
 	HELPAPI std::string strSplitRight ( std::string& str, std::string sep );										// "left,right" --> return "right", str="left"	
-	HELPAPI std::string strParseOut(std::string& str, std::string lsep, std::string rsep = " ");					// "data<1492> | time", <> --> return 1492, str="date | time"
+	HELPAPI std::string strParseOutDelim (std::string& str, std::string lsep, std::string rsep = " ");					// "data<1492> | time", <> --> return 1492, str="date | time"
 
 
 	//----------- original api

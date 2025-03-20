@@ -130,6 +130,7 @@
 		bool LoadIncremental(char* filename);
 		ImageOp::FormatStatus LoadNextRow();
 		bool Save(char* filename);								// Save Image
+		void SetupFormats();
 
 		//--- format-specific load/save (not supported)
 		//bool LoadPng ( char* fname, bool bGrey=false );
@@ -172,9 +173,12 @@
         ImageX* CopyNew ();						// Create new ImageX by direct copy of this one.
 				
 		// Pixel Operations
-		inline Vec4F     GetPixel ( int x, int y )								{ Vec4F c;  (this->*m_getPixelFunc) (x,y, c); return c; }
-		inline Vec4F     GetPixelUV ( float u, float v )					{ Vec4F c;  (this->*m_getPixelFunc) ( int(u*(mXres-1)), int(v*(mYres-1)), c); return c; }			
-		Vec4F			 GetPixelFilteredUV (float x, float y);		
+		inline Vec4F   GetPixel ( int x, int y )								{ Vec4F c;  (this->*m_getPixelFunc) (x,y, c); return c; }
+		inline Vec4F   GetPixelUV ( float u, float v )					{ Vec4F c;  (this->*m_getPixelFunc) ( int(u*(mXres-1)), int(v*(mYres-1)), c); return c; }			
+		Vec4F					 GetPixelFilteredUV (float x, float y);		
+		void					 Dot (int x, int y, float r, Vec4F c );
+		void					 Line (float x0, float y0, float x1, float y1, Vec4F c );
+		void		       BlendPixel  ( int x, int y, Vec4F c, float alpha);
 		inline void		 SetPixel  ( int x, int y, Vec4F c )			{ (this->*m_setPixelFunc) (x,y, c); }
 		inline void		 SetPixelF ( int x, int y, float v )			{ *			(((float*) m_Pix.mCpu) + (y*mXres+x)) = v; }
 		inline float	 GetPixelF ( int x, int y )								{ return *	(((float*) m_Pix.mCpu) + (y*mXres+x)); }
@@ -205,7 +209,6 @@
 			mFmt = ef; 
 			mBitsPerPix = GetBitsPerPix ( ef );
 			mBytesPerRow = GetBytesPerRow ( x, ef );
-				
 		}		
 
 		void SetFilter ( ImageOp::Filter ef );

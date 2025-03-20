@@ -133,7 +133,7 @@
 			#define SEC_SCALAR        1000000000i64
 			#define MIN_SCALAR       60000000000i64
 			#define HR_SCALAR      3600000000000i64
-			#define	DAY_SCALAR    86400000000000i64
+			#define	DAY_SCALAR    86400000000000i64			
 			#define F_YEAR_MULT   33177600i64
 			#define F_MONTH_MULT  2764800i64
 			#define F_DAY_MULT    86400i64
@@ -180,9 +180,11 @@
 		
 			// Set time or date
 			bool SetTime ( int sec );									// Set seconds
-			bool SetTime ( int sec, int msec );							// Set seconds, msecs				
+			bool SetTime ( int sec, int msec );				// Set seconds, msecs				
 			bool SetTime ( TimeX& t )	{ m_CurrTime = t.GetSJT(); return true;} // Set to another Time object				
-			bool SetTime ( std::string line );							// Set time from string (hr,min,sec)
+			bool SetTime ( std::string line );				// Set time from string (hr,min,sec)
+			void ClearTime ();												// Clear time to 00:00:00 while keeping date
+			bool isSameDay(TimeX& op);								// Check if two TimeX datetimes have the same date (day).
 
 			void SetSystemTime ();										// Set date/time to system clock		
 			void SetTimeNSec ();
@@ -204,6 +206,7 @@
 			void GetTime (int& sec, int& msec, int& nsec );
 			void GetTime (int& hr, int& min, int& m, int& d, int& y);				
 			void GetTime (int& hr, int& min, int& m, int& d, int& y, int& s, int& ms, int& ns);
+			double GetDays();
 			double GetSec ();
 			double GetMSec ();
 			
@@ -260,6 +263,7 @@
 			// Elapsed Times
 			float GetElapsedSec ( TimeX& base );
 			float GetElapsedMSec ( TimeX& base );
+			float GetElapsedMin (TimeX& base);
 			float GetElapsedDays ( TimeX& base );		
 			float GetElapsedWeeks ( TimeX& base );
 			float GetElapsedMonths ( TimeX& base );

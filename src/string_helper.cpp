@@ -394,29 +394,47 @@ bool strFileSplit ( std::string str, std::string& path, std::string& name, std::
 // - this func CONSUMES (removes) both the left and right separators
 // e.g. "[MATERIAL] Basic" --> value "MATERIAL", remain="Basic"
 
-std::string strParseOut ( std::string& str, std::string lsep, std::string rsep )
+std::string strParseOutDelim ( std::string& str, std::string lsep, std::string rsep )
 {
   std::string value, remain;
-  strParseOut ( str, lsep, rsep, value, remain);
+  strParseOutDelim ( str, lsep, rsep, value, remain);
   str = remain;
   return value;
 }
-bool strParseOut ( std::string str, std::string lsep, std::string rsep, std::string& value, std::string& remain)
+bool strParseOutDelim ( std::string str, std::string lseps, std::string rseps, std::string& value, std::string& remain)
 {
   size_t f1, fL, fR;
   value = "";
   remain = str;
 
-  f1 = str.find_first_of ( lsep );              // find separators
+  f1 = str.find_first_of ( lseps );              // find separators
   if ( f1 == std::string::npos) return false;
-  fR = str.find_first_of ( rsep, f1 );
+  fR = str.find_first_of ( rseps, f1+1 );
   if ( fR == std::string::npos ) return false;
 
-  fL = f1 + lsep.length();
+  fL = f1 + 1;                                    // separators are single chars
   value = str.substr ( fL, fR-fL );
   remain = str.substr ( 0, f1 ) + str.substr ( fR+1 );  // parse away the separators
   return true;
 }
+
+bool strParseOutStr (std::string str, std::string lstr, std::string rstr, std::string& value, std::string& remain)
+{
+  size_t f1, fL, fR;
+  value = "";
+  remain = str;
+
+  f1 = str.find (lstr);              // find separators
+  if (f1 == std::string::npos) return false;
+  fR = str.find (rstr, f1 + lstr.length() );
+  if (fR == std::string::npos) return false;
+
+  fL = f1 + lstr.length();
+  value = str.substr(fL, fR - fL);
+  remain = str.substr(0, f1) + str.substr(fR);  // parse away the separators
+  return true;
+}
+
 
 // Parse chars
 // - parse any number of alpha-numeric chars starting at lsep. 
@@ -689,21 +707,10 @@ std::string strTrim(std::string str)
 
 std::string strTrim ( std::string str, std::string charlist )
 {
-  size_t found1 = str.find_first_not_of ( charlist );
-  size_t found2;
-  if ( found1 != std::string::npos ) {
-    str = str.substr ( found1 );
-    found2 = str.find_last_not_of ( charlist );
-    if ( found2 != std::string::npos )
-      str = str.substr ( 0, found2+1 );
-  } else {
-    found2 = str.find_last_not_of ( charlist );
-    if ( found2 != std::string::npos )
-      str = str.substr ( 0, found2+1 );
-    else
-      str = "";
-  }
-  return str;
+  size_t lft = str.find_first_not_of ( charlist );
+  size_t rgt = str.find_last_not_of ( charlist );
+  if ( lft == std::string::npos || rgt == std::string::npos) return "";
+  return str.substr(lft, rgt - lft + 1);
 }
 
 

@@ -493,6 +493,20 @@
 		return true;
 	}
 
+	void TimeX::ClearTime()
+	{
+		// clear time to 00:00:00 while keep date, ie. goto start of day
+		m_CurrTime = sjtime(m_CurrTime / DAY_SCALAR) * DAY_SCALAR; 
+	}
+
+	bool TimeX::isSameDay (TimeX& op)
+	{
+		sjtime mjd1 = sjtime(m_CurrTime / DAY_SCALAR) * DAY_SCALAR;			// modified julian date for self
+		sjtime mjd2 = sjtime(op.m_CurrTime / DAY_SCALAR) * DAY_SCALAR;	// modified julian date for op
+		return (mjd1==mjd2);
+	}
+
+
 	// Convert the given float storage (f) back to month/day/year
 	void TimeX::GetDateF ( float f, int& m, int& d, int& y )
 	{
@@ -577,14 +591,25 @@
 		return float( sjtime(m_CurrTime - base.GetSJT() ) ) / sjtime( SEC_SCALAR );
 	}
 
+
 	float TimeX::GetElapsedMSec ( TimeX& base )
 	{
 		return float( sjtime(m_CurrTime - base.GetSJT() ) ) / sjtime( MSEC_SCALAR );
 	}
+	float TimeX::GetElapsedMin (TimeX& base)
+	{
+		return float(sjtime(m_CurrTime - base.GetSJT())) / sjtime(MIN_SCALAR);
+	}
 	
 	float TimeX::GetElapsedDays ( TimeX& base )
 	{
-		return float( sjtime(m_CurrTime - base.GetSJT() ) ) / sjtime( DAY_SCALAR );
+    // accurate method
+		float UT1 = float(base.GetSJT() % sjtime(DAY_SCALAR)) / DAY_SCALAR;		
+		sjtime MJ1 = sjtime(base.GetSJT() / DAY_SCALAR);
+		float UT2 = float(m_CurrTime % sjtime(DAY_SCALAR)) / DAY_SCALAR;
+		sjtime MJ2 = sjtime(m_CurrTime / DAY_SCALAR);
+		
+		return (MJ2 - MJ1) - UT1 + UT2;			// # full days - unused part of first day + used part of last day
 	}
 
 	float TimeX::GetElapsedWeeks ( TimeX& base )
@@ -809,12 +834,15 @@
 
 	double TimeX::GetSec ()
 	{
-		return (double) (m_CurrTime / SEC_SCALAR);
+		return ((double) m_CurrTime) / SEC_SCALAR;
 	}
-
+	double TimeX::GetDays ()
+	{
+		return ((double) m_CurrTime) / DAY_SCALAR;
+	}
 	double TimeX::GetMSec ()
 	{
-		return (double) (m_CurrTime / MSEC_SCALAR);
+		return ((double) m_CurrTime) / MSEC_SCALAR;
 
 		//int s, ms, ns;
 		//GetTime ( s, ms, ns );

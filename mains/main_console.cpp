@@ -9,7 +9,7 @@
 #include <fstream>
 #include <algorithm>
 #include <string>
-#include "nv_gui.h"
+#include "gxlib.h"
 #include "main.h"
 
 // console app includes 
@@ -146,7 +146,7 @@ void Application::appForegroundWindow()              {};
 void Application::appMaximize()  {};
 void Application::appMinimize()  {};
 void Application::appRestore()   {};
-void Application::appPostQuit()  {};
+void Application::appQuit()  {};
 void Application::appSetVSync(bool state)  {};
 bool Application::appStopWindow ()   {return false;};
 

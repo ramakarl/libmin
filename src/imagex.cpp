@@ -658,20 +658,25 @@ bool ImageX::Load (char* filename, char* alphaname )
 	return true;
 }*/
 
+void ImageX::SetupFormats()
+{
+	if (gImageFormats.size() == 0) {
+		addImageFormat(new CImageFormatPng);
+		addImageFormat(new CImageFormatTiff);
+		addImageFormat(new CImageFormatTga);
+		#ifdef BUILD_JPG	
+				addImageFormat(new CImageFormatJpg);
+		#endif
+	}
+}
+
 bool ImageX::Load ( std::string filename, std::string& errmsg)
 {	
 	char ffull[2048];
 	strncpy ( ffull, filename.c_str(), 2048 );
 
-	// Add default formats
-	if ( gImageFormats.size()==0) {
-		addImageFormat ( new CImageFormatPng );
-		addImageFormat ( new CImageFormatTiff );
-		addImageFormat ( new CImageFormatTga );
-		#ifdef BUILD_JPG	
-			addImageFormat ( new CImageFormatJpg );
-		#endif
-	}
+	// Setup Formats
+	SetupFormats();
 	
 	// Read magic bytes (first 4 bytes)
 	// JPG: if ((magic[0] == 0xD8 && magic[1] == 0xFF) || (magic[1] == 0xD8 && magic[0] == 0xFF)) 
@@ -730,10 +735,14 @@ bool ImageX::Load ( std::string filename, std::string& errmsg)
 	return true;
 }
 
+
 bool ImageX::Save (char *filename)
 {
 	std::string fname = filename;
 	std::string fext = fname.substr ( fname.length()-3, 3 );
+
+	// Setup Formats
+	SetupFormats ();
 
 	// Try to save with each format
 	bool saved = false;
@@ -946,6 +955,78 @@ void ImageX::Fill (float r, float g, float b, float a)
 			SetPixel ( x, y, c);
 
 	if (mAutocommit) Commit();
+}
+
+void ImageX::Dot(int x, int y, float r, Vec4F c)
+{
+	float dist, alpha;
+	int ri = int(r);
+	if (x < r || y < r || x > mXres-r || y > mYres-r) return;
+
+	for (int i=-ri; i <= ri; i++ ) {
+		for (int j = -ri; j <= ri; j++) {
+			dist = sqrt(float(i*i)+float(j*j));
+			if (dist > r+1) continue;
+			alpha = (dist < r) ? 1.0 : r + 1 - dist;
+			alpha = fmax(0.0f, fmin(1.0f, alpha));
+			BlendPixel( x+i, y+j, c, alpha);
+		}
+	}
+}
+
+void swap(float* a, float* b)
+{
+	float temp = *a;
+	*a = *b;
+	*b = temp;
+}
+int roundn (float x) { 	return int(x + 0.5); }
+float fracn(float x) 
+{
+	if (x > 0) return x - int(x);
+	else return x - (int(x) + 1);
+}
+
+// Xiaolin Wu line algorithm - anti-aliased 
+//
+void ImageX::Line (float x0, float y0, float x1, float y1, Vec4F c)
+{	
+	int steep = fabs(y1 - y0) > fabs(x1 - x0);
+
+	if (steep)		{ swap(&x0, &y0);	swap(&x1, &y1);	}
+	if (x0 > x1)	{	swap(&x0, &x1);	swap(&y0, &y1);	}
+
+	// compute the slope
+	float dx = x1 - x0;
+	float dy = y1 - y0;
+	float gradient = (dx==0.0) ? 1 : dy / dx;
+	int xpxl1 = x0;
+	int xpxl2 = x1;
+	float intersectY = y0;
+
+	// main loop
+	if (steep) {
+		int x;
+		for (x = xpxl1; x <= xpxl2; x++)	{				
+			BlendPixel ( int(intersectY),   x, c, 1.0-fracn(intersectY) );
+			BlendPixel ( int(intersectY)+1, x, c, fracn(intersectY) );
+			intersectY += gradient;
+		}
+	}	else {
+		int x;
+		for (x = xpxl1; x <= xpxl2; x++) {
+			BlendPixel (x, int(intersectY), c, 1.0-fracn(intersectY) );
+			BlendPixel (x, int(intersectY)+1, c, fracn(intersectY) );
+			intersectY += gradient;
+		}
+	}
+}
+
+void ImageX::BlendPixel(int x, int y, Vec4F c, float alpha)
+{
+	Vec4F px;
+	(this->*m_getPixelFunc) (x, y, px);	
+	(this->*m_setPixelFunc) (x, y, c * alpha + px * (1-alpha) );
 }
 
 

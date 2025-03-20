@@ -678,11 +678,14 @@
 		Vec8S()								{ x=0;y=0;z=0;w=0;x2=0;y2=0;z2=0;w2=0; }		
 		Vec8S(VTYPE c0, VTYPE c1, VTYPE op)	{ x=c0; y=op;z=op;w=op; x2=c1; y2=op;z2=op;w2=op; }
 		Vec8S(VTYPE op)						{  for (int i=0; i<8; i++) ((VTYPE*) &x)[i] = op; }
-		Vec8S(const Vec4F& c, VTYPE op)  { x=c.x; y=c.y; z=c.z; w=c.w; x2=op;y2=op;z2=op;w2=op; }
+		Vec8S(const Vec4F& c, VTYPE op)		{ x=c.x; y=c.y; z=c.z; w=c.w; x2=op;y2=op;z2=op;w2=op; }	
+		Vec8S(const Vec4F& c)							{ x = c.x; y = c.y; z = c.z; w = c.w; x2 = 0; y2 = 0; z2 = 0; w2 = 0; }
 
 		Vec8S& Set (VTYPE op)				{ x=op;y=op;z=op;w=op;x2=op;y2=op;z2=op;w2=op; return *this;}
 		Vec8S& Set (int i, VTYPE op)			{ ((VTYPE*) &x)[i] = op; return *this;}
 		
+		Vec8S& operator= (const Vec4F& op)  { x=op.x; y=op.y; z=op.z; w=op.w; x2=0;y2=0;z2=0;w2=0; return *this;}
+
 		Vec8S &operator= (const int op)			{ for (int i=0; i<8; i++) ((VTYPE*) &x)[i] = op; return *this;}
 		Vec8S &operator= (const Vec8S &op)	{ for (int i=0; i<8; i++) ((VTYPE*) &x)[i] = ((VTYPE*) &op.x)[i]; return *this;}
 		Vec8S &operator+= (const Vec8S &op)	{ for (int i=0; i<8; i++) ((VTYPE*) &x)[i] += ((VTYPE*) &op.x)[i]; return *this;}
