@@ -388,6 +388,18 @@ bool strFileSplit ( std::string str, std::string& path, std::string& name, std::
 }
 
 
+// get cmd line argument
+bool strArg(int argc, char** argv, const char* chk_arg, std::string& val)
+{
+  std::string value = "";
+  for (int i = 1; i < argc; ++i) {
+    if (strcmp(argv[i], chk_arg) == 0) {
+      if (i + 1 < argc) val = argv[i + 1];
+      return true;
+    }
+  }
+  return false;
+}
 
 // Parse out
 // - parse a value out of a string, keeping remainder (left & right) intact

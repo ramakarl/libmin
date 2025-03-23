@@ -69,7 +69,7 @@
 	HELPAPI std::string vecToStr ( Vec4F v );
 
 	//----------- Boolean returns
-	
+	HELPAPI bool		strArg (int argc, char** argv, const char* chk_arg, std::string& val);
 	HELPAPI bool		strSplit ( std::string str, std::string sep, std::string& left, std::string& right );		// "left,right" --> left="left", right="right", str=unchanged
 	HELPAPI bool		strSplitLeft(std::string str, std::string sep, std::string& key, std::string& val);			// "left,right" --> key="left", val="right", str=unchanged
 	HELPAPI bool		strParseOutDelim(std::string str, std::string lsep, std::string rsep, std::string& value, std::string& remain); // "data<1492> | time", <> --> result 1492, str="date | time"
@@ -83,7 +83,6 @@
 	HELPAPI std::string strSplitLeft ( std::string& str, std::string sep );											// "left,right" --> return "left", str="right"
 	HELPAPI std::string strSplitRight ( std::string& str, std::string sep );										// "left,right" --> return "right", str="left"	
 	HELPAPI std::string strParseOutDelim (std::string& str, std::string lsep, std::string rsep = " ");					// "data<1492> | time", <> --> return 1492, str="date | time"
-
 
 	//----------- original api
 	HELPAPI std::string strParse ( std::string str, std::string lstr, std::string rstr, std::string lsep, std::string rsep );

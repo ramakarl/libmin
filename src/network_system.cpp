@@ -657,10 +657,11 @@ bool NetworkSystem::netServerStart ( netPort srv_port, int security )
 //	m_socks.push_back( NetSock() ); printf ( "SOCKS: %d\n", m_socks.size() );   //-- heap corruption test
 
 	TRACE_ENTER ( (__func__) );
+	
+	m_hostType = 's';
 	netPrintf ( PRINT_VERBOSE, "Start Server:" );
 
-	// Get host name (this machine)
-	m_hostType = 's';
+	// Get host name (this machine)	
 	netIP 	server_ip = getHostIP();
 	str	server_name = getHostName();
 	
@@ -2671,7 +2672,9 @@ int NetworkSystem::netSocketSelect ( fd_set* sockReadSet, fd_set* sockWriteSet )
 }
 
 str NetworkSystem::netPrintf ( int flag, const char* fmt_raw, ... )
-{	
+{
+	std::string srvcli = isServer() ? "netS> " : "netC> ";
+
 	if ( ( flag == PRINT_VERBOSE || flag == PRINT_VERBOSE_HS ) && ! m_printVerbose ) {
 		return str("");
 	}
@@ -2696,10 +2699,11 @@ str NetworkSystem::netPrintf ( int flag, const char* fmt_raw, ... )
     vsnprintf ( buffer, sizeof ( buffer ), fmt_raw, args );
     va_end ( args );
     str msg = str ( buffer ) + "\n";
-	switch ( flag ) {
+	
+  switch ( flag ) {
 		case PRINT_VERBOSE:
 			if ( m_printVerbose ) {
-				msg = tag + msg;
+				msg = srvcli + tag + msg;
 				dbgprintf ( msg.c_str ( ) );
 			}
 			break;
@@ -2713,7 +2717,7 @@ str NetworkSystem::netPrintf ( int flag, const char* fmt_raw, ... )
 			int error_id = 0;			// request last err
 			str error_str = CXGetErrorMsg ( error_id );
 			str delim = tag +  "=================================================\n";
-			msg = delim + tag + str("ERROR: ") + msg + ": " + error_str + "\n" + delim;
+			msg = delim + srvcli + tag + str("ERROR: ") + msg + ": " + error_str + "\n" + delim;
 			dbgprintf ( msg.c_str ( ) );
 			break;
 	}
