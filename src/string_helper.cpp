@@ -461,12 +461,17 @@ bool strParseChars(std::string str, std::string lsep, std::string& value, std::s
 
   f1 = str.find_first_of(lsep);              // find separators
   if (f1 == std::string::npos) return false;
-  fR = str.find_first_not_of ( "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789", f1+1 );
-  if (fR == std::string::npos) return false;
-
   fL = f1 + lsep.length();
-  value = str.substr(fL, fR - fL);
-  remain = str.substr(0, f1) + str.substr(fR);    // parse away left sep
+  fR = str.find_first_not_of ( "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789", f1+1 );
+  if (fR == std::string::npos) {
+    // nothing to the right
+    value = str.substr(fL);             
+    remain = str.substr(0, f1);    
+  } else {
+    // keep stuff to the left & right
+    value = str.substr(fL, fR - fL);
+    remain = str.substr(0, f1) + str.substr(fR);    // parse away left sep
+  }  
   return true;
 }
 

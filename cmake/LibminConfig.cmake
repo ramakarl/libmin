@@ -551,6 +551,7 @@ function( _INSTALL )
   #
   foreach (_file ${_INSTALL_FILES} )	
     get_filename_component ( _path "${_file}" DIRECTORY )               
+    get_filename_component ( _name "${_file}" NAME )
     if ( "${_path}" STREQUAL "" )		   
       set ( _fullpath "${_INSTALL_SOURCE}${_file}")            
     else ()
@@ -559,8 +560,12 @@ function( _INSTALL )
     message ( STATUS "Install: ${_fullpath} -> ${_INSTALL_DESTINATION}" )
     add_custom_command(
        TARGET ${PROJNAME} POST_BUILD
+       DEPENDS ${_fullpath}
        COMMAND ${CMAKE_COMMAND} -E copy ${_fullpath} ${_INSTALL_DESTINATION}
-    )                   
+    ) 
+    #-- not working
+    # add_custom_target(COPY_POSTBUILD${_name} ALL DEPENDS ${_fullpath} )
+    # add_dependencies(${PROJNAME} COPY_${_name} )
     list ( APPEND OUT_LIST "${_fullpath}" )
   endforeach()    
   

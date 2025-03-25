@@ -55,7 +55,9 @@
 		int CreateDir ( std::string path );
 		int getNumFiles ()					{ return (int) mList.size(); }
 		dir_list_element getFile ( int n )	{ return mList[n]; }
+		std::string getFullPath (int n )	{ return mPath + gPathDelim + mList[n].text; }
 		bool isDir ( int n )				{ return mList[n].type==0; }
+		bool isRel ( int n )				{ return mList[n].text.at(0)=='.'; }
 
 		// Static functions
 		static dir_list DirList( std::string path, std::string filter );

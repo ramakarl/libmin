@@ -207,6 +207,26 @@ void getFileParts(std::string fname, std::string& path, std::string& name, std::
     }  
 }
 
+std::string fixPath (std::string path)
+{
+  // replace slashes for current platform  
+  size_t pos = 0;
+  std::string from(1, getPathDelimOpposite());
+  std::string to(1, getPathDelim());
+  while ((pos = path.find(from, pos)) != std::string::npos) {		// switch to platform path
+    path.replace(pos, from.length(), to);
+    pos += to.length(); // Move past the replaced part
+  }
+
+  // add terminal /
+  if (path.back() != getPathDelim()) {
+    path += getPathDelim();
+  }
+
+  return path;
+}
+
+
 void strncpy_sc ( char *dst, const char *src, size_t len)
 {
 #if defined(__ANDROID__)
