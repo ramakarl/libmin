@@ -389,6 +389,61 @@ void Event::attachFromFile  (FILE* fp, int len )
 	mDataLen += len;
 }
 
+// attach file to event
+//
+bool Event::attachFile (std::string fullpath)
+{
+	// Open file
+	char fpath[2048];
+	strncpy(fpath, fullpath.c_str(), 2048);
+	FILE* fp = fopen(fpath, "rb");
+	if (fp == 0x0) return false;
+
+	// Get file size	
+	fseek(fp, 0, SEEK_END);
+	size_t sz = ftell(fp);
+	fseek(fp, 0, SEEK_SET);		// reset pos
+
+	// Load file
+	char* buf = (char*) malloc(sz);
+	if (buf==0x0) {fclose(fp); return false;}
+	fread (buf, sz, 1, fp);
+
+	// Attach file to event as int & buffer
+	attachInt ( sz );
+	attachBuf ( buf, sz );
+
+	fclose ( fp );
+	free ( buf ); 
+	return true;
+}
+
+// read file from event
+//
+int Event::getFile(std::string fullpath)
+{
+	char fpath[2048];
+	strncpy(fpath, fullpath.c_str(), 2048);
+
+	// Get file size from event
+	int sz = getInt();
+
+	// Allocate memory
+	char* buf = (char*)malloc(sz);
+	if (buf == 0x0) return false;
+	getBuf ( buf, sz );
+
+	// Write file
+	FILE* fp = fopen ( fpath, "wb" );
+	if ( fp==0x0 ) return 0;
+	fwrite ( buf, sz, 1, fp );
+	fclose ( fp );
+	free ( buf );
+
+	return sz;
+}
+
+
 void Event::attachBufAtPos (int pos, char* buf, int len )
 {
 	if ( pos+len > mMax  )

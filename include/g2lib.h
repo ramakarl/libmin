@@ -52,8 +52,8 @@
         g2Obj* FindObj ( std::string name );    
 
         // Pages
-        void AddPage (int id);
-        void OpenPage ( std::string name );
+        bool AddPage (int id);
+        bool OpenPage ( std::string name );
         void ClosePage ( std::string name );
         //int getCurrPage () { return (m_curr_page < m_pages.size()) ? m_pages [ m_curr_page ] : -1; }
 

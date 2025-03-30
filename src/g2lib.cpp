@@ -312,7 +312,7 @@ g2Obj* g2Lib::AddObj ( std::string name, uchar typ )
     return obj;
 }
 
-void g2Lib::AddPage ( int id )
+bool g2Lib::AddPage ( int id )
 {
   std::string obj_name = m_objlist[ id ]->getName();
 
@@ -321,17 +321,18 @@ void g2Lib::AddPage ( int id )
   bool is_startpage = hasVal ( obj_name, "opt", "start page" );
   bool is_active = hasVal ( obj_name, "opt", "active" );
   if ( is_active || is_startpage ) {
-    OpenPage ( obj_name );    
+    if (OpenPage(obj_name)) return true;      
   }
+  return false;
 }
 
-void g2Lib::OpenPage ( std::string name )
+bool g2Lib::OpenPage ( std::string name )
 {
   g2Obj* obj = FindObj ( name );
-  if ( obj !=0x0 ) {
-    printf ( "opened: %s\n", name.c_str() );
-    m_active_pages.push_back ( obj->m_id );
-  }
+  if ( obj == 0x0 ) return false;
+
+  m_active_pages.push_back ( obj->m_id );
+  return true;
 }
 
           
@@ -511,8 +512,8 @@ void g2Lib::BuildSections ( g2Obj* obj, uchar ly )
 
 void g2Lib::LayoutAll ( Vec4F view, Vec4F region )
 {
-    if ( m_objlist.size() == 0) { 
-      dbgprintf ( "WARNING: g2 Layout has 0 objects.\n" );
+    if (m_objlist.size() == 0) {
+      //dbgprintf ( "WARNING: g2 Layout has 0 objects.\n" );
       return; 
     }
     

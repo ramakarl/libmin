@@ -133,6 +133,7 @@
 		void				attachBufAtPos	(int pos, char* buf, int len );
 		void				writeUShort		(int pos, unsigned short i );  // does not increase length
 		void				attachFromFile  (FILE* fp, int len );
+		bool				attachFile	( std::string fullpath );
 
 		bool				getBool ();
 		int					getInt ();
@@ -149,7 +150,8 @@
 		void				getStr (char* str );
 		void				getMem (char* buf, int len );
 		void				getBuf (char* buf, int len );
-		void				getBufAtPos (int pos, char* buf, int len );
+		void				getBufAtPos (int pos, char* buf, int len );		
+		int					getFile ( std::string fullpath );
 
 		// Serialized header length. Must match platform size of member vars
 		static int		staticSerializedHeaderSize()	{ return 2*sizeof(int) + 2*sizeof(eventStr_t) + sizeof(timeStamp_t); }
