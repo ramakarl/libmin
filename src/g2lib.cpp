@@ -277,8 +277,8 @@ uchar g2Lib::FindType ( std::string isa )
 {
     if ( isa.compare("grid")==0) return 'g';
     if ( isa.compare("item")==0) return 'i';
-    if ( isa.compare("table")==0) return 't';
-    if ( isa.compare("page")==0) return 'p';    
+    // if ( isa.compare("table")==0) return 't';    //-- these are now 'opts'
+    // if ( isa.compare("page")==0) return 'p';    
     return '?';
 }
 
