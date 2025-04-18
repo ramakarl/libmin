@@ -536,13 +536,12 @@ bool strReplace ( std::string& str, std::string src, std::string dest, int& cnt 
   cnt = 0;
   size_t pos = 0;
 
-  pos = str.find ( src, pos );
-  if ( pos != std::string::npos ) return false;
+  pos = str.find ( src, pos );  
   while ( pos != std::string::npos ) {
-    str = str.substr(0,pos) + dest + str.substr(pos + src.length() );
-    pos += dest.length() - src.length() + 1;
-    cnt++;
+    str.replace( pos, src.length(), dest );    
+    pos += dest.length() - src.length() + 1;    
     pos = str.find ( src, pos );
+    cnt++;
   }
   return true;
 }
