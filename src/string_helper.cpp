@@ -413,6 +413,7 @@ std::string strParseOutDelim ( std::string& str, std::string lsep, std::string r
   str = remain;
   return value;
 }
+
 bool strParseOutDelim ( std::string str, std::string lseps, std::string rseps, std::string& value, std::string& remain)
 {
   size_t f1, fL, fR;
@@ -443,7 +444,7 @@ bool strParseOutStr (std::string str, std::string lstr, std::string rstr, std::s
 
   fL = f1 + lstr.length();
   value = str.substr(fL, fR - fL);
-  remain = str.substr(0, f1) + str.substr(fR);  // parse away the separators
+  remain = str.substr(0, f1) + str.substr(fR + 1);  // parse away the separators
   return true;
 }
 

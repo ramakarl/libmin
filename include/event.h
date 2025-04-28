@@ -54,7 +54,7 @@
 		Event ( Event& src );
 		Event ( const Event& src );
 		Event& operator= ( Event* op );	
-		Event& operator= ( Event& op );		
+		Event& operator= ( Event& op );				
 		~Event ();
 		void copyEventVars ( Event* dst, const Event* src );
 		void acquire ( Event& esrc);		// acquire - transfer of ownership

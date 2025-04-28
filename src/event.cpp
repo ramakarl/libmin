@@ -144,16 +144,15 @@ Event::Event ( Event& src )
 	acquire ( src );		// transfer ownership	
 }
 
+Event& Event::operator= (Event* src)
+{
+	acquire(*src);		// transfer ownership
+	return *this;
+}
 // called on direct assignment. eg. Event e = new_event (..)
 Event& Event::operator= ( Event& src )
 {
 	acquire ( src );		// transfer ownership	
-	return *this;
-}
-
-Event& Event::operator= ( Event* src )
-{
-	acquire ( *src );		// transfer ownership
 	return *this;
 }
 
