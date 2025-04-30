@@ -168,7 +168,7 @@ void g2Lib::AddSpec ( std::string lin )
 
 void g2Lib::ParseSpecToDef ( std::string lin ) 
 {  
-  bool bError = false;
+  std::string err = "";
   std::vector<std::string> words;
   
   // convert spec to words
@@ -182,19 +182,29 @@ void g2Lib::ParseSpecToDef ( std::string lin )
           if (words.size() == 3) {
             SetDef ( words[0], words[2] );
           } else {
-            bError = true;
+            err = "wrong word count for 'is a'";
           }
       } 
       // property
-      if (words[1].compare ( "has")==0 || words[1].compare( "action")==0 ) {
+      if (words[1].compare ( "has")==0) {
           if (words.size() == 4) {
             SetKeyVal ( words[0], words[2], words[3] );
           } else {
-            bError = true;
+            err = "wrong word count for 'has'";
           }
       }
-      if (bError) {
-        dbgprintf ( "ERROR: ParsingSpec: %s\n", lin.c_str() );
+      if (words[1].compare("action") == 0 ) {          
+          if (words.size() >= 3 ) {
+            std::string val = "";
+            for (int j=2; j < words.size(); j++) val += words[j] + " | ";
+            SetKeyVal ( words[0], words[1], val );
+          } else {
+            err = "wrong word count for 'action'";
+          }
+      }
+
+      if (!err.empty()) {
+        dbgprintf ( "ERROR: Parsing: %s in: %s\n", err.c_str(), lin.c_str() );
       }
   }
 }

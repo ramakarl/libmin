@@ -62,6 +62,9 @@
         void Render (int w, int h);
         char getKeyboardRequest()   { return m_keyboard; }
         void setKeyboard(char k)    { m_keyboard = k; }
+        void SetAction(std::string a) {m_action = a;}
+        std::string getAction()     {return m_action;}
+      
 
     public:
         std::vector< g2Def >        m_objdefs;      // object specs
@@ -74,6 +77,8 @@
                 
         g2Obj*                      m_selected;     // selected object
         char                        m_keyboard;     // keyboard request
+      
+        std::string                 m_action;
     };
 
     // Global singleton

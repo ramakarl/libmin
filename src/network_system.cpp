@@ -1615,7 +1615,10 @@ int NetworkSystem::netManageTransmitError ( int sock_i, std::string reason, int 
 		return outcome;
 	}
 	
-	netPrintf( PRINT_VERBOSE, "    Manage error: %s", reason.c_str());
+	if (m_printVerbose) {	
+		// display as error, but managed, so only when verbose
+		netPrintf( PRINT_ERROR, "    Manage error: %s", reason.c_str());
+	}
 
 	// Error during transmission
 	if ( m_hostType == 'c' && s.reconnectBudget > 0 ) {
@@ -2558,7 +2561,7 @@ int NetworkSystem::netSocketRecv ( int sock_i, char* buf, int bufmax )
 				TRACE_EXIT((__func__));
 				if ( CXSocketWouldBlock(msg) ) {					
 					return 0;			// pending socket. no error.
-				} else {
+				} else {					
 					return -1;		// actual error
 				}
 			}

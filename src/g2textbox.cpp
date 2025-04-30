@@ -365,9 +365,11 @@ void g2TextBox::OnSelect (int x, int y)
     else {
       m_button_state = 120;      // deactivation countdown
     }
+    // Find action associated with button
+    std::string action = g2.getVal( m_name, "action" );    
+    g2.SetAction ( action );
   }
 }
-
 
 
 bool g2TextBox::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
