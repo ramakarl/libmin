@@ -176,6 +176,7 @@
 		inline float        getY() { return m_mouseY; }
 		inline float        getDX() { return m_dX; }
 		inline float        getDY() { return m_dY; }
+		inline int					getMSAA() { return m_cflags.MSAA; }
 		inline bool			isFirstFrame()	{ return m_display_frame==0; }
 		inline int 			getDisplayFrame() { return m_display_frame; }
 

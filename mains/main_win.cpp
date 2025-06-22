@@ -967,9 +967,14 @@ extern void save_png(char* fname, unsigned char* img, int w, int h, int ch);
         }
     }
 
+    //PFNWGLGETPIXELFORMATATTRIBIVARBPROC wglGetPixelFormatAttribivARB = nullptr;
+
     bool Application::appCreateGL(const Application::ContextFlags* cflags, int& width, int& height)
     {
-        GLuint PixelFormat;
+        int result;
+        GLuint iPixelFormat;
+        GLuint nfmts;
+        int fmt;
 
         Application::ContextFlags  settings;
         settings = m_cflags;
@@ -986,21 +991,21 @@ extern void save_png(char* fname, unsigned char* img, int w, int h, int ch);
         pfd.cStencilBits = settings.stencil;
 
         if (settings.stereo) pfd.dwFlags |= PFD_STEREO;
-
-        // Multisample Anti-Aliasing
-        if (settings.MSAA > 1)
-        {
+        
+        // Create dummy context    
+        m_win->_hDC = GetDC(m_win->_hWndDummy);
+        iPixelFormat = ChoosePixelFormat(m_win->_hDC, &pfd);
+        SetPixelFormat(m_win->_hDC, iPixelFormat, &pfd);
+        m_win->_hRC = wglCreateContext(m_win->_hDC);
+        wglMakeCurrent(m_win->_hDC, m_win->_hRC);
+        glewInit();
+        ReleaseDC(m_win->_hWndDummy, m_win->_hDC);
+        m_win->_hDC = GetDC(m_win->_hWnd);
+        
+        if (settings.MSAA > 1) {
+            // Multisample Anti-Aliasing
             dbgprintf("  Enable Multisample Anti-Aliasing.\n");
-            m_win->_hDC = GetDC(m_win->_hWndDummy);
-            PixelFormat = ChoosePixelFormat(m_win->_hDC, &pfd);
-            SetPixelFormat(m_win->_hDC, PixelFormat, &pfd);
-            m_win->_hRC = wglCreateContext(m_win->_hDC);
-            wglMakeCurrent(m_win->_hDC, m_win->_hRC);
-            glewInit();
-            ReleaseDC(m_win->_hWndDummy, m_win->_hDC);
-            m_win->_hDC = GetDC(m_win->_hWnd);
-
-            int attri[] = {
+            int attri_msaa[] = {
                 WGL_ACCELERATION_ARB,           WGL_FULL_ACCELERATION_ARB,
                 WGL_DRAW_TO_WINDOW_ARB,         GL_TRUE,                
                 WGL_SUPPORT_OPENGL_ARB,         GL_TRUE,                
@@ -1012,28 +1017,68 @@ extern void save_png(char* fname, unsigned char* img, int w, int h, int ch);
                 WGL_SAMPLES_ARB,                settings.MSAA,
                 0,0
             };
-            GLuint nfmts;
-            int fmt;
-            if (!wglChoosePixelFormatARB(m_win->_hDC, attri, NULL, 1, &fmt, &nfmts)) {
-                wglDeleteContext(m_win->_hRC);
-                return false;
-            }
-            wglDeleteContext(m_win->_hRC);
-            DestroyWindow(m_win->_hWndDummy);
-            m_win->_hWndDummy = NULL;
-            if (!SetPixelFormat(m_win->_hDC, fmt, &pfd))
-                return false;
+            result = wglChoosePixelFormatARB(m_win->_hDC, attri_msaa, NULL, 1, &fmt, &nfmts);
 
-            glEnable(GL_MULTISAMPLE);
+        } else {
+            // No anti-aliasing (1 spp)
+            int attri_noaa[] = {
+                WGL_ACCELERATION_ARB,           WGL_FULL_ACCELERATION_ARB,
+                WGL_DRAW_TO_WINDOW_ARB,         GL_TRUE,
+                WGL_SUPPORT_OPENGL_ARB,         GL_TRUE,
+                WGL_DOUBLE_BUFFER_ARB,          GL_TRUE,
+                WGL_PIXEL_TYPE_ARB,             WGL_TYPE_RGBA_ARB,
+                WGL_DEPTH_BITS_ARB,             settings.depth,
+                WGL_STENCIL_BITS_ARB,           settings.stencil,
+                WGL_SAMPLE_BUFFERS_ARB,         0,
+                WGL_SAMPLES_ARB,                0,
+                0,0
+            };
+            result = wglChoosePixelFormatARB(m_win->_hDC, attri_noaa, NULL, 1, &fmt, &nfmts);
+        }
+        
+        // delete dummy context
+        wglDeleteContext(m_win->_hRC);
+        if (!result) { return false; }        // failed to choose format
+        DestroyWindow(m_win->_hWndDummy);
+        m_win->_hWndDummy = NULL;
 
+        // assign final format
+        if (!SetPixelFormat(m_win->_hDC, fmt, &pfd))
+            return false;
+
+        if (settings.MSAA > 1) {
+          // MSAA Multisampling
+          glEnable(GL_MULTISAMPLE);
+        } else {
+          // No anti-aliasing
+          glDisable (GL_MULTISAMPLE);
+          glDisable (GL_POINT_SMOOTH);
+          glDisable (GL_LINE_SMOOTH);
+          glDisable (GL_POLYGON_SMOOTH);
+          glHint(GL_POINT_SMOOTH_HINT, GL_FASTEST);
+          glHint(GL_LINE_SMOOTH_HINT, GL_FASTEST);
+          glHint(GL_POLYGON_SMOOTH_HINT, GL_FASTEST);
         }
-        else {
-            m_win->_hDC = GetDC(m_win->_hWnd);
-            PixelFormat = ChoosePixelFormat(m_win->_hDC, &pfd);
-            SetPixelFormat(m_win->_hDC, PixelFormat, &pfd);
-        }
+
+        // Final context
         m_win->_hRC = wglCreateContext(m_win->_hDC);
         wglMakeCurrent(m_win->_hDC, m_win->_hRC);
+
+        // Check and print samples per pixel            
+        iPixelFormat = GetPixelFormat ( m_win->_hDC );
+        DescribePixelFormat( m_win->_hDC, iPixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
+        wglGetPixelFormatAttribivARB = (PFNWGLGETPIXELFORMATATTRIBIVARBPROC) wglGetProcAddress("wglGetPixelFormatAttribivARB");
+        if (wglGetPixelFormatAttribivARB) {
+          int attribs[] = { WGL_SAMPLE_BUFFERS_ARB, WGL_SAMPLES_ARB };
+          int values[2] = { 0, 0 };
+          if (wglGetPixelFormatAttribivARB (m_win->_hDC, iPixelFormat, 0, 2, attribs, values)) {
+            dbgprintf ( "  MSAA Multisample Buffer: %d\n", values[0] );
+            dbgprintf ( "  MSAA Samples per Pixel:  %d\n", values[1] );
+            if (values[0]==0 && values[1]==0) dbgprintf ( "  ** No MSAA anti-aliasing.\n");
+          }
+        } else {
+          dbgprintf ( "ERROR: Unable to query wglGetPixelFormatAttribvARB.");
+        }
 
         // calling glewinit NOW because the inside glew, there is mistake to fix...
         // This is the joy of using Core. The query glGetString(GL_EXTENSIONS) is deprecated from the Core profile.
