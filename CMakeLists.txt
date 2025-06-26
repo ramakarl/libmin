@@ -62,11 +62,12 @@ endif()
 OPTION (BUILD_CUDA "Build with CUDA" OFF)
 if (BUILD_CUDA) 
 
-        # enable_lanague(CUDA)
+    # enable_lanague(CUDA)
 	
 	# NOTE: When running cmake, use -T cuda=10.2, for cmake-gui specify a Configure time (clear cache)
     if (NOT CUDA_TOOLKIT_VERSION) 
-		set ( CUDA_TOOLKIT_VERSION "10.2" )
+		set ( CUDA_TOOLKIT_VERSION "12.4" )
+		message ( STATUS "*** No CUDA_TOOLKIT_VERSION specified. Assuming CUDA ${CUDA_TOOLKIT_VERSION}." )
 	endif()
 	
 	find_package(CUDAToolkit "${CUDA_TOOLKIT_VERSION}" REQUIRED EXACT)
