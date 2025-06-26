@@ -263,9 +263,9 @@
     #endif
 
 	// math defs
-    #ifndef PI
+    /* #ifndef PI        // note: can conflict with PI in other lib namespaces
         #define PI					(3.14159265358979f)			// sometimes useful :)
-    #endif
+    #endif */
     #ifndef DEGtoRAD
 	    #define DEGtoRAD			(3.14159265358979f/180.0f)
     #endif

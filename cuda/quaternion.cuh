@@ -15,7 +15,7 @@
 	#define fsign(x)						(x >= 0 ? 1 : -1)
 	#define fmodulus(x,y)       (x - trunc(x/y) * y)
 
-	#define PI									3.14159265358979f
+	//#define PI									3.14159265358979f
 	#define DEGtoRAD						(3.14159265358979f/180.0f)
   #define RADtoDEG						(180.0f/3.14159265358979f)
 
