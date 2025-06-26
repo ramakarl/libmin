@@ -1,5 +1,9 @@
 
-cmake_minimum_required(VERSION 3.5...)
+cmake_minimum_required(VERSION 3.5)
+
+if(POLICY CMP0175)
+  cmake_policy(SET CMP0175 OLD) 
+endif()
 
 set (CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "")
 
