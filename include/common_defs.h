@@ -176,9 +176,11 @@
             #include <EGL/egl.h>
             #include <GLES3/gl3.h>
         #elif defined(__linux__)
+            #define GLEW_NO_GLU
             #include <GL/glew.h>
             #include <GL/gl.h>
         #elif defined(_WIN32)                
+            #define GLEW_NO_GLU
             #include <GL/glew.h>
             #include <GL/gl.h>
         #endif

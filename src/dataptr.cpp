@@ -22,6 +22,7 @@
 
 #ifdef USE_OPENGL
   #ifdef _WIN32
+    #define GLEW_NO_GLU
     #include <GL/glew.h>
   #endif
 #endif
