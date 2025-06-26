@@ -22,8 +22,10 @@
 #define GLX_GLXEXT_PROTOTYPES
 
 #ifdef _WIN32
+  #define GLEW_NO_GLU
   #include<GL/glew.h>
 #else
+  #define GLEW_NO_GLU
   #include<GL/glew.h>     // DO NOT USE GL/glxew.h (causes segfault)
   #include<GL/glx.h>
   #include<GL/glxext.h>

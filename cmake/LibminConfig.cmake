@@ -292,6 +292,7 @@ function ( _REQUIRE_CUDA use_cuda_default kernel_path)
         
         if (NOT CUDA_TOOLKIT_VERSION) 
 	        set ( CUDA_TOOLKIT_VERSION "10.2" CACHE PATH "CUDA Toolkit version")
+            message ( STATUS "*** No CUDA_TOOLKIT_VERSION specified. Assuming CUDA ${CUDA_TOOLKIT_VERSION}. ")
         endif()        
         message( STATUS "  Searching for CUDA..") 
 
