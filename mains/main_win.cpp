@@ -480,8 +480,7 @@ LRESULT CALLBACK WinProc (HWND m_hWnd,
 //------------------------------------------------------------ Application
 
 Application::Application() : m_renderCnt(1), m_win(0), m_debugFilter(0)
-{
-    dbgprintf("Application (constructor)\n");
+{    
     pApp = this;        // global handle
     m_mouseX = -1;
     m_mouseY = -1;
@@ -590,15 +589,17 @@ bool Application::appStartWindow (void* arg1, void* arg2, void* arg3, void* arg4
            
     #endif
 
+        // Show the OS Window
+        ShowWindow(m_win->_hWnd, SW_SHOW);
+        appSwapInterval(0);       // vsync off
+
     //-- App init (ONCE)
     if (m_startup) {                // Call user init() only ONCE per application
         m_startup = false;
         dbgprintf("  init()\n");
         if (!init()) { dbgprintf("ERROR: Unable to init() app.\n"); return false; }
     }       
-    // Show the OS Window
-    ShowWindow(m_win->_hWnd, SW_SHOW);
-    appSwapInterval(0);       // vsync off
+    
 
     // Activate (starts glSwapBuffers)
     if (!activate(pApp->m_winSz[0], pApp->m_winSz[1])) { dbgprintf("ERROR: Activate failed.\n"); return false; }
@@ -975,6 +976,8 @@ extern void save_png(char* fname, unsigned char* img, int w, int h, int ch);
         GLuint iPixelFormat;
         GLuint nfmts;
         int fmt;
+
+        dbgprintf("\nStarting OpenGL.\n");
 
         Application::ContextFlags  settings;
         settings = m_cflags;

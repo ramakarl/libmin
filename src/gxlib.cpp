@@ -61,8 +61,11 @@ bool glib::init2D ( const char* fontName )
 	gx.m_white_img.Fill ( 255,255,255,255 );
 
 	// load default font
-	if (!gx.loadFont ( fontName ))
+	if (!gx.loadFont ( fontName )) {
+		printf ("ERROR: Unable to load font. Aborting.\n");
+		exit(-7);
 		return false;
+	}
 
     return true;
 }
@@ -447,8 +450,9 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 
 	gxVert* v = gx.allocImg2D ( len*6, PRIM_TRI, &gx.m_font_img );
 
-	if (msg.substr(0, 4) == "Welc") {
-		bool stop =true;
+	if (gx.m_font_img.getGLID()==-1) {
+		printf ( "ERROR: Font texture is not loaded or not on GPU.\n");
+		exit(-7);
 	}
 
 	// get current font
@@ -1535,7 +1539,7 @@ bool gxLib::loadFont ( const char * fontName )
 	char fname[200], fpath[1024];
 	sprintf (fname, "%s.tga", fontName);
 	if ( !getFileLocation ( fname, fpath ) ) {
-		dbgprintf ( "ERROR: Cannot find %s\n", fname );
+		dbgprintf ( "**** ERROR: Cannot find font file: %s\n", fname );
 		return false;
 	}
 	
@@ -1544,7 +1548,7 @@ bool gxLib::loadFont ( const char * fontName )
 		dbgprintf( "ERROR: Must build with TGA support for fonts.\n" );
 		return false;	
 	}
-	
+
 	// make all pixels white. only alpha is glyph.
 	// since shader multiplies by pixel clr: out = vert clr * pix(r,g,b,a)
 	m_font_img.CopyToAlpha ();

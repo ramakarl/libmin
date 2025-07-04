@@ -46,12 +46,27 @@ _CONFIRM_PATH ( LIBMIN_ROOT "${LIBMIN_ROOT}" "/src/dataptr.cpp" "/src/dataptr.cp
 ##############
 # LIBEXT_ROOT - libext src, by default use the minimal /libext that comes with libmin
 #
+# There are two versions of libext.
+#  libmin/libext - Local libext    - Includes only bcrypt, tinygltf, libjpg, openssl
+#  libext        - Extended libext - Includes fftw3.3, laszip, portaudio, sqlite, optix, gvdb
+#
+# For smaller apps, this keeps down the repository/download size for libmin small.
+#
+if (NOT DEFINED BUILD_LIBEXT_EXTENDED )
+   option ( BUILD_LIBEXT_EXTENDED "Use external libext" FALSE )
+endif()
 if ( NOT DEFINED LIBEXT_ROOT )
-  # check for /libext with extended third party libs
-  _CONFIRM_PATH ( LIBEXT_EXTENDED "${LIBMIN_ROOT}/../libext/" "cmake/FindFFTW.cmake" "cmake/FindFFTW.cmake" "LIBEXT_EXTENDED" FALSE)
+  if (BUILD_LIBEXT_EXTNEDED) 
+     # check for /libext with extended third party libs - may return NOTFOUND
+     CONFIRM_PATH ( LIBEXT_EXTENDED "${LIBMIN_ROOT}/../libext/" "cmake/FindFFTW.cmake" "cmake/FindFFTW.cmake" "LIBEXT_EXTENDED" FALSE)
+  else()
+     SET ( LIBEXT_EXTENDED "NOTFOUND" )
+  endif()
   if ( LIBEXT_EXTENDED STREQUAL "NOTFOUND" ) 
+    # Use Local libext (found in libmin/libext)
     get_filename_component ( LIBEXT_ROOT "${LIBMIN_ROOT}/libext" REALPATH)    
   else()
+    # Use Extended libext (search at a sibling path of libmin)
     get_filename_component ( LIBEXT_ROOT "${LIBMIN_ROOT}/../libext" REALPATH)       
   endif()
 else() 
@@ -117,7 +132,7 @@ endmacro()
 # Provide Libext - extended 3rd party libraries: 
 #  OpenSSL, Laszip, OptiX, PortAudio, CUFFT, PixarUSD, LibGDVB, LibOptiX
 #
-function (_REQUIRE_LIBEXT)    
+function (_REQUIRE_LIBEXT)      
     message (STATUS "  Searching for LIBEXT... ${LIBEXT_ROOT}")
     if (EXISTS "${LIBEXT_ROOT}" AND IS_DIRECTORY "${LIBEXT_ROOT}")
         set( LIBEXT_FOUND TRUE )
@@ -280,6 +295,25 @@ function ( _REQUIRE_JPG )
     endif()
 endfunction()
 
+#####################################################################################
+# Include TinyGLTF
+#   
+function ( _REQUIRE_GLTF )   
+     set ( OK_H "0" )    
+     set ( _gltf_srch "${LIBEXT_ROOT}/include/tinygltf/" )
+	_FIND_FILE ( GLTF_INC _gltf_srch "tiny_gltf.h" "" OK_H )		
+	if ( OK_H EQUAL 1 )
+      add_definitions(-DBUILD_GLTF) 
+      include_directories( "${LIBEXT_ROOT}/include/tinygltf" )
+      message ( STATUS "  ---> Using tinygltf" )
+    else ()
+      message ( FATAL_ERROR "
+      TinyGLTF library not found at: ${_gltf_srch}
+      Set LIBEXT_DIR to libmin/libext path for 3rd party libs.
+      ")
+    endif()
+endfunction()
+
 
 ####################################################################################
 # Include CUDA
@@ -349,7 +383,7 @@ function ( _REQUIRE_CUDA use_cuda_default kernel_path)
     else()
         # check if cuda is at least installed
         find_package(CUDA)
-        message ( "  NOTE: Set BUILD_CUDA to enable GPU. May need to set for libmin also.")
+        message ( "Warning: CUDA not found/enabled. Set BUILD_CUDA to enable GPU. May need to enable when building Libmin also.")
     endif()
     if (USE_NVTX)
         add_definitions(-DUSE_NVTX)

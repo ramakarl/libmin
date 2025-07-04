@@ -356,6 +356,9 @@
 		Vec3F operator/ (const Vec3I &op)	{ return Vec3F(x/float(op.x), y/float(op.y), z/float(op.z)); }		
 		// --
 
+		bool operator< (const Vec3F& op)	{ return (x < op.x) || (y < op.y) || (z < op.z); }
+		bool operator> (const Vec3F& op)  { return (x > op.x) || (y > op.y) || (z > op.z); }
+
 		// Matrix4F Functions - requires class definition (cannot inline)
 		Vec3F &operator*= (const Matrix4F &op);	
 
@@ -745,16 +748,19 @@
 		Matrix4F &operator*= (const double c);	
 		Matrix4F &operator*= (const float* op);	
 		Matrix4F &operator*= (const Vec3F& t);		// quick scale
-				
-		Matrix4F& Multiply (const Matrix4F& a, const Matrix4F& b);		// faster - matrix multiply (does not require temp storage)
-		Matrix4F& operator*= (const Matrix4F& op);						// slower - matrix multiply
-
-		Matrix4F &operator/= (const unsigned char c);
-		Matrix4F &operator/= (const int c);
-		Matrix4F &operator/= (const double c);		
-				
+		Matrix4F& operator/= (const unsigned char c);
+		Matrix4F& operator/= (const int c);
+		Matrix4F& operator/= (const double c);
+		
+		// matrix multiply		
+		Matrix4F  operator* (const Matrix4F& op);
+		Matrix4F& Multiply (const Matrix4F& a, const Matrix4F& b);	
+		Matrix4F& operator*= (const Matrix4F& op);	
+		
+		// identity
 		Matrix4F &Identity ();
 		Matrix4F &Identity (const int order);
+
 		Matrix4F &Transpose (void);
 
 		// compose transforms
@@ -780,7 +786,7 @@
 		Matrix4F &PreTranslate (const Vec3F& t);
 		Matrix4F &PostTranslate (const Vec3F& t);
 		Matrix4F &SetTranslate(const Vec3F& t);		
-		Matrix4F &TRST(Vec3F pos, Quaternion r, Vec3F s, Vec3F piv);	// shape transform		
+		
 		Vec3F getTranslation ()		{ return Vec3F(data[12], data[13], data[14]); }
 		
 		void Print ();
@@ -795,6 +801,10 @@
 		Matrix4F& normalizedBasis(const Vec3F& fwd);
 		Matrix4F& toBasis(const Vec3F& c1, const Vec3F& c2, const Vec3F& c3);
 		Matrix4F& toBasisInv(const Vec3F& c1, const Vec3F& c2, const Vec3F& c3);
+
+		// Translate, Rotate, Scale (TRS) - applied right-to-left
+		Matrix4F& TRST(Vec3F pos, Quaternion r, Vec3F s, Vec3F piv);				// scale -> rotate -> translate
+		Matrix4F& ReverseTRS (Vec3F& pos, Quaternion& quat, Vec3F& scal);		// get back pos, quat, scal
 
 		// Scale-Rotate-Translate (compound matrix)
 		Matrix4F &TransSRT (const Vec3F &c1, const Vec3F &c2, const Vec3F &c3, const Vec3F& t, const Vec3F& s);

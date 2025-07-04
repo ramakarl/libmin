@@ -102,6 +102,9 @@
 		xref		AddMtlGroup ();
 		xref		SetMtlGroup (int n, xref fa, xref fb);
 
+		void		CopyBufferVertNorm (char* buf, int cnt );
+		void		CopyBufferVertPos (char* buf, int cnt);
+
 		void		ComputeBounds (Vec3F& bmin, Vec3F& bmax, int vmin=0, int vmax=0);
 		Vec3F		NormalizeMesh ( float sz, Vec3F& ctr, int vmin = 0, int vmax = 0);	
 		bool		Raytrace ( Vec3F orig, Vec3F dir, Matrix4F& xform, Vec3I& vndx, Vec3F& vnear, Vec3F& vhit, Vec3F& vnorm );

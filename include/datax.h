@@ -88,7 +88,8 @@
 			void		SetBufferUsage	( int i, uchar dt, uchar flags=DT_MISC, int rx=-1, int ry=-1, int rz=-1 );
 			char*		ExpandBuffer	( int i, int max_cnt);						
 			void		ResizeBuffer	( int i, int max_cnt, bool safe=false );			// safely resize a buffer. does not change number of elements.
-			
+			int			MemcpyBuffer	(int i, uchar* dat, int len, int cnt);
+
 			void		DeleteBuffer	( int i );			// delete the buffer 
 			void		ClearBuffer		( int i );			// clear memory (free) but keep buffer
 			void		EmptyBuffer		( int i )			{ int b = mRef[i]; if (b != BUNDEF) mBuf[b].mNum = 0; }		// clear active elements

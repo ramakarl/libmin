@@ -386,6 +386,17 @@ void MeshX::CreateFV ()
 	SetFormatFunc();
 }
 
+void MeshX::CopyBufferVertNorm(char* buf, int cnt)
+{
+	GetNumElem(BVERTPOS);
+}
+
+void MeshX::CopyBufferVertPos(char* buf, int cnt)
+{
+
+
+}
+
 void MeshX::SetFuncFV ()
 {
 	m_AddVertFunc = &MeshX::AddVertFV;
@@ -1242,7 +1253,7 @@ bool MeshX::LoadObj ( const char* fname, float scal )
 		SetMtlGroup ( curr_mtl, grp_start, grp_end );
 	}
 
-	printf ( " Mesh. idx_max: %lld\n",  (unsigned long long) idx_max );
+	// printf ( " Mesh. idx_max: %lld\n",  (unsigned long long) idx_max );
 
 	//Measure ();
 

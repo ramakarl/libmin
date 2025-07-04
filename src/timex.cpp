@@ -187,7 +187,7 @@
 				g_nvtxPush = (nvtxRangePushFunc) GetProcAddress( mod, "nvtxRangePushA");
 				g_nvtxPop  = (nvtxRangePopFunc)  GetProcAddress( mod, "nvtxRangePop");
 			#else
-				PERF_PRINTF( "PERF_INIT: Markers not enabled. Set cmake flag USE_NVTX.\n");
+				PERF_PRINTF( "  PERF_INIT: Markers not enabled. Set cmake flag USE_NVTX.\n");
 				g_perfGPU = false;
 			#endif
 
@@ -199,23 +199,23 @@
 				g_perfCons = _fdopen( hConHandle, "w" );
 				setvbuf(g_perfCons, NULL, _IONBF, 1);
 				*stdout = *g_perfCons; */
-				PERF_PRINTF ( "PERF_INIT: Enabling CPU markers.\n" );
+				PERF_PRINTF ( "  PERF_INIT: Enabling CPU markers.\n" );
 			} else {
-				PERF_PRINTF ( "PERF_INIT: No CPU markers.\n" );
+				PERF_PRINTF ( "  PERF_INIT: No CPU markers.\n" );
 			}
 			if ( g_perfGPU ) {
 				if ( g_nvtxPush != 0x0 && g_nvtxPop != 0x0 ) {
-					PERF_PRINTF ( "PERF_INIT: Enabling GPU markers. Found %s.\n", libname );			
+					PERF_PRINTF ( "  PERF_INIT: Enabling GPU markers. Found %s.\n", libname );			
 				} else {			
-					PERF_PRINTF ( "PERF_INIT: Disabling GPU markers. Did not find %s.\n", libname );			
+					PERF_PRINTF ( "  PERF_INIT: Disabling GPU markers. Did not find %s.\n", libname );			
 					g_perfGPU = false;
 				}		
 			} else {
-				PERF_PRINTF ( "PERF_INIT: No GPU markers.\n" );
+				PERF_PRINTF ( "  PERF_INIT: No GPU markers.\n" );
 			}
 			g_perfOn = g_perfCPU || g_perfGPU;
 			if ( !g_perfOn ) {
-				PERF_PRINTF ( "PERF_INIT: Disabling perf. No CPU or GPU markers.\n" );			
+				PERF_PRINTF ( "  PERF_INIT: Disabling perf. No CPU or GPU markers.\n" );			
 			}
 		#else
 			#ifdef USE_NVTX

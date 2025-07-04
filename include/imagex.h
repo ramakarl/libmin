@@ -157,10 +157,14 @@
 		void Unmap();
 		void Retrieve();
 		int getGLID() { 
-			if ( !(m_Pix.mUseFlags & DT_GLTEX) )	
+			if ( !(m_Pix.mUseFlags & DT_GLTEX) ) {
 				printf ( "ERROR: Image not allocated as DT_GLTEX.\n");		// <-- breakpoint here to debug
-			if ( m_Pix.mGLID==-1) 			
+				return -1;
+			}
+			if ( m_Pix.mGLID==-1) {
 				printf ( "ERROR: Image not committed to GPU.\n");			// <-- breakpoint here to debug	
+				return -1;
+			}
 			return m_Pix.mGLID; 		
 		}
 		#ifdef USE_CUDA

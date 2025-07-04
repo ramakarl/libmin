@@ -292,6 +292,20 @@ int DataX::AddElem ( int i )
 	return mBuf[b].mNum-1;
 }
 
+int DataX::MemcpyBuffer ( int i, uchar* dat, int len, int cnt )
+{
+	int b = mRef[i]; if (b == BUNDEF) return -1;				// buffer indirection 
+
+	assert ( len == mBuf[b].mStride * cnt );
+
+	mBuf[b].Clear();
+	mBuf[b].Append ( mBuf[b].mStride, cnt, (char*) dat );
+	mBuf[b].mNum = cnt;
+
+	return mBuf[b].mNum-1;
+}
+
+
 // Add Element (to all buffers)
 int	DataX::AddElem()
 {

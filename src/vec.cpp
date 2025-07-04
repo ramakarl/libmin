@@ -751,35 +751,37 @@ Matrix4F &Matrix4F::operator/= (const int op)				{for ( int n=0; n<16; n++) data
 Matrix4F &Matrix4F::operator/= (const double op)			{for ( int n=0; n<16; n++) data[n] /= (VTYPE) op; return *this;}
 
 // column-major multiply (like OpenGL)
-Matrix4F &Matrix4F::operator*= (const Matrix4F &op) {
-	register float orig[16];				// Temporary storage
-	memcpy ( orig, data, 16*sizeof(float) );
+Matrix4F &Matrix4F::operator*= (const Matrix4F &op) 
+{
+	float orig[16];
+	memcpy(orig, data, 16 * sizeof(float));
 
-	// Calculate First Row
-	data[0] = op.data[0]*orig[0] + op.data[1]*orig[4] + op.data[2]*orig[8] + op.data[3]*orig[12];
-	data[1] = op.data[0]*orig[1] + op.data[1]*orig[5] + op.data[2]*orig[9] + op.data[3]*orig[13];
-	data[2] = op.data[0]*orig[2] + op.data[1]*orig[6] + op.data[2]*orig[10] + op.data[3]*orig[14];
-	data[3] = op.data[0]*orig[3] + op.data[1]*orig[7] + op.data[2]*orig[11] + op.data[3]*orig[15];
-
-	// Calculate Second Row
-	data[4] = op.data[4]*orig[0] + op.data[5]*orig[4] + op.data[6]*orig[8] + op.data[7]*orig[12];
-	data[5] = op.data[4]*orig[1] + op.data[5]*orig[5] + op.data[6]*orig[9] + op.data[7]*orig[13];
-	data[6] = op.data[4]*orig[2] + op.data[5]*orig[6] + op.data[6]*orig[10] + op.data[7]*orig[14];
-	data[7] = op.data[4]*orig[3] + op.data[5]*orig[7] + op.data[6]*orig[11] + op.data[7]*orig[15];
-	
-	// Calculate Third Row
-	data[8] = op.data[8]*orig[0] + op.data[9]*orig[4] + op.data[10]*orig[8] + op.data[11]*orig[12];
-	data[9] = op.data[8]*orig[1] + op.data[9]*orig[5] + op.data[10]*orig[9] + op.data[11]*orig[13];
-	data[10] = op.data[8]*orig[2] + op.data[9]*orig[6] + op.data[10]*orig[10] + op.data[11]*orig[14];
-	data[11] = op.data[8]*orig[3] + op.data[9]*orig[7] + op.data[10]*orig[11] + op.data[11]*orig[15];
-
-	// Calculate Four Row
-	data[12] = op.data[12]*orig[0] + op.data[13]*orig[4] + op.data[14]*orig[8] + op.data[15]*orig[12];
-	data[13] = op.data[12]*orig[1] + op.data[13]*orig[5] + op.data[14]*orig[9] + op.data[15]*orig[13];
-	data[14] = op.data[12]*orig[2] + op.data[13]*orig[6] + op.data[14]*orig[10] + op.data[15]*orig[14];
-	data[15] = op.data[12]*orig[3] + op.data[13]*orig[7] + op.data[14]*orig[11] + op.data[15]*orig[15];
-
+	for (int col = 0; col < 4; ++col) {
+		for (int row = 0; row < 4; ++row) {
+			data[col * 4 + row] =
+				orig[0 * 4 + row] * op.data[col * 4 + 0] +
+				orig[1 * 4 + row] * op.data[col * 4 + 1] +
+				orig[2 * 4 + row] * op.data[col * 4 + 2] +
+				orig[3 * 4 + row] * op.data[col * 4 + 3];
+		}
+	}
 	return *this;
+}
+
+Matrix4F Matrix4F::operator* (const Matrix4F& op)
+{
+	Matrix4F out;		
+
+	for (int col = 0; col < 4; ++col) {
+		for (int row = 0; row < 4; ++row) {
+			out.data[col * 4 + row] =
+				data[0 * 4 + row] * op.data[col * 4 + 0] +
+				data[1 * 4 + row] * op.data[col * 4 + 1] +
+				data[2 * 4 + row] * op.data[col * 4 + 2] +
+				data[3 * 4 + row] * op.data[col * 4 + 3];
+		}
+	}
+	return out;
 }
 
 // column-major multiply (like OpenGL)
@@ -1094,6 +1096,29 @@ Matrix4F& Matrix4F::TRST ( Vec3F pos, Quaternion r, Vec3F s, Vec3F piv )
 	return *this;
 }
 
+Matrix4F& Matrix4F::ReverseTRS(Vec3F& pos, Quaternion& quat, Vec3F& scal)
+{
+	pos.x = data[12];
+	pos.y = data[13];
+	pos.z = data[14];
+	Vec3F a(data[0], data[1], data[2]);
+	Vec3F b(data[4], data[5], data[6]);
+	Vec3F c(data[8], data[9], data[10]);
+	/*Vec3F a(data[0], data[4], data[8]);
+	Vec3F b(data[1], data[5], data[9]);
+	Vec3F c(data[2], data[6], data[10]);*/
+	scal.x = a.Length();
+	scal.y = b.Length();
+	scal.z = c.Length();
+	a /= scal.x;
+	b /= scal.y;
+	c /= scal.z;
+	quat.fromBasis(a, b, c);
+	quat.normalize();
+	return *this;
+}
+
+
 Matrix4F &Matrix4F::normalizedBasis (const Vec3F &fwd)
 {
 	Vec3F binorm, tang;
@@ -1145,7 +1170,7 @@ Matrix4F& Matrix4F::toBasis(const Vec3F& c1, const Vec3F& c2, const Vec3F& c3)
 	data[8] = (VTYPE) c3.x; data[9] = (VTYPE) c3.y; data[10] = (VTYPE)c3.z; data[11] = (VTYPE)0.0;
 	data[12] = (VTYPE)0.0; data[13] = (VTYPE)0.0; data[14] = (VTYPE)0.0; data[15] = (VTYPE)1.0;
 	return *this;
-}
+}	
 Matrix4F& Matrix4F::toBasisInv(const Vec3F& c1, const Vec3F& c2, const Vec3F& c3)
 {
 	data[0] = (VTYPE)c1.x; data[1] = (VTYPE)c2.x; data[2] = (VTYPE)c3.x; data[3] = (VTYPE)0.0;
