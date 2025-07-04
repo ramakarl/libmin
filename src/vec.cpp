@@ -462,7 +462,7 @@ Vec3F Vec3F::getNormalizedFast() {
 }
 
 
-inline Vec3F& Vec3F::Clamp(float a, float b)
+Vec3F& Vec3F::Clamp(float a, float b)
 {
 	x = (x < a) ? a : ((x > b) ? b : x);
 	y = (y < a) ? a : ((y > b) ? b : y);
@@ -822,7 +822,7 @@ Matrix4F &Matrix4F::operator= (const float* op)
 }
 
 Matrix4F &Matrix4F::operator*= (const float* op) {
-	register float orig[16];				// Temporary storage
+	float orig[16];				// Temporary storage
 	memcpy ( orig, data, 16*sizeof(float) );
 
 	// Calculate First Row
@@ -1510,7 +1510,7 @@ Matrix4F Matrix4F::Inverse (Matrix4F& m)
 	VTYPE* s[4], * tmprow;
 	s[0] = &r1[0]; s[1] = &r2[0]; s[2] = &r3[0]; s[3] = &r4[0];
 
-	register int i, j, p, jj;
+	int i, j, p, jj;
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
 			s[i][j] = m(i, j);
@@ -1602,7 +1602,7 @@ Matrix4F Matrix4F::Transpose(Matrix4F& m)
 }
 Matrix4F& Matrix4F::Transpose()
 {
-	register float orig[16];				// Temporary storage
+	float orig[16];				// Temporary storage
 	memcpy(orig, data, 16 * sizeof(VTYPE));
 
 	data[0] = orig[0];	data[1] = orig[4];	data[2] = orig[8];	data[3] = orig[12];
@@ -1798,7 +1798,7 @@ MatrixF &MatrixF::operator+= (const MatrixF &op)		{
         if (rows!=4 || cols!=4)				Debug.Print (DEBUG_MATRIX, "MatrixF::Multiply4x4 m*=op: Matrix m is not 4x4");
 		if (op.rows!=4 || op.cols!=4)		Debug.Print (DEBUG_MATRIX, "MatrixF::Multiply4x4 m*=op: Matrix op is not 4x4");
     #endif
-	register double c1, c2, c3, c4;					// Temporary storage
+	double c1, c2, c3, c4;					// Temporary storage
 	VTYPE *n, *a, *b1, *b2, *b3, *b4;
 	a = data;	n = data; 
 	b1 = op.data; b2 = op.data + 4; b3 = op.data + 8; b4 = op.data + 12;

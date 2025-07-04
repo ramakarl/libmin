@@ -44,20 +44,16 @@
 	#define S_(x) S__(x)
 	#define S__LINE__ S_(__LINE__)
 
-	#ifdef DEBUG_HEAP
-		#define _CRTDBG_MAP_ALLOC  
-		#include <stdlib.h>  
-		//#include <crtdbg.h> 
-	#else
-		#include <stdlib.h>  
-	#endif
-
 	#ifdef WIN32
+                #ifdef DEBUG_HEAP
+                        #define _CRTDBG_MAP_ALLOC
+                        #include <crtdbg.h>
+                #endif
 		#ifdef MEMORY_LEAKS_CHECK
-			#   pragma message("build will Check for Memory Leaks!")
-			#   define _CRTDBG_MAP_ALLOC
-			#   include <stdlib.h>
-			#   include <crtdbg.h>
+			#pragma message("Build will Check for Memory Leaks!")
+			#define _CRTDBG_MAP_ALLOC
+			#include <stdlib.h>
+			#include <crtdbg.h>
 			inline void* operator new(size_t size, const char *file, int line)
 			{
 			   return ::operator new(size, 1, file, line);
@@ -74,6 +70,8 @@
 			#define new DEBUG_NEW
 		#endif
 	#endif
+
+        #include <stdlib.h>
 
 	
 

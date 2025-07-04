@@ -525,43 +525,54 @@ void checkMem(xlong& total, xlong& used, xlong& app)
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
         glDepthMask(GL_FALSE);
+        //checkGL ( "renderTex:prep", true );
 
         // Get viewport dimensions (actual pixels)
         float screen[4];
         glGetFloatv(GL_VIEWPORT, screen);
+        //checkGL ( "renderTex:get viewport", true );
 
-        glBindVertexArray(gTex.vbo[2]);                                // Select shader
-        //checkGL("renderTexGL::glBindVertexArray");
+        glBindVertexArray(gTex.vbo[2]); 
+        //checkGL ( "renderTex:bind vert array", true );
 
         int s = 0;      // shader #
         glUseProgram(gTex.prog[s]);
-        //checkGL("renderTexGL::glUseProgram");
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glEnableVertexAttribArray(2);
+        //checkGL ( "renderTex:set shader", true );
+        
+        glActiveTexture(GL_TEXTURE0);
+        //checkGL("renderTexGL:activate tex0", true);
+        glBindTexture(GL_TEXTURE_2D, glid1);
+        ///checkGL("renderTexGL:bind texture", true);
+
+        glUniform1i(gTex.utex1[s], 0);
+        //checkGL("renderTexGL:uniform utex1", true);
 
         glUniform4f(gTex.ucoords[s], x1, y1, x2, y2);                     // Select texture    
         glUniform2f(gTex.uscreen[s], (float)screen[2], (float)screen[3]);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, glid1);
-        glUniform1i(gTex.utex1[s], 0);
-        //checkGL("renderTexGL::glBindTexture");
+        //checkGL("renderTexGL:uniforms", true);
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        //checkGL ( "renderTex:enable vert attribs", true );       
 
         glBindBuffer(GL_ARRAY_BUFFER, gTex.vbo[0]);                     // Select VBO	
         glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(nvVertex), 0);
         glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)12);
         glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)24);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gTex.vbo[1]);
-        //checkGL("renderTexGL::glBindBuffer");
+        //checkGL("renderTexGL:bind buffer", true);
 
         int flags = inv1;
         glUniform1i(gTex.utexflags[s], flags);    // inversion flag
 
         glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, 1);
-
-        //checkGL("renderTexGL::renderTexGL");
+        //checkGL("renderTexGL:draw elems", true);
+        
         glUseProgram(0);
+        //checkGL ("renderTexGL:clear shader", true);
         glDepthMask(GL_TRUE);
+
     }
     void compositeTexGL(float blend, int w, int h, int glid1, int glid2, char inv1, char inv2)
     {

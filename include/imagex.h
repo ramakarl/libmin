@@ -183,15 +183,15 @@
 		void					 Dot (int x, int y, float r, Vec4F c );
 		void					 Line (float x0, float y0, float x1, float y1, Vec4F c );
 		void		       BlendPixel  ( int x, int y, Vec4F c, float alpha);
-		inline void		 SetPixel  ( int x, int y, Vec4F c )			{ (this->*m_setPixelFunc) (x,y, c); }
-		inline void		 SetPixelF ( int x, int y, float v )			{ *			(((float*) m_Pix.mCpu) + (y*mXres+x)) = v; }
-		inline float	 GetPixelF ( int x, int y )								{ return *	(((float*) m_Pix.mCpu) + (y*mXres+x)); }
+		void		SetPixel  ( int x, int y, Vec4F c )			{ (this->*m_setPixelFunc) (x,y, c); }
+		void		SetPixelF ( int x, int y, float v )			{ *			(((float*) m_Pix.mCpu) + (y*mXres+x)) = v; }
+		float		GetPixelF ( int x, int y )								{ return *	(((float*) m_Pix.mCpu) + (y*mXres+x)); }
 
 		// Pixel Ops - 16-bit grayscale only
-		inline uint16_t	  GetPixel16 ( int x, int y )							{ return *	(((uint16_t*) m_Pix.mCpu) + (y*mXres+x)); }
-		inline float	  GetPixelUV16 ( float u, float v );
-		float			  GetPixelFilteredUV16 (float x, float y);
-		inline void		  SetPixel16 ( int x, int y, uint16_t v )				{ *			(((uint16_t*) m_Pix.mCpu) + (y*mXres+x)) = v; }
+		uint16_t	GetPixel16 ( int x, int y )							{ return *	(((uint16_t*) m_Pix.mCpu) + (y*mXres+x)); }
+		float	  	GetPixelUV16 ( float u, float v );
+		float		GetPixelFilteredUV16 (float x, float y);
+		void		SetPixel16 ( int x, int y, uint16_t v )				{ *			(((uint16_t*) m_Pix.mCpu) + (y*mXres+x)) = v; }
 		
 		// Image Operations
 		void ChangeFormat ( ImageOp::Format fmt );

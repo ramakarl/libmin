@@ -47,17 +47,17 @@ _REQUIRE_GLEW ()
 
 _REQUIRE_OPENSSL (false)	            # default = false
 
-set( BUILD_JPG false CACHE BOOL "")
+OPTION ( BUILD_JPG "Build with JPG" OFF )
 if (BUILD_JPG)
   _REQUIRE_JPG ()
 endif()
 
-set( USE_NVTX false CACHE BOOL "")		# performance markers available
+OPTION ( USE_NVTX "Use NVTX markers" OFF )     #  performance markers available
 if ( USE_NVTX )
   add_definitions ( -DUSE_NVTX )
 endif()
 
-set( USE_PROFILE_NET false CACHE BOOL "")	# profile network system
+OPTION ( USE_PROFILE_NET "Profile network system" OFF)	# profile network system
 if ( USE_PROFILE_NET )
   add_definitions ( -DPROFILE_NET )
 endif()
@@ -144,7 +144,7 @@ add_library (${PROJNAME} ${LIB_TYPE} ${ALL_SOURCE_FILES} ${CUDA_FILES} ${PTX_FIL
 if (BUILD_CUDA) 
   target_link_libraries( ${PROJNAME} CUDA::cuda_driver)
 endif()
-
+  
 # debug and relase libs
 set ( CMAKE_DEBUG_POSTFIX "d" CACHE STRING "" )
 set_target_properties( ${PROJNAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
@@ -204,16 +204,17 @@ if ( WIN32 )
   _INSTALL ( FILES ${PACKAGE_DLLS} DESTINATION ${_bin_path} )
 endif()
 
+
 # output shared library
-install ( FILES $<TARGET_LINKER_FILE:${PROJNAME}> DESTINATION ${_bin_path} )
+install ( TARGETS ${PROJNAME} LIBRARY DESTINATION ${_bin_path} )
 install ( TARGETS ${PROJNAME} DESTINATION ${_bin_path} )
 
 #################################
 # Done
 message ( STATUS "---------------------------------" )
-message ( STATUS "Installed Bin: ${_bin_path}" )
-message ( STATUS "Installed Inc: ${_inc_path}" )
-message ( "LIBMIN Installed Path: ${CMAKE_INSTALL_PREFIX}" )
+message ( STATUS "Install Bin: ${_bin_path}" )
+message ( STATUS "Install Inc: ${_inc_path}" )
+message ( STATUS "Install Path: ${CMAKE_INSTALL_PREFIX}" )
 message ( STATUS "---------------------------------" )
 
 

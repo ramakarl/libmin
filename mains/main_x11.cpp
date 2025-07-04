@@ -209,17 +209,20 @@ void checkGL( char* msg )
 void checkGL( char* msg ) {}
 #endif
 
-static int sysGetKeyMods(XEvent &evt) {
+static int sysGetKeyMods(XEvent &evt, unsigned int key) {
 
+    // X windows is different..
+    //   A mod key is detected either as an actual 'key' or as a mod 'event'
+        
     int mods = 0;
 
-    if(evt.xkey.state & ShiftMask){
+    if( (evt.xkey.state & ShiftMask) || key==KEY_LEFT_SHIFT || key==KEY_RIGHT_SHIFT){
         mods |= KMOD_SHIFT;
     }
-    if(evt.xkey.state & ControlMask ){
+    if( (evt.xkey.state & ControlMask) || key==KEY_LEFT_CONTROL || key==KEY_RIGHT_CONTROL ){
         mods |= KMOD_CONTROL;
     }
-    if(evt.xkey.state & Mod1Mask){
+    if( (evt.xkey.state & Mod1Mask) || key==KEY_LEFT_ALT || key==KEY_RIGHT_ALT ){
         mods |= KMOD_ALT;
     }
     return mods;
@@ -449,17 +452,22 @@ bool Application::appStartWindow ( void* arg1, void* arg2, void* arg3, void* arg
     int width = m_winSz[0];
     int height = m_winSz[1];
     dbgprintf( "Creating Window. Width: %d Height: %d.\n", width, height );
-    m_win->_window = XCreateWindow(m_win->_dpy, RootWindow(m_win->_dpy, vi->screen),0,0,width,height,0,vi->depth,InputOutput,vi->visual,
-                                     CWBorderPixel | CWColormap | CWEventMask | CWOverrideRedirect,&swa);
+    m_win->_window = XCreateWindow(m_win->_dpy, RootWindow(m_win->_dpy, vi->screen),0,0,width,height,0,vi->depth,InputOutput,vi->visual, CWBorderPixel | CWColormap | CWEventMask | CWOverrideRedirect,&swa);
     sleep(1);
+    
+    // select events to catch
+    XSelectInput( m_win->_dpy, m_win->_window, ExposureMask | StructureNotifyMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | KeyPressMask);
+
+    
     XFree(vi);
     char title[1024];
     strncpy(title, m_title.c_str(), 1024);
     XSetStandardProperties(m_win->_dpy, m_win->_window, title, "", None, NULL, 0, NULL);
     Atom wmDelete = XInternAtom(m_win->_dpy,"WM_DELETE_WINDOW",True);
     XSetWMProtocols(m_win->_dpy, m_win->_window,&wmDelete,1);
-    XMapRaised(m_win->_dpy, m_win->_window);
-    XFlush(m_win->_dpy);
+
+    XMapRaised (m_win->_dpy, m_win->_window);
+    XFlush (m_win->_dpy);
     
     
     #ifdef USE_OPENGL
@@ -493,6 +501,8 @@ bool Application::appStartWindow ( void* arg1, void* arg2, void* arg3, void* arg
     }
            
     #endif
+    
+    appInitGL();
 
     //-- App init (ONCE)
     if (m_startup) {                // Call user init() only ONCE per application
@@ -507,6 +517,43 @@ bool Application::appStartWindow ( void* arg1, void* arg2, void* arg3, void* arg
     return true;
 }
 
+void Application::appQuit ()
+{
+    Atom wmDelete = XInternAtom( m_win->_dpy, "WM_DELETE_WINDOW", False);
+
+    XEvent event = {};
+    event.xclient.type = ClientMessage;
+    event.xclient.message_type = XInternAtom( m_win->_dpy, "WM_PROTOCOLS", True);
+    event.xclient.display = m_win->_dpy;
+    event.xclient.window = m_win->_window;
+    event.xclient.format = 32;
+    event.xclient.data.l[0] = wmDelete;
+    event.xclient.data.l[1] = CurrentTime;
+
+    XSendEvent( m_win->_dpy,  m_win->_window, False, NoEventMask, &event);
+    XFlush( m_win->_dpy );
+
+}
+
+void Application::appResizeWindow(int w, int h)
+{
+    XResizeWindow ( m_win->_dpy, m_win->_window, w, h );
+    XFlush ( m_win->_dpy );
+}
+
+bool Application::appInitGL()
+{    
+    #ifdef USE_OPENGL
+        // additional opengl initialization
+        //  (primary init of opengl occurs in WINinteral::initBase)
+        initBasicGL();
+
+        glFinish();
+    #endif
+
+    return true;
+}
+
 
 bool Application::appPollEvents ()
 {
@@ -515,10 +562,13 @@ bool Application::appPollEvents ()
     bool printableKey = true;
     XEvent event;
     static short mouseWheelScale = 5;
+   
 
     while( XPending(m_win->_dpy) > 0) {
 
 	XNextEvent( m_win->_dpy, &event);
+	
+	
 
 	switch(event.type)
         {
@@ -535,10 +585,10 @@ bool Application::appPollEvents ()
 		    case Button1: btn = AppEnum::BUTTON_LEFT; break;
 		    case Button2: btn = AppEnum::BUTTON_MIDDLE; break;
 		    case Button3: btn = AppEnum::BUTTON_RIGHT; break;		    
-    		    case Button4: pApp->mousewheel( 100 ); break;
-    		    case Button5: pApp->mousewheel( -100 ) ; break;
+    		    case Button4: pApp->mousewheel( 100 ); return true;
+    		    case Button5: pApp->mousewheel( -100 ) ; return true;
     		    };
-		    pApp->appUpdateMouse ( event.xbutton.x,event.xbutton.y );
+		    pApp->appUpdateMouse ( event.xbutton.x, event.xbutton.y, btn, AppEnum::BUTTON_PRESS );
 		    pApp->mouse ( btn, AppEnum::BUTTON_PRESS, pApp->getMods(), pApp->getX(), pApp->getY() );
 		    } break;
 		case ButtonRelease:{
@@ -547,25 +597,25 @@ bool Application::appPollEvents ()
 		    case Button2: btn = AppEnum::BUTTON_MIDDLE; break;
 		    case Button3: btn = AppEnum::BUTTON_RIGHT; break;
 		    };
-		    pApp->appUpdateMouse ( event.xbutton.x,event.xbutton.y );
+		    pApp->appUpdateMouse ( event.xbutton.x,event.xbutton.y, btn, AppEnum::BUTTON_RELEASE );
 		    pApp->mouse ( btn, AppEnum::BUTTON_RELEASE, pApp->getMods(), pApp->getX(), pApp->getY() );
 		    pApp->m_mouseButton = AppEnum::BUTTON_NONE;
 		    } break;
 	       case MotionNotify: {
 		    float dx = pApp->getX() - event.xmotion.x;
 		    float dy = pApp->getY() - event.xmotion.y;
-		    pApp->appUpdateMouse ( event.xbutton.x,event.xbutton.y );
-		    pApp->motion ( pApp->m_mouseButton, pApp->getX(), pApp->getY(), dx, dy );
-		    } break;
+		    pApp->appUpdateMouse ( event.xmotion.x,event.xmotion.y );
+		    pApp->motion ( pApp->m_mouseButton, pApp->getX(), pApp->getY(), pApp->getDX(), pApp->getDY() );
+		      } break;
 	       case KeyPress:{
-		    int key = translateKey(event, printableKey); if (key == KEY_UNKNOWN) break;		    
-		    pApp->setMods( sysGetKeyMods(event) );
+		    int key = translateKey(event, printableKey);
+		    pApp->setMods( sysGetKeyMods(event, key) );
 		    pApp->appSetKeyPress( key, true );
 		    pApp->keyboard ( key, AppEnum::BUTTON_PRESS, pApp->getMods(), pApp->getX(), pApp->getY() );		    
 		    } break;
 		case KeyRelease:{		    
-		    int key = translateKey(event, printableKey); if (key == KEY_UNKNOWN) break;		    
-		    pApp->setMods( sysGetKeyMods(event) );
+		    int key = translateKey(event, printableKey);
+		    pApp->setMods( sysGetKeyMods(event, key) );
 		    pApp->appSetKeyPress( key, false );		    
 		    pApp->keyboard ( key, AppEnum::BUTTON_RELEASE, pApp->getMods(), pApp->getX(), pApp->getY() );
 		    } break;
