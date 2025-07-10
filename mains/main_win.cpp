@@ -849,8 +849,7 @@ void Application::appSetKeyPress(int key, bool state)
     m_keyPressed[key] = state;
 }
 
-bool Application::
-()
+bool Application::appInitGL()
 {    
     #ifdef USE_OPENGL
         // additional opengl initialization
