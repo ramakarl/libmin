@@ -1,0 +1,99 @@
+﻿<html>
+
+  <meta charset='utf-8'>
+
+  <head>
+
+      <!-- <link href="css/simple.css" rel="stylesheet" type="text/css" /> -->
+
+      <script src='lib/jquery.js'></script>
+
+      <script src='giLib.js'></script>
+      <script src='giGrid.js'></script>
+
+      <script>
+
+          //----- GLOBAL VARS
+          var drawing = true;
+          var running = true;
+          var mouseDown = false;
+          var visible = true;
+          var msec = 0;
+          var frame = 0;
+          var lastTime = new Date();
+
+          //------------------ GLOBAL SINGLETONS
+          var gi = null;
+          var g_canvas;
+          var g_context;
+
+          //---------------------------------------- INIT
+          $(document).ready ( function() {
+              console.log("setup.");
+
+              // Get the canvas/context
+              g_canvas = document.getElementById( "canvas" );
+              g_context = g_canvas.getContext("2d");
+
+              // GI Library - global singleton
+              gi = new giLib ( g_canvas, g_context );
+
+              // TESTING
+              var testa = new giGrid ( "a" );
+
+              var testb = new giGrid ( "b" );
+              testb.setSize ( 30, 60, 100, 100 );
+              testb.setBackClr ( 0, 1, 0, 0.2 );
+              testb.setClip ( true );
+              //gxl.addObj ( testb );
+
+              gi.setRoot ( testa );
+
+              console.log("running.");
+
+              requestAnimationFrame( loop, 1 );
+          });
+
+          //-------------------------------------- DISPLAY LOOP
+          function loop () {
+              frame = frame + 1;
+              if ( frame >= 30 ) {
+                  var d = new Date();
+                  msec = (d.getTime() - lastTime ) / frame;
+                  lastTime = d;
+                  frame = 0;
+              }
+              gi.render();
+
+              var container = document.querySelector( 'section' );
+              container.innerHTML = "FPS: " + (1000.0/msec);
+              requestAnimationFrame( loop, 1 );  // post redisplay
+          }
+
+
+          if ( !window.requestAnimationFrame ) {
+          window.requestAnimationFrame = ( function() {
+
+          return window.webkitRequestAnimationFrame ||
+          window.mozRequestAnimationFrame ||
+          window.oRequestAnimationFrame ||
+          window.msRequestAnimationFrame ||
+          function( callback, element ) {
+          window.setTimeout( callback, 1000 );
+          };
+
+          } )();
+          }
+
+      </script>
+  </head>
+
+  <body style='margin:0px'>
+
+    <canvas id='canvas' width='1200' height='700' style='border:0px solid #111;padding:0px;margin:0px' tabindex='0'> </canvas>
+    <section></section>
+    <button id='btn' onclick='btn_func();' >f</button>
+
+  </body>
+
+</html>
