@@ -36,7 +36,8 @@ The functionality in Libmin includes:
 
 Libmin is not built directly.<br>
 It was previously a static/shared library before 2024, and can be reconfigured as such,<br>
-yet the new usage builds code files directly into other projects.<br>
+yet the new usage builds code files directly into other projects. This saves compile time,<br>
+eliminates multiple build projects, and makes interactive debugging much easier.<br>
 
 Look at <a href="https://github.com/ramakarl/just_math">just_math</a> for example cmake project builds. <br>
 All samples there make use of Libmin.<br>
