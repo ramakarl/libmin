@@ -71,7 +71,7 @@ Convenience functions (called in application CMake):
 - _REQUIRE_CUDA(default) - request linkage to NV CUDA, with automatic .cu to PTX compilation
 
 ## Application Cmakes 
-Libmin was designed as a versatile library, providing application wrappers from<br>
+Libmin was designed as a versatile library, providing application wrappers that range from<br>
 interactive OpenGL apps, to GPU-based CUDA apps, to console-based networking apps.<br>
 
 An application that uses libmin creates a CMakeLists.txt.<br>
