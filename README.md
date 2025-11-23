@@ -48,14 +48,15 @@ Libmin provides main wrappers for multiple platforms including Windows, Linux an
 Main wrappers are optional. You may write your own main.<br>
 A main wrapper is used by calling the _REQUIRE_MAIN() function in your project cmake.
 
-## Third-party Libraries
+## Modules & Third-party Libraries
 
-Third party libs may be found in \libext.
+Modules are sub-folders of \libmin with code that can be directly included/compiled.<br>
+Third party libs may be found in \libext as separately compiled libs.<br>
+These are not built with  libmin by default.<br>
 
-These are not built into libmin.<br>
-They are provided for convenience to applications that use libmin.<br>
+Both may be requested via convenience macros by applications that use libmin.<br>
 <Br>
-Convenience functions (called in application CMake):
+Convenience macros (called in application CMake):
 - _REQUIRE_3D - request inclusion of /src/3d folder
 - _REQUIRE_IMAGE - request inclusion of /src/image folder
 - _REQUIRE_DATAPTR - request inclusion of /src/dataptr folder
