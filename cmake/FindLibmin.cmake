@@ -39,6 +39,15 @@ endfunction()
 
 message ( STATUS "\n----- RUNNING FindLibmin.cmake " )
 
+
+# *NOTE** 
+# LIBMIN_ prefix forces the variable to be namespaced to Libmin package,
+# and allows it to be initialized & updated here but visible to project
+set (LIBS_DEBUG "" )
+set (LIBS_OPTIMIZED "" )	
+set (LIBS_PLATFORM "" )	
+set (LIBS_PACKAGE_DLLS "" )	
+
 ##############
 # LIBMIN_ROOT - libmin src, should be set by caller during bootstrap
 #
@@ -74,7 +83,6 @@ else()
 endif()  
 set ( LIBEXT_ROOT ${LIBEXT_ROOT} CACHE PATH "Path to /libext source" )
 _CONFIRM_PATH ( LIBEXT_ROOT "${LIBEXT_ROOT}" "/include/openssl/bio.h" "/include/openssl/bio.h" "LIBEXT_ROOT" TRUE)
-
 
 # Repository paths
 set ( LIBMIN_ROOT_MAINS "${LIBMIN_ROOT}/mains" )
@@ -143,11 +151,7 @@ endmacro()
 # GET GLOBALS
 # Macros run at global scope
 macro(_GET_GLOBALS)
-  get_property ( LIBMIN_FILES GLOBAL PROPERTY LIBMIN_FILES)
-  get_property ( LIBS_OPTIMIZED GLOBAL PROPERTY LIBS_OPTIMIZED)
-  get_property ( LIBS_DEBUG GLOBAL PROPERTY LIBS_DEBUG)
-  get_property ( LIBS_PLATFORM GLOBAL PROPERTY LIBS_PLATFORM)
-  get_property ( PACKAGE_DLLS GLOBAL PROPERTY PACKAGE_DLLS )
+  get_property ( LIBMIN_FILES GLOBAL PROPERTY LIBMIN_FILES)  
 endmacro()
 
 ####################################################################################
@@ -197,7 +201,7 @@ endmacro()
 # Provide Libext - extended 3rd party libraries: 
 #  OpenSSL, Laszip, OptiX, PortAudio, CUFFT, PixarUSD, LibGDVB, LibOptiX
 #
-function (_REQUIRE_LIBEXT)    
+macro (_REQUIRE_LIBEXT)    
     message (STATUS "  Searching for LIBEXT... ${LIBEXT_ROOT}")
     if (EXISTS "${LIBEXT_ROOT}" AND IS_DIRECTORY "${LIBEXT_ROOT}")
         set( LIBEXT_FOUND TRUE )
@@ -212,75 +216,70 @@ message (FATAL_ERROR "  LIBEXT Not Found at: ${LIBEXT_ROOT}.
 Set LIBEXT_ROOT to the location of libext.
 ")
     endif()
-endfunction()
+endmacro()
 
 ###################################################################################
 # Provide a cross-platform main
 #
-function ( _REQUIRE_MAIN )
+macro ( _REQUIRE_MAIN )
     # Add Main to build
 
     OPTION (BUILD_CONSOLE "Build console app" OFF)
 
     add_definitions(-DBUILD_MAIN)
+
     IF (BUILD_CONSOLE)
-    	LIST( APPEND SRC_FILES "${LIBMIN_ROOT_MAINS}/main_console.cpp" )
+    	set (APP_FILES "${LIBMIN_ROOT_MAINS}/main_console.cpp" )
     ELSE()
 	    IF(WIN32)
-  		    LIST( APPEND SRC_FILES "${LIBMIN_ROOT_MAINS}/main_win.cpp" )
+  		    set( APP_FILES "${LIBMIN_ROOT_MAINS}/main_win.cpp" )
 	    ELSEIF(ANDROID)
-		      LIST( APPEND SRC_FILES "${LIBMIN_ROOT_MAINS}/main_android.cpp" )
+		      set( APP_FILES "${LIBMIN_ROOT_MAINS}/main_android.cpp" )
 	    ELSE()
-	  	    LIST( APPEND SRC_FILES "${LIBMIN_ROOT_MAINS}/main_x11.cpp" )
+	  	    set( APP_FILES "${LIBMIN_ROOT_MAINS}/main_x11.cpp" )
 	    ENDIF()
     ENDIF()
-	  LIST( APPEND SRC_FILES "${LIBMIN_ROOT_MAINS}/main.h" )
+	  LIST( APPEND APP_FILES "${LIBMIN_ROOT_MAINS}/main.h" )
     include_directories( ${LIBMIN_ROOT_MAINS} )
 
-    set ( PACKAGE_SOURCE_FILES ${SRC_FILES} PARENT_SCOPE )
-endfunction()
+    list( APPEND PACKAGE_SOURCE_FILES ${APP_FILES} )
+endmacro()
 
-function ( _REQUIRE_CONSOLE )
+macro ( _REQUIRE_CONSOLE )
   add_definitions(-DBUILD_MAIN)
-  LIST( APPEND SRC_FILES "${LIBMIN_ROOT_MAINS}/main_console.cpp" )
+  set( APP_FILES "${LIBMIN_ROOT_MAINS}/main_console.cpp" )
   include_directories( ${LIBMIN_ROOT_MAINS} )
-  set ( PACKAGE_SOURCE_FILES ${SRC_FILES} PARENT_SCOPE )
-endfunction()
+  list( APPEND PACKAGE_SOURCE_FILES ${APP_FILES} )
+endmacro()
 
 ###################################################################################
 # Include OpenGL 
 #
-function ( _REQUIRE_GL )
+macro ( _REQUIRE_GL )
     OPTION (BUILD_OPENGL "Build with OpenGL" ON)
     if (BUILD_OPENGL)            
         message ( STATUS "  Searching for GL.." )
         find_package(OpenGL)
         if (OPENGL_FOUND)                    
           add_definitions(-DBUILD_OPENGL)  		
-          if (WIN32)
-	          set ( GL_LIBS "opengl32.lib" )	          
-          else()
-            set( GL_LIBS "gl glew x11" )
-	        endif()
-          set_property(GLOBAL APPEND PROPERTY LIBS_PLATFORM ${GL_LIBS} )
-          message ( STATUS "  ---> Using GL" )
+          _ATTACH_PLATFORM_LIB ( NAME "GL" WIN "opengl32.lib" LINUX "gl glew x11")          
         endif()
     endif()
-endfunction()
+endmacro()
 
-function ( _REQUIRE_GLEW)    
+macro ( _REQUIRE_GLEW)    
     OPTION (BUILD_GLEW "Build with GLEW" ON)
     if (BUILD_GLEW)
       add_definitions(-DGLEW_STATIC)	    
       LIST(APPEND GLEW_FILES "${LIBEXT_ROOT}/include/GL/glew.c" )       
       _ATTACH_FILES ( "GLEW" ${GLEW_FILES} )      
     endif()
-endfunction()
+endmacro()
 
 ###################################################################################
 # Include OpenSSL
 #
-function ( _REQUIRE_OPENSSL _openssl_default)
+macro ( _REQUIRE_OPENSSL _openssl_default)
     OPTION (BUILD_OPENSSL "Build with OpenSSL" ${_openssl_default} )
     if (BUILD_OPENSSL) 
 
@@ -290,41 +289,61 @@ function ( _REQUIRE_OPENSSL _openssl_default)
 		    add_definitions(-DBUILD_OPENSSL)	
 		    include_directories ( ${OPENSSL_INC} )
 		    link_directories ( ${OPENSSL_BIN} )
-        _ATTACH_LIB ( "OpenSSL" ${OPENSSL_INC} ${OPENSSL_BIN} ${OPENSSL_DEBUG_LIBS} ${OPENSSL_REL_LIBS} ${OPENSSL_DLLS} )
+        _ATTACH_LIB ( NAME "OpenSSL" INC ${OPENSSL_INC} BIN ${OPENSSL_BIN} DEBUG_LIBS ${OPENSSL_DEBUG_LIBS} REL_LIBS ${OPENSSL_REL_LIBS} DLLS ${OPENSSL_DLLS} )
 	    else()
 		    message ( FATAL_ERROR "\n  Unable to find OpenSLL library. Link with a different /libext for third-party libs that include OpenSSL.\n")
 	    endif()
     endif()
-endfunction()
+endmacro()
 
 #####################################################################################
 # Include Bcrypt
 #
-function ( _REQUIRE_BCRYPT _bcrypt_default)
+macro ( _REQUIRE_BCRYPT _bcrypt_default)
     OPTION (BUILD_BCRYPT "Build with Bcrypt" ${_bcrypt_default} )
     if (BUILD_BCRYPT) 
         find_package(Bcrypt)
         if ( BCRYPT_FOUND )	
 	        add_definitions(-DBUILD_BCRYPT)
-          _ATTACH_LIB ( "BCrypt" ${BCRYPT_INC} ${BCRYPT_BIN} ${BCRYPT_DEBUG_LIBS} ${BCRYPT_REL_LIBS} ${BCRYPT_DLLS} )		        	        
+          _ATTACH_LIB ( NAME "BCrypt" INC ${BCRYPT_INC} BIN ${BCRYPT_BIN} DEBUG_LIBS ${BCRYPT_DEBUG_LIBS} REL_LIBS ${BCRYPT_REL_LIBS} DLLS ${BCRYPT_DLLS} )
         endif()
     endif()
-endfunction()
+endmacro()
+
+#####################################################################################
+# Include GVDB
+#
+macro ( _REQUIRE_GVDB )
+ 
+  find_package( LibGVDB )
+
+  if ( LIBGVDB_FOUND )	
+	  add_definitions(-DBUILD_GVDB)
+    _ATTACH_LIB ( NAME "GVDB" INC ${GVDB_INC_DIR} BIN ${GVDB_LIB_DIR} DEBUG_LIBS ${GVDB_DEBUG_LIB} REL_LIBS ${GVDB_REL_LIB} DLLS ${GVDB_DLLS} )
+    set_property (GLOBAL APPEND PROPERTY CUDA_INC_PATHS ${GVDB_INC_DIR} )
+
+    OPTION (BUILD_USING_GVDB_SHARED "Use GVDB Shared Libs" OFF)
+    if (NOT BUILD_USING_GVDB_SHARED)
+      add_definitions(-DGVDB_STATIC)  
+    endif()
+  endif()
+endmacro()
 
 #####################################################################################
 # Include JPG    
 #   
-function ( _REQUIRE_JPG )   
+macro ( _REQUIRE_JPG )   
   set ( OK_H "0" )    
   set ( _jpg_srch "${LIBEXT_ROOT}/win64" )
 	_FIND_FILE ( JPG_LIBS _jpg_srch "libjpg_2019x64.lib" "" OK_H )		
 	if ( OK_H EQUAL 1 )
-      add_definitions(-DBUILD_JPG) 
+      
+      add_definitions(-DBUILD_JPG)
       set ( JPG_OPT "${LIBEXT_ROOT}/win64/libjpg_2019x64.lib" )
       set ( JPG_DEBUG "${LIBEXT_ROOT}/win64/libjpg_2019x64d.lib" )
-      set_property (GLOBAL APPEND PROPERTY LIBS_OPTIMIZED ${JPG_OPT} )
-      set_property (GLOBAL APPEND PROPERTY LIBS_DEBUG ${JPG_DEBUG} )
-      include_directories( "${LIBEXT_ROOT}/include" )
+
+      _ATTACH_LIB ( NAME "JPG" INC "${LIBEXT_ROOT}/include" BIN "${LIBEXT_ROOT}/win64" DEBUG_LIBS ${JPG_DEBUG} REL_LIBS ${JPG_REL} DLLS "" )
+      
       message ( STATUS "  ---> Using libjpg" )
     else ()
       message ( FATAL_ERROR "
@@ -332,7 +351,7 @@ function ( _REQUIRE_JPG )
       Set LIBEXT_DIR to libmin/libext path for 3rd party libs.
       ")
     endif()
-endfunction()
+endmacro()
 
 
 ####################################################################################
@@ -360,10 +379,13 @@ macro ( _REQUIRE_CUDA BUILD_CUDA_default kernel_path)
       file(GLOB CUDA_FILES "${_cuda_kernels_path}/*.cu" )        # project scope          
       # "${_cuda_kernels_path}/*.cuh"
 
-      # give access to libmin cuda kernels
-      set ( LIBMIN_KERNELS_PATH "${LIBMIN_ROOT}/include/cuda")
-      target_include_directories ( libmin::libmin INTERFACE ${LIBMIN_KERNELS_PATH} )
-   
+      # set cuda/nvcc include paths, to add app and libmin kernel headers
+      set ( LIBMIN_KERNEL_PATH "${LIBMIN_ROOT}/include/cuda" )
+      set_property (GLOBAL APPEND PROPERTY CUDA_INC_PATHS ${CMAKE_CURRENT_SOURCE_DIR} )
+      set_property (GLOBAL APPEND PROPERTY CUDA_INC_PATHS ${LIBMIN_ROOT_INC} )
+      set_property (GLOBAL APPEND PROPERTY CUDA_INC_PATHS ${LIBMIN_KERNEL_PATH} )
+      target_include_directories ( libmin::libmin INTERFACE ${LIBMIN_KERNEL_PATH} )   
+
 
       # cuda settings
       set( BUILD_DEBUG_PTX OFF CACHE BOOL "Enable CUDA debugging with NSight")  
@@ -387,10 +409,15 @@ macro ( _REQUIRE_CUDA BUILD_CUDA_default kernel_path)
         endforeach()
 
       else()
+        # get all include paths for nvcc, as comma-separated (we are compiling ptx directly here)
+        get_property (NVCC_INC GLOBAL PROPERTY CUDA_INC_PATHS )
+        string (REPLACE ";" "," NVCC_INC "${NVCC_INC}")
+        message ( STATUS "  NVCC Include Paths: ${NVCC_INC}")
+
         if ( BUILD_DEBUG_PTX )
-	        compile_ptx ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${CMAKE_CURRENT_SOURCE_DIR},${LIBMIN_ROOT_INC},${LIBMIN_KERNELS_PATH}" OPTIONS --ptx -dc -Xptxas -v -G -g --use_fast_math --maxrregcount=32 )
+	        compile_ptx ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${NVCC_INC}" OPTIONS --ptx -dc -Xptxas -v -G -g --use_fast_math --maxrregcount=32 )
         else()
-	        compile_ptx ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${CMAKE_CURRENT_SOURCE_DIR},${LIBMIN_ROOT_INC},${LIBMIN_KERNELS_PATH}" OPTIONS --ptx -dc -Xptxas -v -O3 --use_fast_math --maxrregcount=32 )
+	        compile_ptx ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${NVCC_INC}" OPTIONS --ptx -dc -Xptxas -v -O3 --use_fast_math --maxrregcount=32 )
         endif()
       endif()
       message ( STATUS "  CUDA Kernels: ${CUDA_FILES} " )
@@ -546,51 +573,79 @@ endfunction()
 
 #------------------------------------ CROSS-PLATFORM, MULTI-FILE INSTALLS
 
-function ( _ATTACH_FILES NAME LIST)  
+macro ( _ATTACH_FILES NAME LIST)  
   message ( STATUS "  ${NAME}: ${LIST}")
   set_property (GLOBAL APPEND PROPERTY LIBMIN_FILES ${LIST} )
   message ( STATUS "  ---> Using ${NAME} (STATIC) " ) 
-endfunction()
+endmacro()
 
-function ( _ATTACH_LIB NAME INC BINPATH DEBUG REL DLLS)
+macro (_ATTACH_PLATFORM_LIB)
+  set (options "")
+  set (oneValueArgs NAME WIN LINUX)
+  set (multiValueArgs "" )
+  CMAKE_PARSE_ARGUMENTS( ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  if (WIN32)
+	  set ( ADD_LIBS ${ARG_WIN} )	          
+  else()
+    set ( ADD_LIBS ${ARG_LINUX} )
+	endif()
+  list ( APPEND LIBS_PLATFORM ${ADD_LIBS} )
+  # set (LIBS_PLATFORM "${LIBS_PLATFORM}" PARENT_SCOPE)      #-- necessary when called from functions
+
+  message ( STATUS "  ---> Using ${ARG_NAME}" )
+endmacro ()
+          
+macro ( _ATTACH_LIB )
+  set (options "")
+  set (oneValueArgs NAME INC BIN)
+  set (multiValueArgs DEBUG_LIBS REL_LIBS DLLS )
+  CMAKE_PARSE_ARGUMENTS( ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  # lib includes  
+  include_directories ( ${ARG_INC} )
   
-  set_property (GLOBAL APPEND PROPERTY LIBS_DEBUG "${DEBUG}" )
-  set_property (GLOBAL APPEND PROPERTY LIBS_OPTIMIZED "${REL}" )
-	_EXPANDLIST( OUTPUT PACKAGE_DLLS SOURCE ${BINPATH} FILES ${DLLS} )
+  # lib export/static libs (append to list)
+  
+  list ( APPEND LIBS_DEBUG ${ARG_DEBUG_LIBS} )
+  list ( APPEND LIBS_OPTIMIZED ${ARG_REL_LIBS} )
+  # set(LIBS_DEBUG "${LIBS_DEBUG}" PARENT_SCOPE)            #-- necessary when called from functions
+  # set(LIBS_OPTMIZED_LIBS "${LIBS_DEBUG}" PARENT_SCOPE)
+  
+  # lib shared/binaries  
+  _EXPANDLIST( OUTPUT LIB_DLLS SOURCE ${ARG_BIN} FILES ${ARG_DLLS} )  
+  list ( APPEND LIBS_PACKAGE_DLLS ${LIB_DLLS} )
+  # set(LIBS_PACKAGE_DLLS "${LIBS_PACKAGE_DLLS}" PARENT_SCOPE)
 
-  set_property (GLOBAL APPEND PROPERTY PACKAGE_DLLS ${DLLS} )
-  message ( STATUS "  ---> Using ${NAME}, ${BINPATH}/${DLLS} ")
-endfunction()
+  message ( STATUS "  ---> Using ${ARG_NAME} ")
+endmacro()
 
 
-function( install_files PROJ FILES DESTINATION OUTPUT_VAR )   
+macro( install_files )   
   set (generated_files "")
-  set (oneValueArgs PROJ DESTINATION OUTPUT_VAR )
+  set (oneValueArgs TARGET DESTINATION  )
   set (multiValueArgs FILES )
   CMAKE_PARSE_ARGUMENTS( ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
   if(NOT ARG_DESTINATION)
     set (ARG_DESTINATION "")
   endif()
-    
+
+  # ensure directory exists
+  add_custom_command(
+    TARGET ${PROJNAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${ARG_DESTINATION}"
+  )
+
   foreach(f ${ARG_FILES})
     get_filename_component(name ${f} NAME)
-    set(out "${CMAKE_BINARY_DIR}/${ARG_DESTINATION}/${name}")
-
+    set(out "${ARG_DESTINATION}/${name}")
     add_custom_command(
-        OUTPUT ${out}
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/${ARG_DESTINATION}"
-        COMMAND ${CMAKE_COMMAND} -E copy ${f} ${out}
-        DEPENDS ${f}
-    )
-    list(APPEND generated_files ${out})
+        TARGET ${PROJNAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy ${f} ${out}        
+    )    
   endforeach()
   
-  add_custom_target( ${ARG_PROJ} ALL DEPENDS ${generated_files})
-  
-  install(FILES ${generated_files} DESTINATION ${ARG_DESTINATION})
-  
-  set( ${ARG_OUTPUT_VAR} ${generated_files} PARENT_SCOPE)   
-endfunction()
+endmacro()
 
 
 #------------------------------------------------- CROSS-PLATFORM INSTALL PTX
@@ -602,12 +657,12 @@ macro( install_ptx )
   CMAKE_PARSE_ARGUMENTS( ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   # copy ptx files to destination
-  foreach ( _file ${ARG_FILES} )
-	  get_filename_component ( _ptxname ${_file} NAME ) 	    
-	  set ( _fixed "${ARG_DESTINATION}/${_ptxname}" ) 
-    message ( STATUS "  Install ptx: ${_file} --> ${_fixed}")
+  foreach ( f ${ARG_FILES} )
+	  get_filename_component ( name ${f} NAME ) 	    
+	  set ( out "${ARG_DESTINATION}/${name}" ) 
+    message ( STATUS "  Install ptx: ${f} --> ${out}")
   	add_custom_command ( TARGET ${PROJNAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy  ${_file} ${_fixed}
+      COMMAND ${CMAKE_COMMAND} -E copy  ${f} ${out}
     )	
   endforeach()
   
@@ -708,7 +763,7 @@ endmacro()
 
 #----------------------------------------------- LIST ALL source
 
-function(_LINK ) 
+macro(_LINK ) 
   set (options "")
   set (multiValueArgs PROJECT OPT DEBUG PLATFORM )
   CMAKE_PARSE_ARGUMENTS(_LINK "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -719,19 +774,28 @@ function(_LINK )
 
   target_link_libraries( ${PROJ_NAME} PRIVATE libmin::libmin libext::libext )	
 
-	foreach (item IN ITEMS ${_LINK_PLATFORM} )
-		target_link_libraries( ${PROJ_NAME} PRIVATE ${item} )	
-		list (APPEND LIBLIST ${item})
-	endforeach() 	
+  if (_LINK_PLATFORM)
+    target_link_libraries( ${PROJ_NAME} PRIVATE ${_LINK_PLATFORM} )
+  endif()
+  if (_LINK_DEBUG)
+    target_link_libraries( ${PROJ_NAME} PRIVATE debug ${_LINK_DEBUG} )
+  endif()
+  if (_LINK_OPT)
+    target_link_libraries( ${PROJ_NAME} PRIVATE optimized ${_LINK_OPT} )
+  endif()
 
-	foreach (item IN ITEMS ${_LINK_DEBUG} )
-		target_link_libraries ( ${PROJ_NAME} PRIVATE $<$<CONFIG:Debug>:${item} )
-		list (APPEND LIBLIST ${item})
-	endforeach()
-	
-	foreach (item IN ITEMS ${_LINK_OPT} )   
-		target_link_libraries ( ${PROJ_NAME} PRIVATE $<$<CONFIG:Release>:${item} )
-	endforeach()
+  #--- NOTE: do not construct in this way! CMake does not handle $<$<CONFIG:Debug> properly when invoked many times.
+	#foreach (item IN ITEMS ${_LINK_PLATFORM} )
+  #	target_link_libraries( ${PROJ_NAME} PRIVATE ${item} )	
+	#	list (APPEND LIBLIST ${item})
+	#endforeach() 	
+	#foreach (item IN ITEMS ${_LINK_DEBUG} )
+	#	target_link_libraries ( ${PROJ_NAME} PRIVATE $<$<CONFIG:Debug>:${item} )
+	#	list (APPEND LIBLIST ${item})
+	#endforeach()	
+	#foreach (item IN ITEMS ${_LINK_OPT} )   
+#		target_link_libraries ( ${PROJ_NAME} PRIVATE $<$<CONFIG:Release>:${item} )
+#	endforeach()
 
   if (BUILD_CUDA)
       # link to cuda libraries
@@ -741,7 +805,7 @@ function(_LINK )
   message ( STATUS "\n----- DONE" )	
 	string (REPLACE ";" "\n   " OUTSTR "${LIBLIST}")
 	message ( STATUS "  Libraries used:\n   ${OUTSTR}" )
-endfunction()
+endmacro()
 
 macro(_STARTUP_PROJECT )
 
