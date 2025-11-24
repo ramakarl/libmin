@@ -830,7 +830,7 @@ void NetworkSystem::netServerCheckConnectionHandshakes ( )
 	for ( int sock_i = 0; sock_i < (int) m_socks.size ( ); sock_i++ ) { 
 		NetSock& s = m_socks[ sock_i ];
 
-		if (current_time.GetElapsedSec(s.lastStateChange) > 1.0) {
+		if (current_time.GetElapsedSec(s.lastStateChange) > m_reconnectLimit ) {
 
 			s.lastStateChange = current_time;
 
