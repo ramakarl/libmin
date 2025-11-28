@@ -149,7 +149,6 @@ Email: ramahoetzlein@gmail.com<br>
 ## License
 Libmin is MIT Licensed with contributions from other BSD and MIT licensed sources.<br>
 Individual portions of libmin are listed here with their original licensing.<br>
-<br>
 Copyright listing for Libmin:<br>
 Copyright (c) 2007-2022, Quanta Sciences, Rama Hoetzlein. MIT License (image, dataptr, events, gxlib)<br>
 Copyright (c) 2017 NVIDIA GVDB, by Rama Hoetzlein. BSD License (camera3d, tga, str_helper, vec, mains)<br>
@@ -158,4 +157,3 @@ Copyright (c) 2005-2013 Lode Vandevenne. BSD License (LodePNG, file_png)<br>
 Copyright (c) 2015-2017 Christian Stigen Larsen. BSD License (mersenne)<br>
 Copyright (c) 2002-2012 Nikolaus Gebhardt, Irrlicht Engine. BSD License (quaternion)<br>
 <br>
-Derivative changes to Libmin may append this copyright listing but should not modify it.<br>
