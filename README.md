@@ -142,11 +142,10 @@ _REQUIRE_OPENSSL(default) - request linkage to libssl-dev<br>
 _REQUIRE_BCRYPT(default) - request linkage to bcrypt<br>
 _REQUIRE_CUDA(default) - request linkage to NV CUDA, with automatic .cu to PTX compilation<br>
 
-## Contact
-Feel free to contact me if you have any questions, comments or suggestions:<br>
-**Rama Hoetzlein** <br>
-Website: <a href="https://ramakarl.com">ramakarl.com</a><br>
-Email: ramahoetzlein@gmail.com<br>
+## Direct Contributions
+Thanks to:<br>
+Mark Zifchock - for early versions of the Android cross-platform pathway<br>
+Marcus Pieska - for the OpenSSL stack over the TCP/IP Network layer<br>
 
 ## License
 Libmin is MIT Licensed with contributions from other BSD and MIT licensed sources.<br>
@@ -158,4 +157,9 @@ Copyright (c) 2020 Yuji Hirose. MIT License (httplib.h)<br>
 Copyright (c) 2005-2013 Lode Vandevenne. BSD License (LodePNG, file_png)<br>
 Copyright (c) 2015-2017 Christian Stigen Larsen. BSD License (mersenne)<br>
 Copyright (c) 2002-2012 Nikolaus Gebhardt, Irrlicht Engine. BSD License (quaternion)<br>
-<br>
+
+## Contact
+Feel free to contact me if you have any questions, comments or suggestions:<br>
+**Rama Hoetzlein** <br>
+Website: <a href="https://ramakarl.com">ramakarl.com</a><br>
+Email: ramahoetzlein@gmail.com<br>
