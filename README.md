@@ -1,4 +1,6 @@
 
+<img width=60% src="https://github.com/ramakarl/libmin/blob/main/libmin_design.png" />
+
 ## Libmin: A minimal utility library for computer graphics
 
 ### by [Rama Karl](http://ramakarl.com) (c) 2023. MIT license
