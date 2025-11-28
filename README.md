@@ -44,8 +44,8 @@ To build an application, place the app and Libmin repo as sibling folders.<br>
 The application has a Cmake that bootstraps and requests Libmin to help with direct-compiled code, third party libs, build and linkage.
 Before 2024, Libmin was a static/shared library and can be reconfigured as such, yet the new design builds code files directly into your application.
 
-Look at <a href="https://github.com/ramakarl/just_math">just_math</a> for example cmake application projects.<br>
-All samples there make use of Libmin.<br>
+For a simple, complete example see Flock2 cmake: https://github.com/ramakarl/Flock2/blob/main/CMakeLists.txt<br>
+See also <a href="https://github.com/ramakarl/just_math">just_math</a>, as all samples there use Libmin.<br>
 
 ## Design
 
@@ -76,9 +76,9 @@ An application that uses Libmin create a new CMakeLists.txt and then follows the
 These steps follow the usual Cmake workflow and all Libmin steps are optional. <br>
 Full use of Libmin provides a convenient way to build in vectors, images, meshes, events, networking, OpenSSL, OpenGL, CUDA, cross-platform mains, etc. for a variety of applications types.<br>
 
-For a detailed example see: https://github.com/ramakarl/Flock2/blob/main/CMakeLists.txt<br>
+For a simple, complete example see: https://github.com/ramakarl/Flock2/blob/main/CMakeLists.txt<br>
 
-The following is a simplified, general example:<br>
+The following is a generalized example:<br>
 ```
 cmake_minimum_required(VERSION 2.8...3.5)
 set (CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "")
