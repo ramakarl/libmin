@@ -51,8 +51,8 @@ See also <a href="https://github.com/ramakarl/just_math">just_math</a>, as all s
 
 ## Design
 
-Libmin was designed as a versatile, non-intrusive library to provide cross-platform mains, support code, libraries and wrappers<br>
-for applications that range from interactive OpenGL apps, to GPU-based CUDA apps, to console-based networking apps.
+Libmin was designed as a versatile, non-intrusive library to provide cross-platform mains, support code, libraries and 
+wrappers for applications that range from interactive OpenGL apps, to GPU-based CUDA apps, to console-based networking apps.
 
 To support many application types non-intrusively, static/shared libraries were found to be insufficient as they make too 
 many assumptions regarding what is necessary to include and leading to bloated shared libs and difficulty versioning across many apps.
