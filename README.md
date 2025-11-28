@@ -140,6 +140,12 @@ _REQUIRE_OPENSSL(default) - request linkage to libssl-dev<br>
 _REQUIRE_BCRYPT(default) - request linkage to bcrypt<br>
 _REQUIRE_CUDA(default) - request linkage to NV CUDA, with automatic .cu to PTX compilation<br>
 
+## Contact
+Feel free to contact me if you have any questions, comments or suggestions:<br>
+**Rama Hoetzlein** <br>
+Website: <a href="https://ramakarl.com">ramakarl.com</a><br>
+Email: ramahoetzlein@gmail.com<br>
+
 ## License
 Libmin is MIT Licensed with contributions from other BSD and MIT licensed sources.<br>
 Individual portions of libmin are listed here with their original licensing.<br>
@@ -153,5 +159,3 @@ Copyright (c) 2015-2017 Christian Stigen Larsen. BSD License (mersenne)<br>
 Copyright (c) 2002-2012 Nikolaus Gebhardt, Irrlicht Engine. BSD License (quaternion)<br>
 <br>
 Derivative changes to Libmin may append this copyright listing but should not modify it.<br>
-
-Contact: Rama Hoetzlein at ramahoetzlein@gmail.com
