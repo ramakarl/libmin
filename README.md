@@ -67,7 +67,7 @@ When fully utilized, the result is a simplified project Cmake that simply reques
 
 ## Usage
 An application that uses Libmin create a new CMakeLists.txt and then follows these steps:<br>
-1. Bootstrap - The first in using Libmin is Cmake that loads the Libmin Bootstrap to find the Libmin packaged cmakes.<br>
+1. Bootstrap - Create a Cmake that loads the Libmin Bootstrap to find the Libmin packaged cmakes.<br>
 2. Options - Convenience functions are called to request code include & library linkages [optional].<br>
 3. Executable - The application executable/library is created as usual using add_executable or add_library.<br>
 4. Link - The _LINK macro is invoked to simplify linkage [optional].<br>
