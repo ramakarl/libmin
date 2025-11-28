@@ -3,7 +3,7 @@
 
 ### by [Rama Karl](http://ramakarl.com) (c) 2023. MIT license
 
-Libmin stands for *minimal utility library* for computer graphics. Libmin combines multiple useful functions into a single library but with no external dependencies.
+Libmin stands for *minimal utility library* for computer graphics. Libmin combines multiple useful functions into a single direct-compile framework with no external dependencies.
 Projects with BSD and MIT Licenses have been merged into libmin. The full library is MIT Licensed.<br>
 
 The functionality in Libmin includes:
@@ -22,100 +22,125 @@ The functionality in Libmin includes:
 - Http connections (httlib.h)
 - Time library, with nanosecond accuracy over millenia (timex.h)
 
-## Example Usage
+## Projects using Libmin
 
-To see some example uses of Libmin, check out the Just Math repository:<br>
-Just math - <a href="https://github.com/ramakarl/just_math">https://github.com/ramakarl/just_math</a><br>
+- <a href="https://github.com/ramakarl/just_math">just_math</a> - Collection of pure math demos for computer graphics<br>
+- <a href="https://github.com/ramakarl/flightsim">flightsim</a> - A simple, Single-Body Flight Simulator (SBFM)<br>
+- <a href="https://github.com/ramakarl/flock2">flock2</a> - A Model for Orientation-based Social Flocking<br>
+- <a href="https://github.com/quantasci/logrip">logrip</a> - Defend against AI crawlers & botgs with server log analysis<br>
+- <a href="https://github.com/quantasci/ProjectiveDisplacement">ProjectiveDisplacement</a> - Projective Displacement Mapping for Raytraced Editable Surfaes<br>
+- <a href="https://github.com/quantasci/shapes">SHAPES</a> - A lightweight, node-based renderer for dynamic and natural systems<br>
+- <a href="https://github.com/ramakarl/invk">invk</a> - An Inverse Kinematics Library using Quaternions<br>
+
+## Build & Examples
+
+Libmin is not built directly. <br>
+To build an application, place the app and Libmin repo as sibling folders.<br>
+<pre>
+\codes
+ ├── \application
+ └── \libmin
+</pre>
+The application has a Cmake that bootstraps and requests Libmin to help with direct-compiled code, third party libs, build and linkage.
+Before 2024, Libmin was a static/shared library and can be reconfigured as such, yet the new design builds code files directly into your application.
+
+Look at <a href="https://github.com/ramakarl/just_math">just_math</a> for example cmake application projects.<br>
 All samples there make use of Libmin.<br>
 
-## Building
+## Design
 
-Steps:
-1) git clone https://github.com/ramakarl/libmin.git
-2) Run ./build.sh
-3) For more details/options, see <a href="https://github.com/ramakarl/just_math?tab=readme-ov-file#how-to-build">just_math, How to Build</a>
+Libmin was designed as a versatile, non-intrusive library to provide cross-platform mains, support code, libraries and wrappers<br>
+for applications that range from interactive OpenGL apps, to GPU-based CUDA apps, to console-based networking apps.
+
+To support many application types non-intrusively, static/shared libraries were found to be insufficient as they make too 
+many assumptions regarding what is necessary to include and leading to bloated shared libs and difficulty versioning across many apps.
+The primary reasons for static/shared libraries is to provide a feature barrier and to support many applications 
+without duplicating compilation. Libmin is open source and lightweight enough that both are unnecessary and add complexity. 
+Direct code compilation is simpler, allows for selective inclusion, is faster to compile, and is easier to debug. 
+Yet how to provide code modularity with direct inclusion? Optional convenience macros solve this. Macro functions take care
+of code inclusions (vec, image, mesh, network), of additional libs (OpenGL, OpenSSL, CUDA, FFTW), of linkage (_LINK), and install steps (install_files, install_ptx).
+Think of Libmin as Cmake the way you wanted it to work.
+
+Applications can follow the typical Cmake workflow. If you include nothing, it is no different that a blank slate C/C++ project built with Cmake.
+Libmin provides convenience macros that automatically compile & link in additional source code and third party libs.
+When fully utilized, the result is a simplified project Cmake that simply requests what it needs, links and builds.
+
+## Usage
+An application that uses Libmin create a new CMakeLists.txt and then follows these steps:<br>
+1. Bootstrap - The first in using Libmin is Cmake that loads the Libmin Bootstrap to find the Libmin packaged cmakes.<br>
+2. Options - Convenience functions are called to request code include & library linkages [optional].<br>
+3. Executable - The application executable/library is created as usual using add_executable or add_library.<br>
+4. Link - The _LINK macro is invoked to simplify linkage [optional].<br>
+5. Install - Install is done as usual. Additional helper macros install_ptx and install_files are provided to simplify multi-file installs [optional].<br>
+
+These steps follow the usual Cmake workflow and all Libmin steps are optional. <br>
+Full use of Libmin provides a convenient way to build in vectors, images, meshes, events, networking, OpenSSL, OpenGL, CUDA, cross-platform mains, etc. for a variety of applications types.<br>
+
+For a detailed example see: https://github.com/ramakarl/Flock2/blob/main/CMakeLists.txt<br>
+
+The following is a simplified, general example:<br>
+```
+cmake_minimum_required(VERSION 2.8...3.5)
+set (CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "")
+set(PROJNAME _your_project_name_)
+Project(${PROJNAME})
+################
+# 1. LIBMIN Bootstrap - this section finds the libmin/cmakes
+set ( LIBMIN_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../libmin" CACHE STRING "Location of Libmin")
+find_package( Libmin QUIET )
+..
+################
+# 2. Options - this section specifies the code & linkage that the application desires
+_REQUIRE_DATAPTR()
+_REQUIRE_IMAGE()
+_REQUIRE_3D()
+_REQUIRE_GXLIB()
+_REQUIRE_MAIN()
+_REQUIRE_GL()
+_REQUIRE_GLEW()
+..
+################
+# 3. Executable
+file(GLOB MAIN_FILES *.cpp *.c *.h )
+_GET_GLOBALS()
+add_executable (${PROJNAME} ${MAIN_FILES} ${CUDA_FILES} ${PACKAGE_SOURCE_FILES} ${LIBMIN_FILES})
+# 4. Linkage
+_LINK ( PROJECT ${PROJNAME} OPT ${LIBS_OPTIMIZED} DEBUG ${LIBS_DEBUG} PLATFORM ${LIBS_PLATFORM} )
+..
+################
+# 5. Install Binary
+install ( FILES ${INSTALL_LIST} DESTINATION .)				# EXE
+```
+
+## Libmin Code
+Libmin source code, found in this repo, is direct-compiled into an application code.
+These are separated by folder in the Libmin repo, and requested using convenience macros:<br>
+_REQUIRE_3D - request inclusion of /src/3d folder<br>
+_REQUIRE_IMAGE - request inclusion of /src/image folder<br>
+_REQUIRE_DATAPTR - request inclusion of /src/dataptr folder<br>
+_REQUIRE_G2LIB - request inclusion of /src/g2lib folder<br>
+_REQUIRE_GXLIB - request inclusion of /src/gxlib folder<br>
+_REQUIRE_NETWORK - request inclusion of /src/network folder<br>
+_REQUIRE_MAIN - request linkage to interactive cross-platform main<br>
 
 ## Mains
 
 Libmin provides main wrappers for multiple platforms including Windows, Linux and Android.<br>
 Main wrappers are optional. You may write your own main.<br>
-A main wrapper is used by calling the _REQUIRE_MAIN() function in your cmake.
+A main wrapper is used by calling the _REQUIRE_MAIN() function in your project cmake.
 
-## Modules & Third-party Libraries
-
-Modules are sub-folders of \libmin with code that can be directly included/compiled.<br>
-Third party libs may be found in \libext as separately compiled libs.<br>
-These are not built with  libmin by default.<br>
-
-Both may be requested via convenience macros by applications that use libmin.<br>
-<Br>
-Convenience macros (called in application CMake):
-- _REQUIRE_3D - request inclusion of /src/3d folder
-- _REQUIRE_IMAGE - request inclusion of /src/image folder
-- _REQUIRE_DATAPTR - request inclusion of /src/dataptr folder
-- _REQUIRE_G2LIB - request inclusion of /src/g2lib folder
-- _REQUIRE_GXLIB - request inclusion of /src/g2lib folder
-- _REQUIRE_NETWORK - request inclusion of /src/network folder
-- _REQUIRE_MAIN - request linkage to interactive cross-platform main
-- _REQUIRE_GL - request linkage to OpenGL lib
-- _REQUIRE_GLEW - request linkage to GLEW lib
-- _REQUIRE_LIBEXT - request linkage to third-party libs, enables LIBEXT
-- _REQUIRE_JPG - request linkage to libjpg 
-- _REQUIRE_OPENSSL(default) - request linkage to libssl-dev
-- _REQUIRE_BCRYPT(default) - request linkage to bcrypt
-- _REQUIRE_CUDA(default) - request linkage to NV CUDA
-
-## Application Cmakes 
-Libmin was designed to be a very versatile library, providing application wrappers from interactive OpenGL apps, to GPU-based CUDA apps, to console-based networking apps.<br>
-To achieve this, an application that uses libmin creates a CMakeLists.txt following this pseudo-code.<br>
-For a detailed example see: https://github.com/ramakarl/Flock2/blob/main/CMakeLists.txt<br>
-
-```
-cmake_minimum_required(VERSION 2.8)
-set (CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "")
-set(PROJNAME _your_project_name_)
-Project(${PROJNAME})
-
-# LIBMIN Bootstrap - this section finds the libmin/cmakes
-#
-..
-# Include LIBMIN - this section loads and links with libmin
-#
-find_package( Libmin QUIET )
-..
-# Options - this section specifies the linkage that the application desires
-#
-_REQUIRE_MAIN()  - optional (leave out for console apps)
-_REQUIRE_GL()    - optional
-_REQUIRE_GLEW()  - optional
-_REQUIRE_CUDA(bool, ".")  - optional, for GPU-based apps
-_REQUIRE_LIBEXT() - optional, load and link with additional 3rd party libs
-_REQUIRE_OPENSSL(bool) - optional, links with openssl (from libext)
-_REQUIRE_BCRYPT(bool) - optional, links with bcrypt (from libext)
-..
-# Asset Path - this section provides an ASSET_PATH variable to the 'assets' folder during compile
-#
-..
-# App Code & Executable - this section finds the user-application cpp/h files
-#
-file( GLOB MAIN_FILES *.cpp *.c *.h )
-..add_executable (..)
-..
-# Link Additional Libraries - this section links with all required & optional libs
-#
-_LINK ( PROJECT ${PROJNAME} OPT ${LIBRARIES_OPTIMIZED} DEBUG ${LIBRARIES_DEBUG} PLATFORM ${PLATFORM_LIBRARIES} )
-..
-# Install Binaries - this section builds the install, with dlls, shaders, ptx, exe & include as needed
-#
-file (COPY ..) - for assets folder
-_INSTALL (FILES ${SHADERS} .. ) - for shaders
-_INSTALL (FILES ${PACKAGE_DLLS} .. ) - for libext/libmin dlls
-install (FILES $<TARGET_PDB_FILE:$PROJNAME}) .. ) -for pdb debug symbols
-install (FIELS ${INSTALL_LIST} .. ) - for executable
-```
+## Third-party Libraries
+Third party libraries are not included by default.<br>
+They are provided on-demand with convenience macros:<br>
+_REQUIRE_GL - request linkage to OpenGL lib<br>
+_REQUIRE_GLEW - request linkage to GLEW lib<br>
+_REQUIRE_JPG - request linkage to libjpg <br>
+_REQUIRE_EXT - request linkage to additional libraries bundled in libext<br>
+_REQUIRE_OPENSSL(default) - request linkage to libssl-dev<br>
+_REQUIRE_BCRYPT(default) - request linkage to bcrypt<br>
+_REQUIRE_CUDA(default) - request linkage to NV CUDA, with automatic .cu to PTX compilation<br>
 
 ## License
-
 Libmin is MIT Licensed with contributions from other BSD and MIT licensed sources.<br>
 Individual portions of libmin are listed here with their original licensing.<br>
 <br>
