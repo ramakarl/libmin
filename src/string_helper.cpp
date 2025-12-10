@@ -390,12 +390,21 @@ bool strFileSplit ( std::string str, std::string& path, std::string& name, std::
 // get cmd line argument
 bool strArg(int argc, char** argv, const char* chk_arg, std::string& val)
 {
+  size_t posL, posR;
+  std::string arg, chk;
   std::string value = "";
+  chk = std::string(chk_arg);
   for (int i = 1; i < argc; ++i) {
-    if (strcmp(argv[i], chk_arg) == 0) {
-      if (i + 1 < argc) val = argv[i + 1];
+    arg = argv[i];
+    if (arg.compare(chk) != std::string::npos) {
+      // found arg, get value
+      if (i + 1 >= argc || argv[i + 1][0] == '-') {
+        val = "true";        
+      } else {
+        val = argv[i + 1];        
+      }
       return true;
-    }
+    }    
   }
   return false;
 }
@@ -479,6 +488,7 @@ bool strParseChars(std::string str, std::string lsep, std::string& outvalue, std
 
 // Parse a list as a set of key-value arguments. Input becomes output right side. Return is arg value. Tag is arg tag.
 //   e.g. object:cat, name:felix -> str=name:felix, return=cat, tag=object
+
 std::string strParseArg ( std::string& tag, std::string argsep, std::string sep, std::string& str )
 {
   std::string result;

@@ -204,13 +204,10 @@ endmacro()
 macro (_REQUIRE_LIBEXT)    
     message (STATUS "  Searching for LIBEXT... ${LIBEXT_ROOT}")
     if (EXISTS "${LIBEXT_ROOT}" AND IS_DIRECTORY "${LIBEXT_ROOT}")
-        set( LIBEXT_FOUND TRUE )
         message (STATUS "  ---> Using LIBEXT: ${LIBEXT_ROOT}")
         list( APPEND CMAKE_MODULE_PATH "${LIBEXT_ROOT}/cmake" )
         list( APPEND CMAKE_PREFIX_PATH "${LIBEXT_ROOT}/cmake" )        
-        set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} PARENT_SCOPE)
-        set( CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
-        set( LIBEXT_FOUND ${LIBEXT_FOUND} PARENT_SCOPE)
+        set( LIBEXT_FOUND TRUE )
     else()
 message (FATAL_ERROR "  LIBEXT Not Found at: ${LIBEXT_ROOT}. 
 Set LIBEXT_ROOT to the location of libext.
@@ -280,34 +277,34 @@ endmacro()
 # Include OpenSSL
 #
 macro ( _REQUIRE_OPENSSL _openssl_default)
-    OPTION (BUILD_OPENSSL "Build with OpenSSL" ${_openssl_default} )
-    if (BUILD_OPENSSL) 
+  OPTION (BUILD_OPENSSL "Build with OpenSSL" ${_openssl_default} )
+  if (BUILD_OPENSSL) 
+    find_package(OpenSSL)
 
-	    find_package(OpenSSL)
-
-	    if ( OPENSSL_FOUND )	
-		    add_definitions(-DBUILD_OPENSSL)	
-		    include_directories ( ${OPENSSL_INC} )
-		    link_directories ( ${OPENSSL_BIN} )
-        _ATTACH_LIB ( NAME "OpenSSL" INC ${OPENSSL_INC} BIN ${OPENSSL_BIN} DEBUG_LIBS ${OPENSSL_DEBUG_LIBS} REL_LIBS ${OPENSSL_REL_LIBS} DLLS ${OPENSSL_DLLS} )
-	    else()
-		    message ( FATAL_ERROR "\n  Unable to find OpenSLL library. Link with a different /libext for third-party libs that include OpenSSL.\n")
-	    endif()
+    if ( OPENSSL_FOUND )	
+      add_definitions(-DBUILD_OPENSSL)	
+      include_directories ( ${OPENSSL_INC} )
+      link_directories ( ${OPENSSL_BIN} )
+      _ATTACH_LIB ( NAME "OpenSSL" INC ${OPENSSL_INC} BIN ${OPENSSL_BIN} DEBUG_LIBS ${OPENSSL_DEBUG_LIBS} REL_LIBS ${OPENSSL_REL_LIBS} DLLS ${OPENSSL_DLLS} )
+    else()
+      message ( FATAL_ERROR "\n  Unable to find OpenSLL library. Link with a different /libext for third-party libs that include OpenSSL.\n")
     endif()
+  endif()
 endmacro()
 
 #####################################################################################
 # Include Bcrypt
 #
-macro ( _REQUIRE_BCRYPT _bcrypt_default)
-    OPTION (BUILD_BCRYPT "Build with Bcrypt" ${_bcrypt_default} )
-    if (BUILD_BCRYPT) 
-        find_package(Bcrypt)
-        if ( BCRYPT_FOUND )	
-	        add_definitions(-DBUILD_BCRYPT)
-          _ATTACH_LIB ( NAME "BCrypt" INC ${BCRYPT_INC} BIN ${BCRYPT_BIN} DEBUG_LIBS ${BCRYPT_DEBUG_LIBS} REL_LIBS ${BCRYPT_REL_LIBS} DLLS ${BCRYPT_DLLS} )
-        endif()
+macro ( _REQUIRE_BCRYPT _bcrypt_default )
+  OPTION (BUILD_BCRYPT "Build with Bcrypt" ${_bcrypt_default} )
+  if (BUILD_BCRYPT)
+    find_package(Bcrypt)
+    if ( BCRYPT_FOUND )	      
+      add_definitions(-DBUILD_BCRYPT)
+      add_definitions(-DBCRYPT_STATIC)
+      _ATTACH_LIB ( NAME "BCrypt" INC ${BCRYPT_INC} BIN ${BCRYPT_BIN} DEBUG_LIBS ${BCRYPT_DEBUG_LIBS} REL_LIBS ${BCRYPT_REL_LIBS} DLLS "" )
     endif()
+  endif()
 endmacro()
 
 #####################################################################################
@@ -612,10 +609,9 @@ macro ( _ATTACH_LIB )
   # set(LIBS_DEBUG "${LIBS_DEBUG}" PARENT_SCOPE)            #-- necessary when called from functions
   # set(LIBS_OPTMIZED_LIBS "${LIBS_DEBUG}" PARENT_SCOPE)
   
-  # lib shared/binaries  
-  _EXPANDLIST( OUTPUT LIB_DLLS SOURCE ${ARG_BIN} FILES ${ARG_DLLS} )  
-  list ( APPEND LIBS_PACKAGE_DLLS ${LIB_DLLS} )
-  # set(LIBS_PACKAGE_DLLS "${LIBS_PACKAGE_DLLS}" PARENT_SCOPE)
+  # lib shared/binaries - ARG_DLLS should be a list of fully pathed files
+  list ( APPEND LIBS_PACKAGE_DLLS ${ARG_DLLS} )
+  # message ( " ARG_DLLS: ${ARG_DLLS}" )  
 
   message ( STATUS "  ---> Using ${ARG_NAME} ")
 endmacro()
@@ -731,7 +727,7 @@ endmacro()
 # Find all files in specified folder with the given extension.
 # This creates a file list, where each entry is only the filename w/o path
 # Return the count of files
-macro(_FIND_MULTIPLE targetVar searchDir extWin64 extLnx )    
+macro(_FIND_MULTIPLE targetVar searchDir preFix extWin64 extLnx )    
   unset ( fileList )    
   unset ( targetVar ) 
     if ( WIN32 )   
@@ -739,7 +735,7 @@ macro(_FIND_MULTIPLE targetVar searchDir extWin64 extLnx )
   else()
      SET ( extFind ${extLnx} )
   endif()  
-  file( GLOB fileList "${searchDir}/*.${extFind}")  
+  file( GLOB fileList "${${searchDir}}/${preFix}*.${extFind}")    
   list( APPEND ${targetVar} ${fileList} )  
 endmacro()
 

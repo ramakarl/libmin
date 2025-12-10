@@ -267,7 +267,7 @@ private: // State
 	// Security related
 	int m_security;
 	int m_reconnectInterval;
-	int m_reconnectLimit;
+	int m_reconnectMaxCount;
 	str m_pathPublicKey;
 	str m_pathPrivateKey;
 	str m_pathCertDir;

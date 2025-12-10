@@ -104,7 +104,14 @@
 		if (devsel >= 0) {
 			//--- Create new context with Driver API 
 			cuCheck(cuDeviceGet(&dev, devsel), "", "cuDeviceGet", "", false);
-			cuCheck(cuCtxCreate(&ctx, CU_CTX_SCHED_AUTO, dev), "", "cuCtxCreate", "", false);
+
+			#if CUDA_VERSION >= 11020
+				CUctxCreateParams params;
+				memset(&params, 0, sizeof(params));
+				cuCheck(cuCtxCreate(&ctx, &params, CU_CTX_SCHED_AUTO, dev), "", "cuCtxCreate", "", false);
+			#else           
+				cuCheck(cuCtxCreate(&ctx, CU_CTX_SCHED_AUTO, dev), "", "cuCtxCreate", "", false);
+			#endif      			
 		}
 		cuDeviceGetName(name, 128, dev);
 		if (verbose) dbgprintf("   Using Device: %d, %s, Context: %p\n", (int)dev, name, (void*)ctx);

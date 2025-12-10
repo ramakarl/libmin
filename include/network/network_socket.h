@@ -138,16 +138,17 @@
 		bool			blocking;		// is blocking
 		bool			broadcast;		// is broadcast
 		int 			security; 		// indicates the security level; e.g., OpenSSL
-		int 			reconnectLimit;  	// limits the number of reconnection attempts 
-		int 			reconnectBudget; 	// remaining allowed reconnect attempts
-		TimeX 			lastStateChange; 	// for tracking when timeouts should occur
+		int 			reconnectMaxCount;	// limits the number of reconnection attempts 
+		int 			reconnectCount;			// remaining allowed reconnect attempts
+		int				reconnectInterval;	// interval for this socket
+		TimeX 		lastStateChange;	// for tracking when timeouts should occur
 		
 		// Outgoing buffers
 		char*			txBuf;					// transmit buffer (per socket)
 		char*			txPtr;				
-		int			txPktSize;
-		int			txLen;					// transmit so far
-		int			txMax;					// transmit max (expandable)
+		int				txPktSize;
+		int				txLen;					// transmit so far
+		int				txMax;					// transmit max (expandable)
 
 		// Incoming buffers
 		char*			rxBuf;					// receive buffer (per socket)

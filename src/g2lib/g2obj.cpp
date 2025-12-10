@@ -133,8 +133,13 @@ void g2Obj::LoadImg ( ImageX*& img, std::string fname )
 
   // try jpg
   fname = fbase + ".jpg";
-  if ( getFileLocation ( fname, fpath ) )
-    if ( img->Load ( fpath ) ) return;
+  if (getFileLocation(fname, fpath)) {
+    if (img->Load(fpath)) 
+      return;   // success
+  }
+
+  delete img;
+  img = 0x0;
   
   printf ( "WARNING: Unable to load image: %s\n", fbase.c_str() );  
 }

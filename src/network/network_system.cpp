@@ -1,3 +1,5 @@
+
+
 //----------------------------------------------------------------------------------------------------------------------
 //
 // Network System
@@ -392,8 +394,8 @@ NetworkSystem::NetworkSystem ( const char* trace_file_name )
 	m_eventPool = 0x0;			// default heap (not accelerated)
 
 	// default timings
-	m_reconnectInterval = 5000;		// 5 seconds
-	m_reconnectLimit = 10;				// 10x tries
+	m_reconnectInterval = 1000;		// 1 seconds
+	m_reconnectMaxCount = 10;			// 10x tries
 	m_processInterval = 200;	 	  // 200 msec, packet interval
 
 	TimeX curr_time;
@@ -734,7 +736,7 @@ void NetworkSystem::netServerAcceptClient ( int sock_i )
 		TRACE_EXIT ( (__func__) );
 		return;
 	} else if ( result==0 ) {
-		// Waiting. Not yet accepted.
+		// Waiting. Not yet accepted.		
 
 	} else if (result > 0) {
 		// Add socket for client
@@ -830,7 +832,7 @@ void NetworkSystem::netServerCheckConnectionHandshakes ( )
 	for ( int sock_i = 0; sock_i < (int) m_socks.size ( ); sock_i++ ) { 
 		NetSock& s = m_socks[ sock_i ];
 
-		if (current_time.GetElapsedSec(s.lastStateChange) > m_reconnectLimit ) {
+		if (current_time.GetElapsedMSec(s.lastStateChange) > m_reconnectInterval ) {
 
 			s.lastStateChange = current_time;
 
@@ -1259,12 +1261,12 @@ void NetworkSystem::netClientCheckConnectionHandshakes ( )
 				// Check for timeout
 				TimeX current_time;
 				current_time.SetTimeNSec();
-				if (current_time.GetElapsedSec(s.lastStateChange) > 5.0) {
-					netManageHandshakeError(sock_i, "client timed out");
+				if (current_time.GetElapsedMSec(s.lastStateChange) > s.reconnectInterval ) {
+					netManageHandshakeError(sock_i, "Client timed out");
 				}
-			} else if (s.state == STATE_NONE && s.reconnectBudget > 0 ) {	
+			} else if (s.state == STATE_NONE && s.reconnectCount > 0 ) {	
 				// Auto-reconnect if desired
-				s.reconnectBudget--;
+				s.reconnectCount--;
 				netClientConnectToServer ( s.srvAddr, s.srvPort, false, sock_i ); // If disconnected, try and reconnect
 			}			
 		}
@@ -1478,7 +1480,9 @@ int NetworkSystem::netAddSocket ( int side, int mode, int state, bool block, Net
 	s.blocking = block;
 	s.broadcast = 0;
 	s.security = m_security; 
-	s.reconnectBudget = s.reconnectLimit = m_reconnectLimit;  
+	s.reconnectInterval = m_reconnectInterval;
+	s.reconnectMaxCount = m_reconnectMaxCount;
+	s.reconnectCount = s.reconnectMaxCount;
 
 	#ifdef BUILD_OPENSSL
 		s.ctx = 0;
@@ -1576,14 +1580,14 @@ int NetworkSystem::netManageHandshakeError ( int sock_i, std::string reason )
 
   // Fallback only if: client side, and reconnect budget depleted, and fallback to lower security level allowed.
 	bool fallback_allowed = (s.security & NET_SECURITY_OPENSSL) && (s.security & NET_SECURITY_PLAIN_TCP);
-	if ( s.reconnectBudget == 0 && s.side == NET_CLI && fallback_allowed) {
+	if ( s.reconnectCount == 0 && s.side == NET_CLI && fallback_allowed) {
 
 		// Client try fallback to plain TCP
 		s.security = NET_SECURITY_PLAIN_TCP;
 		s.srvPort -= 1;									// TCP ports
 		s.dest.port -= 1;
 		s.state = STATE_NONE;						// indicate ready to restart
-		s.reconnectBudget = s.reconnectLimit;		// reset the reconnect budget for TCP
+		s.reconnectCount = s.reconnectMaxCount;		// reset the reconnect budget for TCP
 
 		netSocketReuse( sock_i );						// reuse socket. don't try and reconnect here. 
 
@@ -1621,7 +1625,7 @@ int NetworkSystem::netManageTransmitError ( int sock_i, std::string reason, int 
 	}
 
 	// Error during transmission
-	if ( m_hostType == 'c' && s.reconnectBudget > 0 ) {
+	if ( m_hostType == 'c' && s.reconnectCount > 0 ) {
 		
 		netSocketReuse( sock_i );			// reuse socket. don't try and reconnect here. 		
 
@@ -2778,19 +2782,19 @@ bool NetworkSystem::netSetReconnectInterval ( int time_ms )
 	return true;
 }
 
-bool NetworkSystem::netSetReconnectLimit ( int limit )
+bool NetworkSystem::netSetReconnectLimit ( int max_count )
 {
-	m_reconnectLimit = limit;
+	m_reconnectMaxCount = max_count;
 	return true;
 }
 
-bool NetworkSystem::netSetReconnectLimit ( int limit, int sock_i )
+bool NetworkSystem::netSetReconnectLimit ( int max_count, int sock_i )
 {
 	if ( !valid_socket_index ( sock_i ) ) {
 		return false;
 	}
-	m_socks[ sock_i ].reconnectLimit = limit;
-	m_socks[ sock_i ].reconnectBudget = limit;
+	m_socks[ sock_i ].reconnectMaxCount = max_count;
+	m_socks[sock_i].reconnectCount = max_count;
 	return true;
 }
 

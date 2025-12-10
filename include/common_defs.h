@@ -146,10 +146,10 @@
     const f64 ROUNDING_ERROR_f64 = 0.00000001;
     const f64 PI64 = 3.1415926535897932384626433832795028841971693993751;
 	
-	
     // Universal functions
     #include <vector>
     #include <string>    
+    #include <map>
     HELPAPI void checkMem( xlong& total, xlong& used, xlong& app);    
     HELPAPI char getPathDelim();
     HELPAPI char getPathDelimOpposite();
@@ -164,6 +164,15 @@
     HELPAPI unsigned long getFilePos ( FILE* fp );
     HELPAPI void getFileParts(std::string fname, std::string& path, std::string& name, std::string& ext);
     HELPAPI void dbgprintf(const char * fmt, ...);
+
+    typedef std::multimap<std::string, std::string>   argList_t;
+
+    HELPAPI void strParseArgs(int argc, char* argv[], argList_t& list);
+    HELPAPI void strParseArgs( std::string args, argList_t& list);
+    HELPAPI std::string getArg(std::string chk, argList_t& list);    
+    HELPAPI bool getArgExists(std::string chk, argList_t& list);
+    HELPAPI bool getArgBool(std::string chk, argList_t& list);
+    HELPAPI bool getArgBool(std::string chk, std::string val, argList_t& list);
 
     //--- report CUDA availability 
     HELPAPI bool cuAvailable ();

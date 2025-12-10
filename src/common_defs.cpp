@@ -25,6 +25,8 @@
 #include <string>
 #include <algorithm>
 
+#include <stdexcept>
+
 #if defined(__ANDROID__)
     #include <android/log.h>               // for Android printf logs
     #include <sys/stat.h>
@@ -228,6 +230,92 @@ std::string fixPath (std::string str)
   
   return str;
 }
+
+void strParseArgs(int argc, char* argv[], argList_t& list)
+{
+  std::string args = "";
+  
+  // concatenate into string
+  for (int n = 1; n < argc; n++) {
+    args += std::string(argv[n]) + " ";
+  }
+  // parse 
+  strParseArgs(args, list);  
+}
+
+void strParseArgs(std::string args, argList_t& list)
+{  
+  std::vector<std::string> arglist;
+  std::string str = args;
+
+  // split string on spaces
+  size_t f1 = str.find_first_of(" ");
+  while (f1 != std::string::npos) {
+    arglist.push_back ( str.substr(0, f1) );
+    str = str.substr(f1 + 1);
+    f1 = str.find_first_of(" ");
+  }
+  arglist.push_back( str );
+
+  // parse args
+  std::string key, val;
+  for (int n = 0; n < arglist.size(); n++) {
+    if (!arglist[n].empty() && arglist[n][0] == '-') {
+      key = arglist[n].substr(1);
+      if (n + 1 < arglist.size() && !arglist[n+1].empty() && arglist[n + 1][0] != '-') {
+        val = arglist[n + 1];        
+      } else {
+        val = "true";
+      }
+      list.emplace(key, val);
+    }
+  }
+  if (arglist[0].size() > 0) {
+    if (arglist[0][0] != '-') {
+      list.emplace("default", arglist[0]);
+    }
+  }
+}
+
+std::string	getArg(std::string key, argList_t& list)
+{
+  // return value of the first key match
+  auto it = list.find( key );
+  if (it != list.end()) {    
+    return it->second;    // returns first occurance    
+  }  
+  return "";  
+}
+
+bool getArgExists(std::string key, argList_t& list)
+{
+  // return true if the key exists
+  auto it = list.find(key);
+  if (it != list.end()) return true;
+  return false;
+}
+
+bool getArgBool(std::string key, argList_t& list)
+{
+  // return true if the key's value is "true", otherwise false
+  auto it = list.find(key);
+  if (it != list.end()) {
+    return (it->second.at(0) == 't');
+  }
+  return false;
+}
+
+bool getArgBool(std::string key, std::string val, argList_t& list)
+{
+  // for duplicate keys, check if 'val' is among them
+  std::pair<argList_t::iterator, argList_t::iterator> range = list.equal_range( key );
+  for (argList_t::iterator it = range.first; it != range.second; it++) {
+    if (it->second.compare(val) != std::string::npos) return true;    
+  }
+  return false;
+
+}
+
 
 
 void strncpy_sc ( char *dst, const char *src, size_t len)
