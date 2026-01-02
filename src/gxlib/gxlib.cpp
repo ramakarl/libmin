@@ -6,7 +6,7 @@
 
 #include "gxlib.h"
 
- #define EXTRA_CHECKS			// debug with GL checks
+#define EXTRA_CHECKS			// debug with GL checks
 
 using namespace glib;
 
@@ -53,20 +53,21 @@ bool glib::init2D ( const char* fontName )
 	// generate VAO
 	#ifdef BUILD_OPENGL
 		glGenVertexArrays ( 1, (GLuint*) &gx.mVAO );
-		glBindVertexArray ( gx.mVAO );
-	#endif
+		glBindVertexArray ( gx.mVAO );	
 
-  // create white texture
-  GLuint tex;
-  glGenTextures(1, &tex);
-  glBindTexture ( GL_TEXTURE_2D, tex );
-  unsigned char whitePixel[4] = {255,255,255,255};
-  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, whitePixel );
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  gx.m_white_tex = tex;
+		// create white texture
+		GLuint tex;
+		glGenTextures(1, &tex);
+		glBindTexture ( GL_TEXTURE_2D, tex );
+		unsigned char whitePixel[4] = {255,255,255,255};
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, whitePixel );
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		gx.m_white_tex = tex;
+
+	#endif
   
 	// load font image
 	if (!gx.loadFont ( fontName )) {
@@ -342,7 +343,7 @@ void glib::drawCircle ( Vec2F a, float r, Vec4F clr  )
 void glib::drawCircleFill (Vec2F a, float r, Vec4F clr)
 {
 	int n = 0;
-	int du = 15;
+	int du = 90;
 	int segs = (360/du)+1;
 	gxVert* v = gx.allocGeom2D(3 * segs + 4, PRIM_TRI);
 
@@ -373,9 +374,14 @@ void glib::drawCircleFill (Vec2F a, float r, Vec4F clr)
 	int cnt = 3*segs+2;
 }
 
-void glib::drawImg ( ImageX* img, Vec2F a, Vec2F b, Vec4F clr )
+void glib::drawImg(ImageX* img, Vec2F a, Vec2F b, Vec4F clr)
 {
-	gxVert* v = gx.allocImg2D ( 6, PRIM_TRI, img );
+	drawImg( img->getGLID(), a, b, clr);
+}
+
+void glib::drawImg(int glid, Vec2F a, Vec2F b, Vec4F clr)
+{
+	gxVert* v = gx.allocImg2D ( 6, PRIM_TRI, glid );
 
 	// repeat first for jump
 	v->x = a.x; v->y = a.y; v->z = 0; vclr(v,clr,0); v++;
@@ -389,7 +395,6 @@ void glib::drawImg ( ImageX* img, Vec2F a, Vec2F b, Vec4F clr )
 	// repeat last for jump
 	v->x = b.x; v->y = b.y; v->z = 0; vclr(v,clr,0); v++;
 }
-
 
 //------------------------------ FONT RENDERING
 
@@ -458,8 +463,9 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
     printf("ERROR: Font texture is not on GPU.\n"); 
     exit(-7);
   }
+	int glid = gx.m_font_img.getGLID();
 
-	gxVert* v = gx.allocImg2D ( len*6, PRIM_TRI, &gx.m_font_img );
+	gxVert* v = gx.allocImg2D ( len*6, PRIM_TRI, glid );
 
 	// get current font
 	gxFont& font = gx.getCurrFont ();		
@@ -838,8 +844,9 @@ void glib::drawText3D ( Vec3F a, float sz, char* msg, Vec4F clr )
     printf("ERROR: Font texture is not on GPU.\n");
     exit(-7);
   }
+	int glid = gx.m_font_img.getGLID();
 
-	gxVert3D* v = gx.allocGeom3D ( len*6, PRIM_TRI, &gx.m_font_img );
+	gxVert3D* v = gx.allocGeom3D ( len*6, PRIM_TRI, glid );
 
 	// create a basis space oriented toward the camera 
 	gxSet* s = gx.getCurrSet ();	
@@ -1161,7 +1168,7 @@ void gxLib::attachPrim ( gxSet* s, uchar typ, uchar prim )
   gxPrim* p = (gxPrim*) (s->geom + s->size);
   p->typ = typ;
   p->prim = prim;
-	p->img_ptr = m_curr_img;
+	p->img_id = m_curr_imgid;
   p->cnt = 0;
 	s->lastpos = s->size;	// save position of prim
   s->size += sizeof(gxPrim);	
@@ -1176,9 +1183,9 @@ gxVert* gxLib::allocGeom2D ( int cnt, uchar prim )
 	s->size += cnt*sizeof(gxVert);	
   return start;
 }
-gxVert* gxLib::allocImg2D (int cnt, uchar prim, ImageX* img )
+gxVert* gxLib::allocImg2D (int cnt, uchar prim, int img_id )
 {
-	m_curr_img = (uint64_t) img;			// assign image to prims
+	m_curr_imgid = (uint64_t) img_id;			// assign image ID to prims
   gxSet* s = gx.getCurrSet();	
   expandSet ( s, 'i', prim, cnt * sizeof(gxVert) );    
 	m_curr_num += cnt;
@@ -1196,9 +1203,9 @@ gxVert3D* gxLib::allocGeom3D ( int cnt, uchar prim )
 	s->size += cnt*sizeof(gxVert3D);	
   return start;
 }
-gxVert3D* gxLib::allocGeom3D (int cnt, uchar prim, ImageX* img )
+gxVert3D* gxLib::allocGeom3D (int cnt, uchar prim, int img_id )
 {
-	m_curr_img = (uint64_t) img;			// assign image to prims
+	m_curr_imgid = (uint64_t) img_id;			// assign image to prims
   gxSet* s = gx.getCurrSet();	
   expandSet ( s, 'i', prim, cnt * sizeof(gxVert3D) );    
 	m_curr_num += cnt;
@@ -1831,7 +1838,7 @@ void gxLib::drawSet ( int g )
 				checkGL ( "drawSet(3D): glVertAttrPtr norm 3d");
 
 				// bind image
-        imgGL = (p->typ=='x') ? m_white_tex : (p->typ=='i') ? ((ImageX*) p->img_ptr)->getGLID() : 0;
+        imgGL = (p->typ=='x') ? m_white_tex : (p->typ=='i') ? p->img_id : 0;
 				glBindTexture ( GL_TEXTURE_2D, imgGL );     
         checkGL ( "drawSet(3D): glBindTexture");
 		
@@ -1874,7 +1881,7 @@ void gxLib::drawSet ( int g )
 				checkGL ( "drawSet(2D): glVertAttrPtr uv 2d");
 			
 				// bind image
-				imgGL = (p->typ=='x') ? m_white_tex : (p->typ=='i') ? ((ImageX*) p->img_ptr)->getGLID() : 0;			
+				imgGL = (p->typ=='x') ? m_white_tex : (p->typ=='i') ? p->img_id : 0;			
 				glBindTexture ( GL_TEXTURE_2D, imgGL );
         checkGL ( "drawSet(2D): glBindTexture 2D");
 

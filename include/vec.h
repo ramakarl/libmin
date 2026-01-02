@@ -56,36 +56,49 @@
 		Vec2I (const Vec4F &op);
 
 		// Member Functions		
-		inline Vec2I &operator= (const Vec2I &op);
-		inline Vec2I &operator= (const Vec2F &op);		
-		inline Vec2I &operator= (const Vec3I &op);
-		inline Vec2I &operator= (const Vec3F &op);
-		inline Vec2I &operator= (const Vec4F &op);
+		Vec2I &operator= (const Vec2I &op);
+		Vec2I &operator= (const Vec2F &op);		
+		Vec2I &operator= (const Vec3I &op);
+		Vec2I &operator= (const Vec3F &op);
+		Vec2I &operator= (const Vec4F &op);
 
-		inline Vec2I &operator+= (const Vec2I &op);
-		inline Vec2I &operator+= (const Vec2F &op);
-		inline Vec2I &operator+= (const Vec3I &op);
-		inline Vec2I &operator+= (const Vec3F &op);
-		inline Vec2I &operator+= (const Vec4F &op);
+		Vec2I &operator+= (const Vec2I &op);
+		Vec2I &operator+= (const Vec2F &op);
+		Vec2I &operator+= (const Vec3I &op);
+		Vec2I &operator+= (const Vec3F &op);
+		Vec2I &operator+= (const Vec4F &op);
 
-		inline Vec2I &operator-= (const Vec2I &op);
-		inline Vec2I &operator-= (const Vec2F &op);
-		inline Vec2I &operator-= (const Vec3I &op);
-		inline Vec2I &operator-= (const Vec3F &op);
-		inline Vec2I &operator-= (const Vec4F &op);
+		Vec2I &operator-= (const Vec2I &op);
+		Vec2I &operator-= (const Vec2F &op);
+		Vec2I &operator-= (const Vec3I &op);
+		Vec2I &operator-= (const Vec3F &op);
+		Vec2I &operator-= (const Vec4F &op);
 	
-		inline Vec2I &operator*= (const Vec2I &op);
-		inline Vec2I &operator*= (const Vec2F &op);
-		inline Vec2I &operator*= (const Vec3I &op);
-		inline Vec2I &operator*= (const Vec3F &op);
-		inline Vec2I &operator*= (const Vec4F &op);
-		inline Vec2I &operator* (const Vec2F &op);
+		Vec2I &operator*= (const Vec2I &op);
+		Vec2I &operator*= (const Vec2F &op);
+		Vec2I &operator*= (const Vec3I &op);
+		Vec2I &operator*= (const Vec3F &op);
+		Vec2I &operator*= (const Vec4F &op);
+		Vec2I &operator* (const Vec2F &op);
 
-		inline Vec2I &operator/= (const Vec2I &op);
-		inline Vec2I &operator/= (const Vec2F &op);
-		inline Vec2I &operator/= (const Vec3I &op);
-		inline Vec2I &operator/= (const Vec3F &op);
-		inline Vec2I &operator/= (const Vec4F &op);		
+		Vec2I &operator/= (const Vec2I &op);
+		Vec2I &operator/= (const Vec2F &op);
+		Vec2I &operator/= (const Vec3I &op);
+		Vec2I &operator/= (const Vec3F &op);
+		Vec2I &operator/= (const Vec4F &op);		
+
+		Vec2I operator+ (const int op) { return Vec2I(x + op, y + op); }
+		Vec2I operator+ (const float op) { return Vec2I(int(x + op), int(y + op)); }
+		Vec2I operator+ (const Vec2I& op) { return Vec2I(x + op.x, y + op.y); }
+		Vec2I operator- (const int op) { return Vec2I(x - op, y - op); }
+		Vec2I operator- (const float op) { return Vec2I(int(x - op), int(y - op)); }
+		Vec2I operator- (const Vec2I& op) { return Vec2I(x - op.x, y - op.y); }
+		Vec2I operator* (const int op) { return Vec2I(x * op, y * op); }
+		Vec2I operator* (const float op) { return Vec2I(int(x * op), int(y * op)); }
+		Vec2I operator* (const Vec2I& op) { return Vec2I(x * op.x, y * op.y); }		
+		Vec2I operator/ (const int op) { return Vec2I(x / op, y / op); }
+		Vec2I operator/ (const float op) { return Vec2I(int(x / op), int(y / op)); }
+		Vec2I operator/ (const Vec2I& op) { return Vec2I(x / op.x, y / op.y); }
 
 		// Note: Cross product does not exist for 2D vectors (only 3D)
 		inline double Dot (const Vec2I &v);
@@ -164,13 +177,18 @@
 		 Vec2F &operator/= (const Vec4F &op);
 		 Vec2F &operator/= (const double v)		{x /= (float) v; y /= (float) v; return *this;}
 
-		 // Slower operations (makes temporary)
-		 Vec2F operator- (const float op);
-		 Vec2F operator- (const Vec2F &op);
-		 Vec2F operator+ (const float op);
-		 Vec2F operator+ (const Vec2F &op);
-		 Vec2F operator* (const float op);
-		 Vec2F operator* (const Vec2F &op);		 
+		 Vec2F operator+ (const int op) { return Vec2F(x + op, y + op); }
+		 Vec2F operator+ (const float op) { return Vec2F(int(x + op), int(y + op)); }		 
+		 Vec2F operator+ (const Vec2F& op) { return Vec2F(x + op.x, y + op.y); }
+		 Vec2F operator- (const int op) { return Vec2F(x - op, y - op); }
+		 Vec2F operator- (const float op) { return Vec2F(int(x - op), int(y - op)); }
+		 Vec2F operator- (const Vec2F& op) { return Vec2F(x - op.x, y - op.y); }
+		 Vec2F operator* (const int op) { return Vec2F(x * op, y * op); }
+		 Vec2F operator* (const float op) { return Vec2F(int(x * op), int(y * op)); }
+		 Vec2F operator* (const Vec2F& op) { return Vec2F(x * op.x, y * op.y); }
+		 Vec2F operator/ (const int op) { return Vec2F(x / op, y / op); }
+		 Vec2F operator/ (const float op) { return Vec2F(int(x / op), int(y / op)); }
+		 Vec2F operator/ (const Vec2F& op) { return Vec2F(x / op.x, y / op.y); }
 
 		// Note: Cross product does not exist for 2D vectors (only 3D)		
 		 double Dot(const Vec2I &v);
@@ -207,12 +225,14 @@
 		// Constructors/Destructors
 		Vec3I();
 		Vec3I (const VTYPE xa, const VTYPE ya, const VTYPE za);
+		Vec3I(const Vec2I& op, const int opz);
 		Vec3I (const Vec3I &op);
 		Vec3I (const Vec3F &op);
 		Vec3I (const Vec4F &op);
 
 		// Set Functions
 		Vec3I &Set (const VTYPE xa, const VTYPE ya, const VTYPE za);
+		
 
 		// Member Functions		
 		Vec3I &operator= (const Vec3I &op);
@@ -483,7 +503,7 @@
 		Vec4F &operator/= (const Vec3F &op);
 		Vec4F &operator/= (const Vec4F &op);
 
-		// Slow operations - require temporary variables
+		// Slow operations - require temporary variable s
 		Vec4F operator+ (const int op)			{ return Vec4F(x+float(op), y+float(op), z+float(op), w+float(op)); }
 		Vec4F operator+ (const float op)		{ return Vec4F(x+op, y+op, z+op, w*op); }
 		Vec4F operator+ (const Vec4F &op)	{ return Vec4F(x+op.x, y+op.y, z+op.z, w+op.w); }

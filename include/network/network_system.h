@@ -99,9 +99,10 @@ public:
 	void netSetSelectInterval ( int time_ms ); 
 	
 	// Security config API
+	bool netSetProcessInterval(int time_ms);	
 	bool netSetReconnectInterval ( int time_ms ); 
 	bool netSetReconnectLimit ( int limit );
-	bool netSetReconnectLimit ( int limit, int sock_i );
+	bool netSetReconnectLimit ( int limit, int sock_i );	
 	bool netSetSecurityLevel ( int levels );
 	bool netSetSecurityLevel ( int levels, int sock_i );
 	bool netSetPathToPublicKey ( str path );

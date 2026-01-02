@@ -13,7 +13,7 @@
 #include "network_system.h"
 
 #ifdef __linux__
-	#include <net/if.h>
+	#include <net/if.h> 
 	#include <netinet/in.h>
 	#include <netinet/tcp.h> 
 	#include <sys/stat.h>
@@ -396,7 +396,7 @@ NetworkSystem::NetworkSystem ( const char* trace_file_name )
 	// default timings
 	m_reconnectInterval = 1000;		// 1 seconds
 	m_reconnectMaxCount = 10;			// 10x tries
-	m_processInterval = 200;	 	  // 200 msec, packet interval
+	m_processInterval = 50;	 	  // 50 msec, packet interval
 
 	TimeX curr_time;
 	curr_time.SetTimeNSec();
@@ -2772,6 +2772,13 @@ void NetworkSystem::netSetSelectInterval ( int time_ms )
 //----------------------------------------------------------------------------------------------------------------------
 // -> SECURITY CONFIG API <-
 //----------------------------------------------------------------------------------------------------------------------
+
+bool NetworkSystem::netSetProcessInterval(int time_ms)
+{
+	m_processInterval = time_ms;
+
+	return true;
+}
 
 bool NetworkSystem::netSetReconnectInterval ( int time_ms )
 {

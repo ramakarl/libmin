@@ -60,6 +60,8 @@
 	HELPAPI std::string typeToStr ( objType t );
 	HELPAPI std::string wsToStr ( const std::wstring& str );
 	HELPAPI std::wstring strToWs (const std::string& s);
+	HELPAPI std::string strToLower(const std::string& s);
+	HELPAPI std::string strToUpper(const std::string& s);
 
 	HELPAPI bool strToVec(const std::string& str, char lsep, char insep, char rsep, float* vec, int vec_dim = 3);
 	HELPAPI bool strToVec3(const std::string& str, char lsep, char insep, char rsep, float* vec);

@@ -76,7 +76,7 @@
         uchar       typ;        // 1
         uchar       prim;       // 1        
         uint32_t    cnt;        // 4
-        uint64_t    img_ptr;    // 8 bytes
+        uint64_t    img_id;     // 8 bytes
     };
 
     struct gxSet {

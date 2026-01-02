@@ -72,6 +72,7 @@
     GXAPI void drawCircle ( Vec2F a, float r, Vec4F clr  );
     GXAPI void drawCircleFill (Vec2F a, float r, Vec4F clr);
     GXAPI void drawImg(ImageX* img, Vec2F a, Vec2F b, Vec4F clr);
+    GXAPI void drawImg(int glid, Vec2F a, Vec2F b, Vec4F clr);
     GXAPI void drawText ( Vec2F a, std::string msg, Vec4F clr );    
     
     // 3D Interface
@@ -128,8 +129,8 @@
         void        updateVBO(gxSet* s);
         gxVert*     allocGeom2D (int vert_cnt, uchar prim );        
         gxVert3D*   allocGeom3D (int vert_cnt, uchar prim );  
-        gxVert*     allocImg2D(int vert_cnt, uchar prim, ImageX* font_img);
-        gxVert3D*   allocGeom3D(int cnt, uchar prim, ImageX* img);          // with image (texture)                
+        gxVert*     allocImg2D(int vert_cnt, uchar prim, int img_id );
+        gxVert3D*   allocGeom3D(int cnt, uchar prim, int img_id );          // with image (texture)                
         
         // fonts
         bool        loadFont ( const char * fontName );
@@ -149,7 +150,7 @@
         int         m_curr_set;                 // current set
         uchar       m_curr_type;                // types: 'I' (Image), 'i' (gxImg/font), 'x' (none)        
         uchar       m_curr_prim;                // prims: PRIM_POINTS, PRIM_LINES, PRIM_TRI, PRIM_IMGS
-        uint64_t    m_curr_img;                 
+        uint64_t    m_curr_imgid;
         int         m_curr_num;
 
         // text drawing

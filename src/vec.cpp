@@ -129,51 +129,51 @@ Vec2I::Vec2I (const Vec3F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y;}
 Vec2I::Vec2I (const Vec4F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y;}
 
 // Member Functions
-inline Vec2I &Vec2I::operator= (const Vec2I &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator= (const Vec2F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator= (const Vec3I &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator= (const Vec3F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator= (const Vec4F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; return *this;}	
+Vec2I &Vec2I::operator= (const Vec2I &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator= (const Vec2F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator= (const Vec3I &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator= (const Vec3F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator= (const Vec4F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; return *this;}	
 	
-inline Vec2I &Vec2I::operator+= (const Vec2I &op) {x+=(VTYPE) op.x; y+=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator+= (const Vec2F &op) {x+=(VTYPE) op.x; y+=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator+= (const Vec3I &op) {x+=(VTYPE) op.x; y+=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator+= (const Vec3F &op) {x+=(VTYPE) op.x; y+=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator+= (const Vec4F &op) {x+=(VTYPE) op.x; y+=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator+= (const Vec2I &op) {x+=(VTYPE) op.x; y+=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator+= (const Vec2F &op) {x+=(VTYPE) op.x; y+=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator+= (const Vec3I &op) {x+=(VTYPE) op.x; y+=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator+= (const Vec3F &op) {x+=(VTYPE) op.x; y+=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator+= (const Vec4F &op) {x+=(VTYPE) op.x; y+=(VTYPE) op.y; return *this;}
 
-inline Vec2I &Vec2I::operator-= (const Vec2I &op) {x-=(VTYPE) op.x; y-=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator-= (const Vec2F &op) {x-=(VTYPE) op.x; y-=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator-= (const Vec3I &op) {x-=(VTYPE) op.x; y-=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator-= (const Vec3F &op) {x-=(VTYPE) op.x; y-=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator-= (const Vec4F &op) {x-=(VTYPE) op.x; y-=(VTYPE) op.y; return *this;}
-	
-inline Vec2I &Vec2I::operator*= (const Vec2I &op) {x*=(VTYPE) op.x; y*=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator*= (const Vec2F &op) {x*=(VTYPE) op.x; y*=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator*= (const Vec3I &op) {x*=(VTYPE) op.x; y*=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator*= (const Vec3F &op) {x*=(VTYPE) op.x; y*=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator*= (const Vec4F &op) {x*=(VTYPE) op.x; y*=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator-= (const Vec2I &op) {x-=(VTYPE) op.x; y-=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator-= (const Vec2F &op) {x-=(VTYPE) op.x; y-=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator-= (const Vec3I &op) {x-=(VTYPE) op.x; y-=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator-= (const Vec3F &op) {x-=(VTYPE) op.x; y-=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator-= (const Vec4F &op) {x-=(VTYPE) op.x; y-=(VTYPE) op.y; return *this;}
 
-inline Vec2I &Vec2I::operator/= (const Vec2I &op) {x/=(VTYPE) op.x; y/=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator/= (const Vec2F &op) {x/=(VTYPE) op.x; y/=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator/= (const Vec3I &op) {x/=(VTYPE) op.x; y/=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator/= (const Vec3F &op) {x/=(VTYPE) op.x; y/=(VTYPE) op.y; return *this;}
-inline Vec2I &Vec2I::operator/= (const Vec4F &op) {x/=(VTYPE) op.x; y/=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator*= (const Vec2I &op) {x*=(VTYPE) op.x; y*=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator*= (const Vec2F &op) {x*=(VTYPE) op.x; y*=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator*= (const Vec3I &op) {x*=(VTYPE) op.x; y*=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator*= (const Vec3F &op) {x*=(VTYPE) op.x; y*=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator*= (const Vec4F &op) {x*=(VTYPE) op.x; y*=(VTYPE) op.y; return *this;}
+
+Vec2I &Vec2I::operator/= (const Vec2I &op) {x/=(VTYPE) op.x; y/=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator/= (const Vec2F &op) {x/=(VTYPE) op.x; y/=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator/= (const Vec3I &op) {x/=(VTYPE) op.x; y/=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator/= (const Vec3F &op) {x/=(VTYPE) op.x; y/=(VTYPE) op.y; return *this;}
+Vec2I &Vec2I::operator/= (const Vec4F &op) {x/=(VTYPE) op.x; y/=(VTYPE) op.y; return *this;}
 
 // Note: Cross product does not exist for 2D vectors (only 3D)
 		
-inline double Vec2I::Dot(const Vec2I &v)			{double dot; dot = (double) x*v.x + (double) y*v.y; return dot;}
-inline double Vec2I::Dot(const Vec2F &v)			{double dot; dot = (double) x*v.x + (double) y*v.y; return dot;}
+double Vec2I::Dot(const Vec2I &v)			{double dot; dot = (double) x*v.x + (double) y*v.y; return dot;}
+double Vec2I::Dot(const Vec2F &v)			{double dot; dot = (double) x*v.x + (double) y*v.y; return dot;}
 
-inline double Vec2I::Dist (const Vec2I &v)		{ double distsq = DistSq (v); if (distsq!=0) return sqrt(distsq); return 0.0;}
-inline double Vec2I::Dist (const Vec2F &v)		{ double distsq = DistSq (v); if (distsq!=0) return sqrt(distsq); return 0.0;}
-inline double Vec2I::Dist (const Vec3I &v)		{ double distsq = DistSq (v); if (distsq!=0) return sqrt(distsq); return 0.0;}
-inline double Vec2I::Dist (const Vec3F &v)		{ double distsq = DistSq (v); if (distsq!=0) return sqrt(distsq); return 0.0;}
-inline double Vec2I::Dist (const Vec4F &v)		{ double distsq = DistSq (v); if (distsq!=0) return sqrt(distsq); return 0.0;}
-inline double Vec2I::DistSq (const Vec2I &v)		{ double a,b; a = (double) x - (double) v.x; b = (double) y - (double) v.y; return (a*a + b*b);}
-inline double Vec2I::DistSq (const Vec2F &v)		{ double a,b; a = (double) x - (double) v.x; b = (double) y - (double) v.y; return (a*a + b*b);}
-inline double Vec2I::DistSq (const Vec3I &v)		{ double a,b; a = (double) x - (double) v.x; b = (double) y - (double) v.y; return (a*a + b*b);}
-inline double Vec2I::DistSq (const Vec3F &v)		{ double a,b; a = (double) x - (double) v.x; b = (double) y - (double) v.y; return (a*a + b*b);}
-inline double Vec2I::DistSq (const Vec4F &v)		{ double a,b; a = (double) x - (double) v.x; b = (double) y - (double) v.y; return (a*a + b*b);}
+double Vec2I::Dist (const Vec2I &v)		{ double distsq = DistSq (v); if (distsq!=0) return sqrt(distsq); return 0.0;}
+double Vec2I::Dist (const Vec2F &v)		{ double distsq = DistSq (v); if (distsq!=0) return sqrt(distsq); return 0.0;}
+double Vec2I::Dist (const Vec3I &v)		{ double distsq = DistSq (v); if (distsq!=0) return sqrt(distsq); return 0.0;}
+double Vec2I::Dist (const Vec3F &v)		{ double distsq = DistSq (v); if (distsq!=0) return sqrt(distsq); return 0.0;}
+double Vec2I::Dist (const Vec4F &v)		{ double distsq = DistSq (v); if (distsq!=0) return sqrt(distsq); return 0.0;}
+double Vec2I::DistSq (const Vec2I &v)		{ double a,b; a = (double) x - (double) v.x; b = (double) y - (double) v.y; return (a*a + b*b);}
+double Vec2I::DistSq (const Vec2F &v)		{ double a,b; a = (double) x - (double) v.x; b = (double) y - (double) v.y; return (a*a + b*b);}
+double Vec2I::DistSq (const Vec3I &v)		{ double a,b; a = (double) x - (double) v.x; b = (double) y - (double) v.y; return (a*a + b*b);}
+double Vec2I::DistSq (const Vec3F &v)		{ double a,b; a = (double) x - (double) v.x; b = (double) y - (double) v.y; return (a*a + b*b);}
+double Vec2I::DistSq (const Vec4F &v)		{ double a,b; a = (double) x - (double) v.x; b = (double) y - (double) v.y; return (a*a + b*b);}
 
 inline Vec2I &Vec2I::Normalize (void) {
 	double n = (double) x*x + (double) y*y;
@@ -267,13 +267,6 @@ Vec2F &Vec2F::Normalize (void) {
 double Vec2F::Length (void) { double n; n = (double) x*x + (double) y*y; if (n != 0.0) return sqrt(n); return 0.0; }
 VTYPE *Vec2F::Data (void)			{return &x;}
 
-Vec2F Vec2F::operator- (const float op)		{ return Vec2F(x - op, y - op); }
-Vec2F Vec2F::operator- (const Vec2F &op)		{ return Vec2F(x - op.x, y - op.y); }
-Vec2F Vec2F::operator+ (const float op)		{ return Vec2F(x + op, y + op); }
-Vec2F Vec2F::operator+ (const Vec2F &op)		{ return Vec2F(x + op.x, y + op.y); }
-Vec2F Vec2F::operator* (const float op)		{ return Vec2F(x * op, y * op); }
-Vec2F Vec2F::operator* (const Vec2F &op)		{ return Vec2F(x*op.x, y*op.y); }	
-
 #undef VTYPE
 #undef VNAME
 
@@ -283,6 +276,7 @@ Vec2F Vec2F::operator* (const Vec2F &op)		{ return Vec2F(x*op.x, y*op.y); }
 // Constructors/Destructors
 Vec3I::Vec3I() {x=0; y=0; z=0;}
 Vec3I::Vec3I (const VTYPE xa, const VTYPE ya, const VTYPE za) {x=xa; y=ya; z=za;}
+Vec3I::Vec3I (const Vec2I& op, const int opz) { x = (VTYPE)op.x; y = (VTYPE)op.y; z = (VTYPE) opz; }
 Vec3I::Vec3I (const Vec3I &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; z=(VTYPE) op.z;}
 Vec3I::Vec3I (const Vec3F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; z=(VTYPE) op.z;}
 Vec3I::Vec3I (const Vec4F &op) {x=(VTYPE) op.x; y=(VTYPE) op.y; z=(VTYPE) op.z;}

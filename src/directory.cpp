@@ -266,24 +266,24 @@ dir_list Directory::DirList( std::string path, std::string ext )
 	{
 	  if (( fileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) && !( fileData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN  ))
 	  {
-		dir_list_element e;
-		e.length = 0;
-		e.text = fileData.cFileName;
-		e.extension = "DIR";
-		e.type = FILE_TYPE_DIR;
-		out.push_back( e );
+			dir_list_element e;
+			e.length = 0;
+			e.text = fileData.cFileName;
+			e.extension = "DIR";
+			e.type = FILE_TYPE_DIR;
+			out.push_back( e );
 	  }
 	  else
 	  {
-		filesize.LowPart = fileData.nFileSizeLow;
-		filesize.HighPart = fileData.nFileSizeHigh;
+			filesize.LowPart = fileData.nFileSizeLow;
+			filesize.HighPart = fileData.nFileSizeHigh;
 
-		dir_list_element e;
-		e.length = (int) filesize.QuadPart;
-		e.text = fileData.cFileName;
-		e.extension = strSplitRight ( e.text, "." );
-		e.type = FILE_TYPE_FILE;
-		out.push_back( e );
+			dir_list_element e;
+			e.length = (int) filesize.QuadPart;
+			e.text = fileData.cFileName;
+			e.extension = strSplitRight ( e.text, "." );
+			e.type = FILE_TYPE_FILE;
+			out.push_back( e );
 	  }
 	}
 	while (FindNextFileA(hFind, &fileData) != 0);

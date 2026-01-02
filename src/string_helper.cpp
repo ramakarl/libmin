@@ -28,6 +28,7 @@
 #include <cstring>
 #include <sstream>
 #include <assert.h>
+#include <algorithm>
 
 #ifdef _WIN32
   #include <windows.h>    // needed for WideCharToMultiByte
@@ -50,6 +51,20 @@
   #endif
 
 #endif
+
+std::string strToLower(const std::string& s)
+{
+  std::string r = s;
+  std::transform(r.begin(), r.end(), r.begin(), [](unsigned char c) { return std::tolower(c); });
+  return r;
+}
+
+std::string strToUpper(const std::string& s)
+{
+  std::string r = s;
+  std::transform(r.begin(), r.end(), r.begin(), [](unsigned char c) { return std::toupper(c); });
+  return r;
+}
 
 int strToI (std::string s) {
   //return ::atoi ( s.c_str() );

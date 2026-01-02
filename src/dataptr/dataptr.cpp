@@ -181,6 +181,8 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
+      if (mUseRX==0 || mUseRY==0) dbgprintf("***ERROR*** DataPtr::Append. UseRX/RY is 0. Set usage.\n");
+
       checkGL ( "glBindTexture (DataPtr::Append)" );
       switch (mUseType) {
       case DT_UCHAR:    glTexImage2D ( GL_TEXTURE_2D, 0, GL_R8,    mUseRX, mUseRY, 0, GL_RED,  GL_UNSIGNED_BYTE, src );  break;
