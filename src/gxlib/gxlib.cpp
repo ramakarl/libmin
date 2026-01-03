@@ -490,7 +490,7 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 		if ( ch == '\n' ) {
 			// line return
 			lX = lLinePosX;
-			lLinePosY += gx.m_text_hgt;
+			lLinePosY += gx.m_text_hgt / text_aspect;
 			lY = lLinePosY;
 		
 		} else if ( ch >= 0 && ch <= 128 ) {
@@ -532,40 +532,39 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	}
 }
 
-Vec2F glib::getTextDim ( char mode, float hgt, std::string msg )
+Vec4F glib::getTextDim ( char mode, float hgt, std::string msg )
 {
 	int len = (int) msg.size();
-	if (len == 0)	return Vec2F(0, 0);						// no text
+	if (len == 0)	return Vec4F(0, 0, 0, 0);						// no text
 
-	float text_hgt = hgt;
+	float yhgt = hgt;
 	if (mode == 'p') {
-		text_hgt = hgt * (gx.m_BasePnt / 10.0) * gx.m_PixPerPnt * fabs((gx.m_View.w - gx.m_View.y) / (gx.m_Region.w - gx.m_Region.y));
+		yhgt = hgt * (gx.m_BasePnt / 10.0) * gx.m_PixPerPnt * fabs((gx.m_View.w - gx.m_View.y) / (gx.m_Region.w - gx.m_Region.y));
 	}	
 	// get current font
 	gxFont& font = gx.getCurrFont();
-	if (font.ascent == 0)	return Vec2F(0, 0);					// we don't have a font yet
-	float fontPixToWorld = text_hgt / font.ascent;		// font to world scale
+	if (font.ascent == 0)	return Vec4F(0, 0, 0, 0);		// we don't have a font yet
+	float yworld = yhgt / font.ascent;								// font to world scale
 	
 	// world size width of text
-	float lX = 0, lMax = 0;	
+	float ymax, x = 0, xmax = 0;
+	int ln = 1;
 	char ch;
 	for (int c=0; c < len; c++) {
 		ch = msg.at(c);
 		if (ch == '\n') {
-			lX = 0;
+			x = 0; ln++;
 		}	else if (ch >= 0 && ch <= 128) {			
-			lX += (font.glyphs[ch].advance + gx.m_text_kern) * fontPixToWorld;
-			if (lX > lMax) lMax = lX;
+			x += (font.glyphs[ch].advance + gx.m_text_kern) * yworld;
+			if (x > xmax) xmax = x;
 		}
 	}
-	Vec2F sz;
-	sz.x = lMax;	
-	sz.y = font.ascent * fontPixToWorld;
+	ymax = yhgt * ln;
 
 	// world space to pixels
 	// px = sz * Vec2F( float(s->region.z - s->region.x) / (view.z - view.x), float(region.w - region.y) / (view.w - view.y) );
 
-	return sz;
+	return Vec4F( xmax, ymax, ln, ymax/xmax );
 }
 
 void glib::start3D ( Camera3D* cam, bool bStatic )

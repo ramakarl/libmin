@@ -61,7 +61,7 @@
     GXAPI void setTextSz ( float hgt, float kern=0);
     GXAPI void setTextPnts ( float hgt_pnt, float kern=0);    
     GXAPI float getPntToWorld ();    
-    GXAPI Vec2F getTextDim(char mode, float sz, std::string msg);
+    GXAPI Vec4F getTextDim(char mode, float sz, std::string msg);
     GXAPI void end2D ();    
     GXAPI void drawLine ( Vec2F a, Vec2F b, Vec4F clr );
     GXAPI void drawRect ( Vec2F a, Vec2F b, Vec4F clr );
