@@ -206,8 +206,8 @@ void getFileParts(std::string fname, std::string& path, std::string& name, std::
     if (!path.empty() && path.back() != getPathDelim()) path += getPathDelim();
 }
 
-// fixPath - fixes paths or filenames /w paths
-std::string fixPath (std::string str)
+// getPathFixed - fixes paths or filenames /w paths
+std::string getPathFixed (std::string str)
 {
    if (str.empty()) return "";
 

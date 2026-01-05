@@ -41,12 +41,12 @@
 	HELPAPI std::string strFilepath ( std::string str );	// path of a file
 
 	// convert
-	HELPAPI bool isFloat (std::string s);	// fast	
-	HELPAPI int strToI (std::string s);
-	HELPAPI int strToI (std::string s, int &val);
-	HELPAPI xlong strToI64 (std::string s);
-	HELPAPI float strToF (std::string s);
-	HELPAPI int strToF (std::string s, float &val);
+	HELPAPI int strToI (const std::string& s);
+	HELPAPI int strToI (const std::string& s, int &val);
+	HELPAPI float strToF(const std::string& s);
+	HELPAPI int strToF(const std::string& s, float& val);
+	HELPAPI bool isFloat(std::string s);	// fast	
+	HELPAPI xlong strToI64 (std::string s);	
 	HELPAPI double strToD (std::string s);	
 	HELPAPI unsigned char strToC ( std::string s );
 	HELPAPI unsigned long strToUL ( std::string s );

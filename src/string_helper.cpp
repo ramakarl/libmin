@@ -66,22 +66,31 @@ std::string strToUpper(const std::string& s)
   return r;
 }
 
-int strToI (std::string s) {
-  //return ::atoi ( s.c_str() );
+// strToI - robust
+// eg. N(43.136) => 43
+int strToI(const std::string& s)
+{
+  int result = 0;
+  bool started = false;
+
+  for (unsigned char c : s) {
+    if (c >= '0' && c <= '9') {  // faster than std::isdigit
+      started = true;
+      result = result * 10 + (c - '0');
+    } else if (started) {
+      break;
+    }
+  }
+  return result;
+}
+
+// strToI - fast, strict (stops at first non-digit)
+// eg. 43.136L => 43, N(43.146) => fail
+int strToI (const std::string& s, int &x)
+{
   std::istringstream str_stream ( s );
-  int x;
-  if (str_stream >> x) return x;    // this is the correct way to convert std::string to int, do not use atoi
+  if (str_stream >> x) return x; 
   return 0;
-};
-
-int strToI (std::string s, int &x) {
-  //return ::atoi ( s.c_str() );
-  std::istringstream str_stream ( s );
-
-   // this is the correct way to convert std::string to int, do not use atoi
-   //
-  if (str_stream >> x) { return 0; }
-  return -1;
 };
 
 xlong strToI64 (std::string s) 
@@ -95,37 +104,58 @@ xlong strToI64 (std::string s)
 	#endif
 }
 
-bool isFloat (std::string s) {
+// strToF - robust
+//
+float strToF (const std::string& s)
+{
+  float result = 0.0f;
+  bool neg = false;
+  bool started = false;
+  bool fraction = false;
+  float divisor = 10.0f;
 
+  for (size_t i = 0; i < s.size(); ++i) {
+    char c = s[i];    
+    if (!started) {
+      if (c == '-') { neg = true; started = true; continue; }
+      if (c == '+') { started = true; continue; }
+      if (c >= '0' && c <= '9') { started = true; }
+      else continue; // skip other chars
+    }
+    if (c >= '0' && c <= '9') {
+      if (!fraction)  result = result * 10.0f + (c - '0');
+      else            result = result + (c - '0') / divisor, divisor *= 10.0f;
+    } else if (c == '.' && !fraction) {
+      fraction = true;  // start parsing fractional part
+    } else {
+      break;      // stop at first non-digit/non-dot
+    }
+  }
+  return started ? (neg ? -result : result) : std::numeric_limits<float>::quiet_NaN();
+};
+
+// strToF - fast, strict (stops at first non-digit)
+// eg. 43.136L => 43.136, N(43.136) => fail
+int strToF (const std::string& s, float &x)
+{
+  std::istringstream str_stream ( s );
+  if (str_stream >> x) { return x; }
+  return std::numeric_limits<float>::quiet_NaN();
+};
+
+bool isFloat(std::string s) 
+{
   int st = 0;
   char ch = s.at(st);
-  if (ch == 43 || ch==45 ) st++;          // check +, -
-
+  if (ch == 43 || ch == 45) st++;          // check +, -
   for (int n = st; n < s.length(); n++) {
     ch = s.at(n);
-    if ( ch < 48 || ch > 57 || ch != 46 )    // fast check for non-numerical
+    if (ch < 48 || ch > 57 || ch != 46)    // fast check for non-numerical
       return false;
   }
   return true;
 }
 
-float strToF (std::string s) {
-  //return ::atof ( s.c_str() );
-  if (s.at(0)=='n') return std::numeric_limits<float>::quiet_NaN();
-  std::istringstream str_stream ( s );
-  float x;
-  if (str_stream >> x) return x;    // this is the correct way to convert std::string to float, do not use atof
-  return std::numeric_limits<float>::quiet_NaN();
-};
-
-int strToF (std::string s, float &val) {
-  std::istringstream str_stream ( s );
-
-  // this is the correct way to convert std::string to float, do not use atof
-  //
-  if (str_stream >> val) { return 0; }
-  return -1;
-};
 
 double strToD (std::string s) {
   //return ::atof ( s.c_str() );

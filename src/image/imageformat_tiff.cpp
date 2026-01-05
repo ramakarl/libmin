@@ -865,7 +865,7 @@ bool CImageFormatTiff::SaveTiffDirectory ()
 	}
 	
 	// Strip offsets -- List of strip offsets. 
-	// 4-byte list (ulong) per row
+	// 4-byte list (uxlong) per row
 	for (int n=0; n < m_yres; n++) {
 		if (m_DebugTif) dbgprintf ( "Offset #%d: pos: %d, val: %d\n", n, m_Buf.getPos(), TIFF_SAVE_POSOFFSETS + m_yres*4*2 + n * m_bpr);
 		m_Buf.write<uint64_t>( TIFF_SAVE_POSOFFSETS + strip_header_size + n * m_bpr );

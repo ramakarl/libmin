@@ -186,8 +186,8 @@ inline void vclr ( gxVert* v, Vec4F clr, float a=1)
 
 void glib::drawLine ( Vec2F a, Vec2F b, Vec4F clr )
 {
-    gxVert* v = gx.allocGeom2D ( 2, PRIM_LINES );
-    v->x = a.x; v->y = a.y; v->z = 0; vclr(v,clr); v++;
+	gxVert* v = gx.allocGeom2D ( 2, PRIM_LINES );
+  v->x = a.x; v->y = a.y; v->z = 0; vclr(v,clr); v++;
 	v->x = b.x; v->y = b.y; v->z = 0; vclr(v,clr); v++;
 }
 

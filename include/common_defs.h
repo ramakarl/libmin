@@ -47,7 +47,7 @@
 	        typedef	uint8_t				uchar;
 	        typedef uint16_t			ushort;
 	        typedef uint32_t			uint;
-	        typedef uint64_t			uxlong;     // note: keyword 'ulong' cannot be used with NV_ARM. 'slong' is signed, dont use here
+	        typedef uint64_t			uxlong;     // note: keyword 'ulong' conflits with NV_ARM. 'slong' is signed, dont use here
 
 	        #define FALSE	0
 	        #define TRUE	1
@@ -153,10 +153,10 @@
     HELPAPI void checkMem( xlong& total, xlong& used, xlong& app);    
     HELPAPI char getPathDelim();
     HELPAPI char getPathDelimOpposite();
+    HELPAPI std::string getPathFixed(std::string path);
     HELPAPI std::vector<std::string>& getGlobalPaths ();
     HELPAPI void addSearchPath ( const char* path );
-    HELPAPI void addSearchPath ( const std::string& path);
-    HELPAPI std::string fixPath ( std::string path );
+    HELPAPI void addSearchPath ( const std::string& path);    
     HELPAPI bool getFileLocation ( const char* filename, char* outpath );
     HELPAPI bool getFileLocation ( const char* filename, char* outpath, std::vector<std::string> paths );
     HELPAPI bool getFileLocation ( const std::string filename, std::string &outpath );    
