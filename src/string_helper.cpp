@@ -717,6 +717,18 @@ std::string vecToStr ( Vec4F v )
 }
 
 
+// convert UTF-8 to safe printable ascii 
+std::string strToAscii(const std::string& str)
+{
+  std::string ascii;
+  ascii.reserve(str.size());
+
+  for (unsigned char c : str) {
+    if (c >= 0x20 && c <= 0x7E) ascii.push_back ( static_cast<char>(c));
+  }
+  return ascii;
+}
+
 std::string wsToStr ( const std::wstring& str )
 {
 #ifdef _MSC_VER

@@ -40,7 +40,7 @@
 	HELPAPI std::string strFilebase ( std::string str );	// basename of a file (minus ext)
 	HELPAPI std::string strFilepath ( std::string str );	// path of a file
 
-	// convert
+	// str-to-type
 	HELPAPI int strToI (const std::string& s);
 	HELPAPI int strToI (const std::string& s, int &val);
 	HELPAPI float strToF(const std::string& s);
@@ -52,17 +52,21 @@
 	HELPAPI unsigned long strToUL ( std::string s );
 	HELPAPI unsigned long strToID ( std::string str );		// should only be used for 4-byte literals. for actual unsigned long see strToUL
 	
+	// type-to-str
 	HELPAPI std::string cToStr ( char c );
 	HELPAPI std::string iToStr ( int i );
 	HELPAPI std::string fToStr ( float f );
 	HELPAPI std::string xlToStr ( uint64_t v );	
 	HELPAPI objType strToType ( std::string str );
-	HELPAPI std::string typeToStr ( objType t );
-	HELPAPI std::string wsToStr ( const std::wstring& str );
-	HELPAPI std::wstring strToWs (const std::string& s);
+	HELPAPI std::string typeToStr ( objType t );		
+
+	// utf-8 / ascii
+	HELPAPI std::string strToAscii(const std::string& s);
+	HELPAPI std::string wsToStr(const std::wstring& str);
+	HELPAPI std::wstring strToWs(const std::string& s);
+
 	HELPAPI std::string strToLower(const std::string& s);
 	HELPAPI std::string strToUpper(const std::string& s);
-
 	HELPAPI bool strToVec(const std::string& str, char lsep, char insep, char rsep, float* vec, int vec_dim = 3);
 	HELPAPI bool strToVec3(const std::string& str, char lsep, char insep, char rsep, float* vec);
 	HELPAPI bool strToVec4(const std::string& str, char lsep, char insep, char rsep, float* vec);
