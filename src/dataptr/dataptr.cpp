@@ -389,12 +389,14 @@ void DataPtr::Retrieve ()
       switch (mUseType) {
       case DT_UCHAR:  glReadPixels(0, 0, w, h, GL_RED, GL_UNSIGNED_BYTE, mCpu );    break;
       case DT_UCHAR3:  glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, mCpu );    break;
-	  case DT_USHORT3: glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_SHORT, mCpu );		break;
+	    case DT_USHORT3: glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_SHORT, mCpu );		break;
       case DT_UCHAR4:  glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, mCpu );    break;
       case DT_USHORT: glReadPixels(0, 0, w, h, GL_RED, GL_UNSIGNED_SHORT, mCpu );    break;
       case DT_FLOAT:  glReadPixels(0, 0, w, h, GL_RED,  GL_FLOAT, mCpu );        break;
       case DT_FLOAT4:  glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT, mCpu );        break;
       };
+      // unbind fbo
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
       // Flip Y
       /*int pitch = w * 3;

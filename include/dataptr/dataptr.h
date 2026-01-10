@@ -89,6 +89,7 @@
 
 		// Data access
 		int				getUsage ()		{ return mUseType; }				
+		uint64_t	getSize()			{ return mSize; }
 		uint64_t		getDataSz ( int cnt, int stride )	{ return (uint64_t) cnt * stride; }
 		int				getNum()	{ return mNum; }
 		int				getMax()	{ return mMax; }

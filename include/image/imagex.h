@@ -108,6 +108,30 @@
 		float	fScaling;	// 1/2,1/4,1/8,1
 	};
 
+	inline uchar getTypeFromFmt(ImageOp::Format fmt, int& stride)
+	{
+		uchar dt;
+		switch (fmt) {
+		case ImageOp::BW16:		dt = DT_USHORT;	stride = 2;		break;
+		case ImageOp::RGB8:		dt = DT_UCHAR3;	stride = 3;		break;
+		case ImageOp::RGBA8:	dt = DT_UCHAR4;	stride = 4;		break;
+		case ImageOp::F32:		dt = DT_FLOAT;	stride = 4;		break;
+		}
+		return dt;
+	}
+	inline ImageOp::Format getFmtFromType(uchar dt)
+	{
+		ImageOp::Format fmt;
+		switch (dt) {
+		case DT_USHORT:	fmt = ImageOp::BW16;	break;
+		case DT_FLOAT:	fmt = ImageOp::F32;		break;
+		case DT_UCHAR3:	fmt = ImageOp::RGB8;	break;
+		case DT_UCHAR4: fmt = ImageOp::RGBA8;	break;
+		}
+		return fmt;
+	}
+
+
 	class HELPAPI ImageX {
 	public:
 		ImageX ();
