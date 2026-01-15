@@ -2670,7 +2670,7 @@ int NetworkSystem::netSocketSelect ( fd_set* sockReadSet, fd_set* sockWriteSet )
 
 	NET_PERF_PUSH ( "select" );
 	timeval tv;
-    tv.tv_sec = m_rcvSelectTimout.tv_sec;
+  tv.tv_sec = m_rcvSelectTimout.tv_sec;
 	tv.tv_usec = m_rcvSelectTimout.tv_usec;
 	result = select ( maxfd, sockReadSet, sockWriteSet, NULL, &tv ); // Select all sockets that have changed
 	NET_PERF_POP ( );
@@ -2680,14 +2680,14 @@ int NetworkSystem::netSocketSelect ( fd_set* sockReadSet, fd_set* sockWriteSet )
 
 str NetworkSystem::netPrintf ( int flag, const char* fmt_raw, ... )
 {
-	std::string srvcli = isServer() ? "netS> " : "netC> ";
-
+	if (flag == PRINT_FLOW && !m_printFlow) {
+		return str("");
+	}
 	if ( ( flag == PRINT_VERBOSE || flag == PRINT_VERBOSE_HS ) && ! m_printVerbose ) {
 		return str("");
-	}
-	if ( flag == PRINT_FLOW && ! m_printFlow ) {
-		return str("");
-	}
+	}	
+
+	std::string srvcli = isServer() ? "netS> " : "netC> ";
 
 	str tag;
   char buffer[ 2048 ];
@@ -2701,11 +2701,11 @@ str NetworkSystem::netPrintf ( int flag, const char* fmt_raw, ... )
 		tag = "";
 	}
 	
-    va_list args;
-    va_start ( args, fmt_raw );
-    vsnprintf ( buffer, sizeof ( buffer ), fmt_raw, args );
-    va_end ( args );
-    str msg = str ( buffer ) + "\n";
+  va_list args;
+  va_start ( args, fmt_raw );
+  vsnprintf ( buffer, sizeof ( buffer ), fmt_raw, args );
+  va_end ( args );
+  str msg = str ( buffer ) + "\n";
 	
   switch ( flag ) {
 		case PRINT_VERBOSE:

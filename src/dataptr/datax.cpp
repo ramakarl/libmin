@@ -70,8 +70,10 @@ int DataX::AddBuffer ( int userid, std::string name, ushort stride, uint64_t max
 {
 	DataPtr buf;
 	buf.mRefID = userid;
-	buf.SetUsage ( DT_MISC, dest_flags, maxcnt,1,1 );
-	buf.Resize ( stride, maxcnt, 0x0, dest_flags );
+	buf.SetUsage ( dest_flags, DT_MISC, maxcnt, 1, 1 );
+
+	uint64_t sz = maxcnt*stride;
+	buf.Resize ( stride, sz, 0x0, dest_flags );
 
 	// add to buffer list
 	int b = (int) mBuf.size();		
@@ -116,14 +118,14 @@ void DataX::ClearBuffer(int i)
 	int rz = mBuf[b].mUseRZ;	
 	
 	mBuf[b].Clear();								// clear buffer (free)
-	mBuf[b].SetUsage (usetype, useflags, rx,ry,rz );	// reset usage
-	mBuf[b].Resize(stride, 1, 0x0, useflags);		// resize
+	mBuf[b].SetUsage (useflags, usetype, rx,ry,rz );	// reset usage
+	mBuf[b].Resize(stride, stride, 0x0, useflags);		// resize
 }
 
 void DataX::SetBufferUsage	( int i, uchar dt, uchar use_flags, int rx, int ry, int rz  )
 {
 	int b = mRef[i];  if (b==BUNDEF) return;
-	mBuf[b].SetUsage ( dt, use_flags, rx, ry, rz );
+	mBuf[b].SetUsage (use_flags, dt, rx, ry, rz );
 }
 
 void DataX::SetNum ( int num )
@@ -255,7 +257,9 @@ char* DataX::ExpandBuffer ( int i, int max_cnt )
 {
 	int b=mRef[i]; if ( b==BUNDEF) return 0;
 
-	mBuf[b].Append ( mBuf[b].mStride, max_cnt - mBuf[b].mMax );
+	uint64_t add_sz = (max_cnt - mBuf[b].mMax) * mBuf[b].mStride;
+
+	mBuf[b].Append ( mBuf[b].mStride, add_sz );
 
 
 	//---- old code for expand
@@ -275,8 +279,9 @@ char* DataX::ExpandBuffer ( int i, int max_cnt )
 //--- internal func. no user-level indirection
 int DataX::AddElemDirect (int b)
 {
-	if (mBuf[b].mNum >= mBuf[b].mMax)
-		mBuf[b].Append(mBuf[b].mStride, mBuf[b].mMax + 8);	// expand
+	if (mBuf[b].mNum >= mBuf[b].mMax) {
+		mBuf[b].Append (mBuf[b].mStride, mBuf[b].mSize );	// expand
+	}
 	mBuf[b].mNum++;
 	return mBuf[b].mNum - 1;
 }
@@ -288,7 +293,7 @@ int DataX::AddElem ( int i )
 
 	//--- this part identical to AddElemDirect
 	if ( mBuf[b].mNum >= mBuf[b].mMax ) 
-		mBuf[b].Append ( mBuf[b].mStride, mBuf[b].mMax + 8 );	// expand
+		mBuf[b].Append ( mBuf[b].mStride, mBuf[b].mSize);		// expand by 2x
 
 	mBuf[b].mNum++;
 	return mBuf[b].mNum-1;
@@ -301,7 +306,7 @@ int DataX::MemcpyBuffer ( int i, uchar* dat, int len, int cnt )
 	assert ( len == mBuf[b].mStride * cnt );
 
 	mBuf[b].Clear();
-	mBuf[b].Append ( mBuf[b].mStride, cnt, (char*) dat );
+	mBuf[b].Append ( mBuf[b].mStride, len, (char*) dat );
 	mBuf[b].mNum = cnt;
 
 	return mBuf[b].mNum-1;

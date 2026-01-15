@@ -206,6 +206,121 @@ bool CImageFormatJpg::Load ( const std::string filename, ImageX* img )
 	}
 	return true;
 }
+struct jpeg_error {
+	jpeg_error_mgr mgr;
+	jmp_buf jmp_out;
+};
+
+void jpeg_error_handler (j_common_ptr cinfo)
+{
+	jpeg_error* err = reinterpret_cast<jpeg_error*>(cinfo->err);
+	// print the error message
+	char buffer[JMSG_LENGTH_MAX];
+	(err->mgr.format_message)(cinfo, buffer);
+	printf( "libjpeg error: %s\n", buffer);
+	
+	// jump back to safety (no exception handling in libjpeg)
+	longjmp(err->jmp_out, 1);
+}
+
+
+bool compress_jpeg ( unsigned char* in_pixels, 
+										 int width, int height, int quality, 
+										 unsigned char** out_pixels,
+										 unsigned long* out_size )
+{
+	jpeg_compress_struct cinfo;
+	jpeg_error jerr;
+
+	cinfo.err = jpeg_std_error( &jerr.mgr );
+	jerr.mgr.error_exit = jpeg_error_handler;
+
+	if (setjmp(jerr.jmp_out)) {
+		jpeg_destroy_compress(&cinfo);
+		return false;
+	}
+
+	jpeg_create_compress ( &cinfo);
+
+	// allocates the destination buffer. caller must own it
+	jpeg_mem_dest (&cinfo, out_pixels, out_size );
+
+	cinfo.image_width = width;
+	cinfo.image_height = height;
+	cinfo.input_components = 3;		// RGB
+	cinfo.in_color_space = JCS_RGB;
+
+	JSAMPROW src_ptr[1];
+	const int src_stride = width * 3;
+
+	jpeg_set_defaults(&cinfo);
+	jpeg_set_quality(&cinfo, quality, TRUE);
+
+	jpeg_start_compress ( &cinfo, TRUE );
+
+	while (cinfo.next_scanline < cinfo.image_height) {
+		src_ptr[0] = (JSAMPROW) &in_pixels[cinfo.next_scanline * src_stride];
+		jpeg_write_scanlines( &cinfo, src_ptr, 1);
+	}
+
+	jpeg_finish_compress( &cinfo );
+	jpeg_destroy_compress ( &cinfo );
+
+	return true;
+}
+
+bool decompress_jpeg(unsigned char* in_pixels, unsigned long in_size,
+										unsigned char** out_pixels,
+										int* out_w, int* out_h, unsigned long* out_size )
+{
+	jpeg_decompress_struct dinfo;
+	jpeg_error jerr;
+
+	dinfo.err = jpeg_std_error(&jerr.mgr);
+	jerr.mgr.error_exit = jpeg_error_handler;
+
+	if (setjmp(jerr.jmp_out)) {
+		jpeg_destroy_decompress(&dinfo);
+		return false;
+	}
+
+	jpeg_create_decompress(&dinfo);
+
+	// set the source buffer 
+	jpeg_mem_src(&dinfo, in_pixels, in_size);
+
+	if (jpeg_read_header(&dinfo, TRUE) != JPEG_HEADER_OK) {
+		jpeg_destroy_decompress(&dinfo);
+		return false;
+	}
+	
+	jpeg_start_decompress(&dinfo);
+	
+	// allocates the destination buffer. caller must own it
+	*out_w = dinfo.output_width;
+	*out_h = dinfo.output_height;
+	int row_stride = dinfo.output_width * dinfo.output_components;
+	*out_size = row_stride * dinfo.output_height;
+	*out_pixels = (unsigned char*) malloc ( (*out_size) );
+
+	if (!(*out_pixels)) {
+		jpeg_finish_decompress(&dinfo);
+		jpeg_destroy_decompress(&dinfo);
+		return false;
+	}
+
+	JSAMPROW dest_ptr[1];
+	while (dinfo.output_scanline < dinfo.output_height) {
+		dest_ptr[0] = *out_pixels + dinfo.output_scanline * row_stride;
+		jpeg_read_scanlines(&dinfo, dest_ptr, 1);
+	}
+
+	jpeg_finish_decompress(&dinfo);
+	jpeg_destroy_decompress(&dinfo);
+
+	return true;
+}
+
 
 bool CImageFormatJpg::Save ( const std::string filename, ImageX* img )
 {
@@ -261,7 +376,7 @@ bool CImageFormatJpg::Save ( const std::string filename, ImageX* img )
 	iPitch = m_pImg->GetBytesPerRow();
 
 	switch ( m_pImg->GetFormat() ) {
-	case ImageOp::BW8: {
+	case ImageOp::BW8: {	
 		jpeg_info.input_components = 1;	
 		jpeg_info.in_color_space = JCS_GRAYSCALE; 
 		adj_size = jpeg_info.image_width * jpeg_info.image_height;				

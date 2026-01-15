@@ -332,16 +332,16 @@ endmacro()
 macro ( _REQUIRE_JPG )   
   set ( OK_H "0" )    
   set ( _jpg_srch "${LIBEXT_ROOT}/win64" )
-	_FIND_FILE ( JPG_LIBS _jpg_srch "libjpg_2019x64.lib" "" OK_H )		
+	_FIND_FILE ( JPG_LIBS _jpg_srch "libjpegt.lib" "" OK_H )		
 	if ( OK_H EQUAL 1 )
       
       add_definitions(-DBUILD_JPG)
-      set ( JPG_OPT "${LIBEXT_ROOT}/win64/libjpg_2019x64.lib" )
-      set ( JPG_DEBUG "${LIBEXT_ROOT}/win64/libjpg_2019x64d.lib" )
+      set ( JPG_REL "${LIBEXT_ROOT}/win64/libjpegt.lib" )
+      set ( JPG_DEBUG "${LIBEXT_ROOT}/win64/libjpegt_d.lib" )
 
-      _ATTACH_LIB ( NAME "JPG" INC "${LIBEXT_ROOT}/include" BIN "${LIBEXT_ROOT}/win64" DEBUG_LIBS ${JPG_DEBUG} REL_LIBS ${JPG_REL} DLLS "" )
+      _ATTACH_LIB ( NAME "JPG" INC "${LIBEXT_ROOT}/include/libjpegt" BIN "${LIBEXT_ROOT}/win64" DEBUG_LIBS ${JPG_DEBUG} REL_LIBS ${JPG_REL} DLLS "" )
       
-      message ( STATUS "  ---> Using libjpg" )
+      message ( STATUS "  ---> Using libjpegt (turbo)" )
     else ()
       message ( FATAL_ERROR "
       JPG libraries not found. 
@@ -611,7 +611,8 @@ macro ( _ATTACH_LIB )
   
   # lib shared/binaries - ARG_DLLS should be a list of fully pathed files
   list ( APPEND LIBS_PACKAGE_DLLS ${ARG_DLLS} )
-  # message ( " ARG_DLLS: ${ARG_DLLS}" )  
+  
+  # message ( " LIBS_DEBUG: ${ARG_DLLS}" )  
 
   message ( STATUS "  ---> Using ${ARG_NAME} ")
 endmacro()
@@ -767,19 +768,21 @@ macro(_LINK )
 	set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS Debug PARENT_SCOPE ) 
 
 	set (PROJ_NAME ${_LINK_PROJECT})
+  
+  target_link_libraries(${PROJ_NAME} PRIVATE 
+    libmin::libmin 
+    libext::libext
+    ${_LINK_PLATFORM}
+    $<$<CONFIG:Debug>:${_LINK_DEBUG}>
+    $<$<CONFIG:Release>:${_LINK_OPT}>  
+  )
 
-  target_link_libraries( ${PROJ_NAME} PRIVATE libmin::libmin libext::libext )	
-
-  if (_LINK_PLATFORM)
-    target_link_libraries( ${PROJ_NAME} PRIVATE ${_LINK_PLATFORM} )
-  endif()
-  if (_LINK_DEBUG)
-    target_link_libraries( ${PROJ_NAME} PRIVATE debug ${_LINK_DEBUG} )
-  endif()
-  if (_LINK_OPT)
-    target_link_libraries( ${PROJ_NAME} PRIVATE optimized ${_LINK_OPT} )
-  endif()
-
+  #--- NOTE: does not work separately. VS does not respect 'debug' and 'optimized'
+  # target_link_libraries( ${PROJ_NAME} PRIVATE libmin::libmin libext::libext )	
+  # target_link_libraries( ${PROJ_NAME} PRIVATE ${_LINK_PLATFORM} )
+  # target_link_libraries( ${PROJ_NAME} PRIVATE debug ${_LINK_DEBUG} )
+  # target_link_libraries( ${PROJ_NAME} PRIVATE optimized ${_LINK_OPT} )
+  
   #--- NOTE: do not construct in this way! CMake does not handle $<$<CONFIG:Debug> properly when invoked many times.
 	#foreach (item IN ITEMS ${_LINK_PLATFORM} )
   #	target_link_libraries( ${PROJ_NAME} PRIVATE ${item} )	
@@ -790,8 +793,8 @@ macro(_LINK )
 	#	list (APPEND LIBLIST ${item})
 	#endforeach()	
 	#foreach (item IN ITEMS ${_LINK_OPT} )   
-#		target_link_libraries ( ${PROJ_NAME} PRIVATE $<$<CONFIG:Release>:${item} )
-#	endforeach()
+  #	target_link_libraries ( ${PROJ_NAME} PRIVATE $<$<CONFIG:Release>:${item} )
+  #endforeach()
 
   if (BUILD_CUDA)
       # link to cuda libraries

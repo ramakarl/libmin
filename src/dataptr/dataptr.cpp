@@ -31,6 +31,7 @@
 #endif
 
 int DataPtr::mFBO = -1;
+int DataPtr::gDataptrErr = 0;
 
 int getTypeSize(uchar dtype)
 {
@@ -97,24 +98,37 @@ void DataPtr::Clear ()
 }
 
 
-void DataPtr::SetUsage ( uchar dt, uchar flags, int rx, int ry, int rz )
+void DataPtr::SetUsage (uchar flags, uchar dt, int rx, int ry, int rz )
 {
   mUseType = dt;
+  mUseFlags = flags;
 
-  // usage checks should go here
-
-  if ( flags != DT_MISC ) mUseFlags = flags;
+  // usage checks should go here  
   if ( rz != -1) { mUseRX=rx; mUseRY=ry; mUseRZ=rz; }
 }
 
+void DataPtr::SetUsage (uchar flags )
+{
+  mUseFlags = flags;
+}
 
+// **NOTE**: In future this should be renamed AppendNewUsage
+//
 void DataPtr::UpdateUsage ( uchar flags )
 {
   mUseFlags |= flags;              // append usage, e.g. GPU
-  SetUsage ( mUseType, mUseFlags, mUseRX, mUseRY, mUseRZ );
+  SetUsage (mUseFlags, mUseType, mUseRX, mUseRY, mUseRZ );
   Append ( mStride, 0, mCpu, mUseFlags );    // reallocate on new usage
   mNum = mMax;
   Commit ();                  // commit to new usage
+}
+
+void DataPtr::ResizeCPU ( uint64_t newsz )
+{
+   if (mCpu != 0x0) free(mCpu);
+   char* newdata = (char*) malloc(newsz);
+   mCpu = newdata;
+   mSize = newsz;
 }
 
 void DataPtr::ReallocateCPU ( uint64_t oldsz, uint64_t newsz )
@@ -128,30 +142,30 @@ void DataPtr::ReallocateCPU ( uint64_t oldsz, uint64_t newsz )
   mCpu = newdata;
 }
 
-void DataPtr::Resize ( int stride, uint64_t cnt, char* dat, uchar dest_flags )
+void DataPtr::Resize ( int stride, uint64_t added_sz, char* dat, uchar dest_flags )
 {
   Clear();
-  Append ( stride, cnt, dat, dest_flags );
+  Append ( stride, added_sz, dat, dest_flags );
 }
 
-int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flags )
-{
+int DataPtr::Append ( int stride, uint64_t added_sz, char* dat, uchar dest_flags )
+{  
   bool mbDebug = false;
 
   mStride = stride;
 
   // Update size
   uint64_t old_size = mSize;
-  uint64_t added_size = getDataSz ( added_cnt, stride );
+  uint64_t added_size = added_sz;  
   uint64_t new_size = old_size + added_size;
   #ifdef BUILD_CUDA
     DataPtr newdat;
     newdat.mCpu = 0x0;
     newdat.mGLID = -1;
     newdat.mGpu = 0;
-  #endif
-  mMax += added_cnt;
+  #endif  
   mSize = new_size;
+  mMax = mSize / stride;
   mUseFlags = dest_flags;
 
   if ( new_size==0 ) return 0;
@@ -194,6 +208,14 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
       case DT_FLOAT:    glTexImage2D ( GL_TEXTURE_2D, 0, GL_R32F,  mUseRX, mUseRY, 0, GL_RED,  GL_FLOAT, src);        break;
       case DT_FLOAT4:   glTexImage2D ( GL_TEXTURE_2D, 0, GL_RGBA32F,mUseRX, mUseRY, 0, GL_RGBA,  GL_FLOAT, src);        break;
       };
+
+      gDataptrErr = (int) glGetError();
+      if (gDataptrErr != GL_NO_ERROR) {
+        glDeleteTextures ( 1, (GLuint*) &mGLID );
+        mGLID = -1;
+        return 0;
+      }
+
       checkGL ( "glTexImage2D (DataPtr::Append)" );
 
       // CUDA-GL interop with GL texture. (provides mGpu pointer w/o cuMemAlloc)
@@ -236,7 +258,7 @@ int DataPtr::Append ( int stride, uint64_t added_cnt, char* dat, uchar dest_flag
     }
   #endif
 
-  return mSize / mStride;
+  return mSize;
 }
 
 
@@ -423,6 +445,29 @@ void DataPtr::Retrieve ()
       cuCheck ( cuMemcpyDtoH ( mCpu, mGpu, mSize ), "DataPtr::Retrieve", "cuMemcpyDtoH", "DT_CUMEM", false );
     }
   #endif
+}
+
+void DataPtr::Copy ( DataPtr* src )
+{
+  // full copy of data
+  // - only CPU copies supported
+
+  if (src->mCpu==0x0) {
+    src->Retrieve(); 
+  }
+  ResizeCPU ( src->mSize );
+
+  memcpy ( mCpu, src->mCpu, mSize );
+  
+  mUseFlags = src->mUseFlags;
+  mUseRX = src->mUseRX;
+  mUseRY = src->mUseRY;
+  mUseRZ = src->mUseRZ;
+  mUseType = src->mUseType;  
+
+  mNum = src->mNum;
+  mMax = src->mMax;
+  mStride = src->mStride;
 }
 
 

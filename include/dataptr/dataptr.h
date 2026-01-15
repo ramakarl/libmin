@@ -73,13 +73,16 @@
 
 		
 		// Buffer operations
-		void			Resize ( int stride, uint64_t cnt, char* dat=0x0, uchar dest_flags=DT_CPU );
-		int				Append ( int stride, uint64_t cnt, char* dat=0x0, uchar dest_flags=DT_CPU );
+		void			Resize ( int stride, uint64_t sz, char* dat=0x0, uchar dest_flags=DT_CPU );
+		int				Append ( int stride, uint64_t sz, char* dat=0x0, uchar dest_flags=DT_CPU );
 		void			UseMax ()	{ mNum = mMax; }
-		void			SetUsage ( uchar dt, uchar flags=DT_MISC, int rx=-1, int ry=-1, int rz=-1 );		// special usage (2D,3D,GLtex,GLvbo,etc.)
+		void			SetUsage ( uchar flags, uchar dt, int rx=-1, int ry=-1, int rz=-1 );		// special usage (2D,3D,GLtex,GLvbo,etc.)
+		void			SetUsage ( uchar flags );
 		void			UpdateUsage ( uchar flags );		
-		void			ReallocateCPU ( uint64_t oldsz, uint64_t newsz );
+		void			ReallocateCPU ( uint64_t oldsz, uint64_t newsz );		// safe resize (preserving)
+		void			ResizeCPU( uint64_t newsz );												// destructive resize
 		void			FillBuffer ( uchar v );
+		void			Copy (DataPtr* src);
 		void			CopyTo ( DataPtr* dest, uchar dest_flags );
 		void			Commit ();		
 		void			Retrieve ();	
@@ -107,6 +110,7 @@
 		// Helper functions		
 		void			SetElemInt(uint64_t n, int val)	{ * (int*) (mCpu+n*mStride) = val; }
 		int				getElemInt(uint64_t n)			{ return * (int*) (mCpu+n*mStride); }
+		int				getErr()	{ return gDataptrErr; }
 
 	public:
 		uint64_t		mNum=0, mMax=0, mSize=0;
@@ -135,6 +139,7 @@
 		#endif
 
 		static int		mFBO;
+		static int		gDataptrErr;
 	};
 
 #endif

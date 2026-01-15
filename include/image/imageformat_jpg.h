@@ -22,9 +22,14 @@
 
 	#include "imageformat.h"	
 
-	#include "libjpg/jpeglib.h"
-	#include "libjpg/jerror.h"
+	#include "libjpegt/jpeglib.h"
+	#include "libjpegt/jerror.h"
 	#include <setjmp.h>
+
+
+  // in-memory compression
+	HELPAPI bool compress_jpeg (unsigned char* in_pixels, int width, int height, int quality, unsigned char** out_pixels, unsigned long* out_size);
+	HELPAPI bool decompress_jpeg (unsigned char* in_pixels, unsigned long in_size, unsigned char** out_pixels, int* out_w, int* out_h, unsigned long* out_size);
 
 	struct extended_error_mgr {
 		struct jpeg_error_mgr pub;

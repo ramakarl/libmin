@@ -90,7 +90,7 @@ void ImageX::SetUsage ( uchar use_flags )
 {
 	if (use_flags == 0 ) return;
 	m_UseFlags = use_flags;
-	m_Pix.SetUsage (  GetDataType ( mFmt ), use_flags, mXres, mYres, 1 );
+	m_Pix.SetUsage ( use_flags, GetDataType ( mFmt ), mXres, mYres, 1 );
 	m_Pix.UpdateUsage ( m_UseFlags );
 }
 
@@ -138,8 +138,11 @@ void ImageX::ResizeChannel ( int chan, int xr, int yr, ImageOp::Format fmt, ucha
 		// Set new pixel format parameters		
 		uchar dt = GetDataType ( fmt );
 		SetFormat ( xr, yr, fmt );		
-		m_Pix.SetUsage ( dt, use_flags, xr, yr, 1 );
-		m_Pix.Resize ( GetBytesPerPix(), xr*yr, 0x0, use_flags );		
+		m_Pix.SetUsage (use_flags, dt, xr, yr, 1 );
+		
+		uint64_t sz = xr * yr * GetBytesPerPix();
+		m_Pix.Resize ( GetBytesPerPix(), sz, 0x0, use_flags );		
+
 		m_Pix.mNum = xr*yr;
 				
 		// Update formatting functions
@@ -536,7 +539,7 @@ void ImageX::TransferFrom ( ImageX* src_img )
 		
 		uchar dt = src_img->GetDataType( src_img->GetFormat() );
 		SetFormat ( xr, yr, src_img->GetFormat() );				// Set new pixel format
-		m_Pix.SetUsage( dt, m_UseFlags, xr,yr,1);
+		m_Pix.SetUsage(m_UseFlags, dt, xr,yr,1);
 		m_Pix.mNum = xr * yr;
 
 		SetFlagEqual ( ImageOp::Channels, orig_flags );
