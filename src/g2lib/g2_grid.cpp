@@ -1,5 +1,5 @@
 
-#include "g2grid.h"
+#include "g2_grid.h"
 #include "gxlib.h"
 
 using namespace glib;
@@ -32,11 +32,8 @@ void g2Grid::UpdateLayout ( Vec4F p )
     Vec4F adv;
 
     // update self first
-    m_pos = p;
-
-    // margins (horiz & vert) 
-    m_pos = SetMargins ( p, m_minx, m_maxx, m_miny, m_maxy );    
-
+    m_pos = SetRegion (p, m_region, m_minx, m_maxx, m_miny, m_maxy );
+    
     // child regions
     Vec4F pos = m_pos;    
       

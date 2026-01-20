@@ -1837,7 +1837,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 				if (m_printFlow) {
 					chksum = ComputeChecksum(s.pktPtr, s.eventLen);
 				}
-				netPrintf ( PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s --> RECV  chksum=%lld", s.pktLen, s.eventLen, s.rxLen, s.event->getNameStr ( ).c_str(), chksum );	
+				netPrintf ( PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s --> RECV  chksum=%lld", s.pktLen, s.eventLen, s.rxLen, s.event->NameToStr().c_str(), chksum );	
 
 				s.pktLen -= s.eventLen;								// consume event size in bytes
 				s.pktPtr += s.eventLen;
@@ -1850,7 +1850,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 				s.rxPtr += s.pktLen;											// advance recv buffer
 				s.rxLen += s.pktLen;
 				s.pktPtr += s.pktLen;											// consume remaining buffer len bytes
-				netPrintf(PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s", s.pktLen, s.eventLen, s.rxLen, s.event->getNameStr().c_str());
+				netPrintf(PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s", s.pktLen, s.eventLen, s.rxLen, s.event->NameToStr().c_str());
 				s.pktLen = 0;
 			}
 
@@ -1861,7 +1861,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 			s.rxPtr += s.pktLen;								// advance recv buffer
 			s.rxLen += s.pktLen;			
 			s.pktPtr += s.pktLen;								// consume remaining buffer len bytes
-			netPrintf(PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s", s.pktLen, s.eventLen, s.rxLen, s.event->getNameStr().c_str());
+			netPrintf(PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s", s.pktLen, s.eventLen, s.rxLen, s.event->NameToStr().c_str());
 			s.pktLen = 0;
 
 			if (s.rxLen >= header_sz && s.eventLen == 0 )  {
@@ -1892,7 +1892,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 			memmove ( s.rxBuf, s.rxBuf + s.eventLen, s.rxLen);		// must us an overlap-safe memory copy (not memcpy), to shift the data back
 			s.rxPtr = s.rxBuf + s.rxLen;						// reset to beginning of recv						
 
-			netPrintf(PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s --> RECV  chksum=%lld", s.eventLen, s.eventLen, s.rxLen, s.event->getNameStr().c_str(), chksum );
+			netPrintf(PRINT_FLOW, "RX %d/%d bytes (rxLen=%d), %s --> RECV  chksum=%lld", s.eventLen, s.eventLen, s.rxLen, s.event->NameToStr().c_str(), chksum );
 			s.eventLen = 0;													// reset event len
 
 			// Check for additional event(s)
@@ -1967,7 +1967,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 			
 			// debugging
 			int hsz = Event::staticSerializedHeaderSize();
-			netPrintf(PRINT_VERBOSE, "RX %d bytes, %s", m_event.mDataLen + hsz, m_event.getNameStr().c_str());
+			netPrintf(PRINT_VERBOSE, "RX %d bytes, %s", m_event.mDataLen + hsz, m_event.NameToStr().c_str());
 			if ( m_event.mDataLen + hsz != m_eventLen ) {
 				netPrintf(PRINT_ERROR, "Serialize issue. Event length %d != expected %d.", m_event.mDataLen + hsz, m_eventLen);
 			}
@@ -2317,7 +2317,7 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 		chksum = ComputeChecksum( buf, event_len );		
 	}
 
-	netPrintf ( PRINT_FLOW, "TX %d bytes, %s --> SENDING  chksum=%lld", e.getSerializedLength (), e.getNameStr().c_str(), chksum );
+	netPrintf ( PRINT_FLOW, "TX %d bytes, %s --> SENDING  chksum=%lld", e.getSerializedLength (), e.NameToStr().c_str(), chksum );
 
 	if ( m_socks[ sock_i ].mode == NET_TCP ) { // Send over socket
 		if ( s.security == NET_SECURITY_PLAIN_TCP || s.state < STATE_HANDSHAKE ) {

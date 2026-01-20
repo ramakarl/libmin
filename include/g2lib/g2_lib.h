@@ -12,9 +12,9 @@
 #ifndef DEF_GI
     #define DEF_GI
     
+    #include "g2_obj.h"
     #include "gxlib.h"
-    #include "gxlib_types.h"
-    #include "g2obj.h"
+    #include "gxlib_types.h"    
     #include "main_includes.h"      // AppEnum
   
     namespace glib {
@@ -26,8 +26,9 @@
         // Interaction (top-level)
         bool OnMouse ( AppEnum button, AppEnum state, int mods, int x, int y);
         bool OnMotion ( AppEnum button, int x, int y, int dx, int dy ); 
-        bool OnKeyboard ( int key, AppEnum action, int mods, int x, int y);
+        bool OnKeyboard ( int key, AppEnum action, int mods, int x, int y);             
         void OnSelect ( g2Obj* obj, int x, int y );
+        void Deselect();
         
         // Layout Spec
         void LoadSpec ( std::string fname );

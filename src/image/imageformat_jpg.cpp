@@ -296,14 +296,12 @@ bool decompress_jpeg(unsigned char* in_pixels, unsigned long in_size,
 	
 	jpeg_start_decompress(&dinfo);
 	
-	// allocates the destination buffer. caller must own it
+	// caller must provide pre-allocated destination
 	*out_w = dinfo.output_width;
 	*out_h = dinfo.output_height;
 	int row_stride = dinfo.output_width * dinfo.output_components;
 	*out_size = row_stride * dinfo.output_height;
-	*out_pixels = (unsigned char*) malloc ( (*out_size) );
-
-	if (!(*out_pixels)) {
+	if (*out_pixels==0x0) {
 		jpeg_finish_decompress(&dinfo);
 		jpeg_destroy_decompress(&dinfo);
 		return false;

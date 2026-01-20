@@ -160,23 +160,24 @@
 		// Accessors
 		bool 				isActive();		
 		bool 				onPress(int key) 	{ return m_keyPressed[key] && m_keyToggled[key]; }
-		inline void         setWinSz(int w, int h) { m_winSz[0]=w; m_winSz[1]=h; }
-		inline const int*   getWinSz() const { return m_winSz; }
-		inline int          getWidth() const { return m_winSz[0]; }
-		inline int          getHeight() const { return m_winSz[1]; }
-		inline const int    getWheel() const { return m_wheel; }
-		inline int          getMods() const { return m_mods; }
-		bool 				getKeyPress(int key) { return m_keyPressed[key]; }
-		void				setKeyPress(int key, bool v) { m_keyPressed[key] = v; }
-		inline int			getKeyMods();
-		inline void         setMods(int m) { m_mods = m; }
-		inline float        getX() { return m_mouseX; }
-		inline float        getY() { return m_mouseY; }
-		inline float        getDX() { return m_dX; }
-		inline float        getDY() { return m_dY; }
-		inline int			getMSAA() { return m_cflags.MSAA; }
-		inline bool			isFirstFrame()	{ return m_display_frame==0; }
-		inline int 			getDisplayFrame() { return m_display_frame; }
+		inline void       setWinSz(int w, int h) { m_winSz[0]=w; m_winSz[1]=h; }
+		inline const int* getWinSz() const { return m_winSz; }
+		inline int        getWidth() const { return m_winSz[0]; }
+		inline int        getHeight() const { return m_winSz[1]; }
+		inline const int  getWheel() const { return m_wheel; }		
+		bool 							getKeyPress(int key) { return m_keyPressed[key]; }
+		void							setKeyPress(int key, bool v) { m_keyPressed[key] = v; }
+
+		inline int        getMods() const { return m_mods; }
+		inline int				getKeyMods() { return m_mods; }
+		inline void       setMods(int m) { m_mods = m; }
+		inline float      getX() { return m_mouseX; }
+		inline float      getY() { return m_mouseY; }
+		inline float      getDX() { return m_dX; }
+		inline float      getDY() { return m_dY; }
+		inline int				getMSAA() { return m_cflags.MSAA; }
+		inline bool				isFirstFrame()	{ return m_display_frame==0; }
+		inline int 				getDisplayFrame() { return m_display_frame; }
 
 	public:
 

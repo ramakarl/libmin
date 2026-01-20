@@ -142,6 +142,8 @@
     typedef	float	f32;
     typedef	double	f64;
 
+    typedef uint32_t    nameStr_t;
+
     const f32 ROUNDING_ERROR_f32 = 0.000001f;
     const f64 ROUNDING_ERROR_f64 = 0.00000001;
     const f64 PI64 = 3.1415926535897932384626433832795028841971693993751;

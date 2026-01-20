@@ -278,7 +278,7 @@ void EventQueue::trace ()
 
 	while (!mList.empty()) {
 		e = mList.front ();
-		fprintf ( mTraceFile, "%s ", e.getNameStr().c_str() );
+		fprintf ( mTraceFile, "%s ", e.NameToStr().c_str() );
 		fflush ( mTraceFile );
 		temp.push ( e );
 		mList.pop ();

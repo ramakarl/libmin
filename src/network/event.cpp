@@ -16,6 +16,7 @@
 // OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #include "event.h"
+#include "string_helper.h"
 
 static char mbuf [ 16384 ];
 
@@ -27,29 +28,6 @@ extern int event_alloc;
 #ifdef DEBUG_EVENT_MEM
 	extern void emem_rename ( Event& e, eventStr_t oldname, eventStr_t newname, const char* msg );
 #endif
-
-eventStr_t strToName (std::string str )
-{
-	char buf[5];
-	strcpy ( buf, str.c_str() );
-	eventStr_t name;
-	((char*) &name)[3] = buf[0];
-	((char*) &name)[2] = buf[1];
-	((char*) &name)[1] = buf[2];
-	((char*) &name)[0] = buf[3];
-	return name;
-}
-
-std::string nameToStr ( eventStr_t name )			// static function
-{
-	char buf[5];
-	buf[0] = ((char*) &name)[3];
-	buf[1] = ((char*) &name)[2];
-	buf[2] = ((char*) &name)[1];
-	buf[3] = ((char*) &name)[0];
-	buf[4] = '\0';
-	return std::string ( buf );
-}
 
 Event::Event () : Event ( 0, 0 )
 {
@@ -506,6 +484,27 @@ unsigned long Event::getULong ()
 	return i;
 }
 
+void Event::attachNameStr(nameStr_t str)
+{
+	if (mDataLen + sizeof(nameStr_t) > mMax) expand(mDataLen * 2);
+	mPos[0] = uint8_t(str >> 24) & 0xFF;
+	mPos[1] = uint8_t(str >> 16) & 0xFF;
+	mPos[2] = uint8_t(str >>  8) & 0xFF;
+	mPos[3] = uint8_t(str >>  0) & 0xFF;
+	mPos += sizeof(nameStr_t);
+	mDataLen += sizeof(nameStr_t);
+}
+
+nameStr_t Event::getNameStr ()
+{
+	nameStr_t n = 0;
+	n |= uint32_t(*mPos++) << 24;
+	n |= uint32_t(*mPos++) << 16;
+	n |= uint32_t(*mPos++) << 8;
+	n |= uint32_t(*mPos++);	
+	return n;
+}
+
 xlong Event::getInt64 ()
 {
 	xlong i = * (xlong*) mPos;
@@ -589,11 +588,11 @@ void Event::startWrite ()
 	mDataLen = 0;
 }
 
-std::string	Event::getNameStr ()
+std::string	Event::NameToStr ()
 {
 	return nameToStr ( getName () );
 }
-std::string	Event::getSysStr ()
+std::string	Event::SysToStr ()
 {
 	return nameToStr ( mTarget );
 }

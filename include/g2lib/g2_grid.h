@@ -10,7 +10,7 @@
 #ifndef DEF_GI_GRID
     #define DEF_GI_GRID
     
-    #include "g2obj.h"
+    #include "g2_obj.h"
 
     #define G_LX    0
     #define G_LY    1

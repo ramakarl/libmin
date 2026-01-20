@@ -1,8 +1,8 @@
 
 #include "string_helper.h"
 #include "imagex.h"
-#include "g2textbox.h"
-#include "g2lib.h"
+#include "g2_item.h"
+#include "g2_lib.h"
 #include "gxlib.h"
 #include "event_system.h"
 
@@ -21,11 +21,13 @@ using namespace glib;
 #define PLACE_TOP      213
 #define PLACE_BOTTOM   214
 
-g2TextBox::g2TextBox ()
+g2Item::g2Item ()
 {
   m_isButton = false;  
+  m_isSlider = false;
   m_button_state = 0;
   m_button_toggleable = false;
+  m_slider_val = 0;
   
   m_text_clr.Set(1,1,1,1);
   m_text = "";
@@ -46,7 +48,7 @@ g2TextBox::g2TextBox ()
   m_icon_placey = PLACE_CENTER;
 }
 
-void g2TextBox::LayoutIcon ()
+void g2Item::LayoutIcon ()
 {
   // Icon Layout rules:
   // icon_scale - 0-100   = % aspect-preserving fit to region
@@ -106,7 +108,7 @@ void g2TextBox::LayoutIcon ()
 }
 
 
-std::string g2TextBox::getPrintedText(Vec4F& clr)
+std::string g2Item::getPrintedText(Vec4F& clr)
 {
   if (!m_text.empty()) {
     clr = m_text_clr;
@@ -118,7 +120,7 @@ std::string g2TextBox::getPrintedText(Vec4F& clr)
 }
 
 
-void g2TextBox::LayoutText ()
+void g2Item::LayoutText ()
 {
   // Text Layout   
   
@@ -153,12 +155,10 @@ void g2TextBox::LayoutText ()
 
 
 
-void g2TextBox::UpdateLayout ( Vec4F p )
+void g2Item::UpdateLayout ( Vec4F p )
 {
   // update self 
-  m_pos = p;
-
-  m_pos = SetMargins ( p, m_minx, m_maxx, m_miny, m_maxy );
+  m_pos = SetRegion(p, m_region, m_minx, m_maxx, m_miny, m_maxy);
 
   LayoutIcon ();
 
@@ -167,13 +167,14 @@ void g2TextBox::UpdateLayout ( Vec4F p )
 
 // Item properties
 //
-void g2TextBox::SetProperty ( std::string key, std::string val )
+void g2Item::SetProperty ( std::string key, std::string val )
 {
   std::string horiz, vert;
 
   if (key.compare("opt") == 0) {
     if (val.compare("editable")==0)  m_isEditable = true;
     if (val.compare("button")==0)    m_isButton = true;
+    if (val.compare("slider") == 0)  m_isSlider = true;
     if (val.compare("toggleable") == 0) m_button_toggleable = true;
 
   } else if ( key.compare("textclr")==0 || key.compare("text color")==0 ) {
@@ -248,7 +249,7 @@ void g2TextBox::SetProperty ( std::string key, std::string val )
   }
 }
 
-void g2TextBox::drawBackgrd (bool dbg)
+void g2Item::drawBackgrd (bool dbg)
 {  
   if (m_rounded) {
     drawRoundedFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr );
@@ -257,7 +258,7 @@ void g2TextBox::drawBackgrd (bool dbg)
   }
 }
 
-void g2TextBox::drawBorder (bool dbg)
+void g2Item::drawBorder (bool dbg)
 {
   if (dbg) {
     drawRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(1,0.5,0,1) );
@@ -272,7 +273,7 @@ void g2TextBox::drawBorder (bool dbg)
   }
 }
 
-void g2TextBox::drawForegrd ( bool dbg)
+void g2Item::drawForegrd ( bool dbg)
 {
   // button icon  
   if (m_button_state == 0) {    
@@ -287,6 +288,15 @@ void g2TextBox::drawForegrd ( bool dbg)
       drawFill( Vec2F(m_pos.x, m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(1, 1, 1, .6));
     }
     if (!m_button_toggleable) m_button_state--;   // countdown non-toggleable buttons
+  }
+
+  // slider
+  if (m_isSlider) {    
+    float px = 2.0;
+    float cy = (m_pos.y + m_pos.w)*0.5;
+    float sx = m_pos.x + m_slider_val * (m_pos.z-m_pos.x);
+    drawFill ( Vec2F(m_pos.x, cy-px), Vec2F(m_pos.z, cy+px), Vec4F(0.4,0.4,0.4,1));
+    drawFill ( Vec2F(sx-px, m_pos.y-px), Vec2F(sx+px, m_pos.w+px), Vec4F(1,1,1,1));  
   }
 
   // text
@@ -320,7 +330,7 @@ void g2TextBox::drawForegrd ( bool dbg)
  
 }
 
-void g2TextBox::drawSelected(bool dbg)
+void g2Item::drawSelected(bool dbg)
 {
   if (m_isEditable) {        
     if (m_rounded) {
@@ -331,7 +341,7 @@ void g2TextBox::drawSelected(bool dbg)
   }
 }
 
-void g2TextBox::OnSelect (int x, int y)
+void g2Item::OnSelect (int x, int y)
 {
   // editable
   if (m_isEditable) {
@@ -366,30 +376,55 @@ void g2TextBox::OnSelect (int x, int y)
       m_button_state = 120;      // deactivation countdown
     }
     // Find action associated with button
-    std::string action = g2.getVal( m_name, "action" );    
+    std::string action = g2.getVal( m_name, "action" );       
     g2.SetAction ( action );
   }
 }
 
 
-bool g2TextBox::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
+bool g2Item::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
 {
+  if (state==AppEnum::BUTTON_RELEASE && isSelected()) {
+    g2.Deselect ();
+  }
 
-  if ( m_isEditable || m_isButton ) {
-    if (button==AppEnum::BUTTON_LEFT && state==AppEnum::BUTTON_PRESS) {
-      // select textbox
-      if ( x > m_pos.x && y > m_pos.y && x < m_pos.z && y < m_pos.w ) {
+  if (button == AppEnum::BUTTON_LEFT && state == AppEnum::BUTTON_PRESS) {
+    if (x > m_pos.x && y > m_pos.y && x < m_pos.z && y < m_pos.w) {
 
+      // select this item
+      if ( m_isEditable || m_isButton || m_isSlider ) {
+    
         g2.OnSelect ( this, x, y );
-
         return true;
       }
+    }
+  }  
+
+  return false;
+}
+
+bool g2Item::OnMotion(AppEnum button, int x, int y, int dx, int dy)
+{
+  if ( isSelected() ) {
+    if (button==AppEnum::BUTTON_LEFT) {
+      if (x > m_pos.x && y > m_pos.y && x < m_pos.z && y < m_pos.w) {
+
+        // set slide value
+        if (m_isSlider) {
+          m_slider_val = (x - m_pos.x) / (m_pos.z-m_pos.x);          
+          std::string action = g2.getVal(m_name, "action");   // getVal very slow, must fix!!
+          g2.SetAction (action);
+        }
+      }
+
+      // capture when selected and dragging, even if outside region
+      return true;
     }
   }
   return false;
 }
 
-void g2TextBox::UpdateCursor ()
+void g2Item::UpdateCursor ()
 {
   Vec2F sz; 
 
@@ -411,7 +446,7 @@ void g2TextBox::UpdateCursor ()
   m_edit_pos.z = sz.x;      // cursor pos (in pixels)
 }
 
-bool g2TextBox::OnKeyboard (int key, AppEnum action, int mods, int x, int y)
+bool g2Item::OnKeyboard (int key, AppEnum action, int mods, int x, int y)
 {
   if ( !m_isEditable ) return false;
   if ( action==AppEnum::BUTTON_RELEASE ) return false;

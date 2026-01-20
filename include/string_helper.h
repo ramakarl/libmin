@@ -40,6 +40,10 @@
 	HELPAPI std::string strFilebase ( std::string str );	// basename of a file (minus ext)
 	HELPAPI std::string strFilepath ( std::string str );	// path of a file
 
+	// 4-byte strings
+	HELPAPI nameStr_t strToName(std::string str);
+	HELPAPI std::string nameToStr(nameStr_t name);
+
 	// str-to-type
 	HELPAPI int strToI (const std::string& s);
 	HELPAPI int strToI (const std::string& s, int &val);

@@ -1,6 +1,6 @@
 //--------------------------------------------------
 //
-// giTextBox
+// g2Item
 // 
 // Quanta Sciences (c) 2023
 // Rama Hoetzlein
@@ -8,17 +8,17 @@
 //--------------------------------------------------
 
 
-#ifndef DEF_GI_TEXTBOX
-    #define DEF_GI_TEXTBOX
+#ifndef DEF_GI_ITEM
+    #define DEF_GI_ITEM
     
-    #include "g2obj.h"
+    #include "g2_obj.h"
     #include "imagex.h"
   
     namespace glib {
 
-    class GXAPI g2TextBox : public g2Obj {
+    class GXAPI g2Item : public g2Obj {
     public:   
-        g2TextBox ();
+        g2Item ();
 
         virtual uchar getType()     { return 't'; }
         virtual void UpdateLayout ( Vec4F p ); 
@@ -29,17 +29,19 @@
         virtual void drawSelected (bool dbg);
         virtual void OnSelect(int x, int y);
         virtual bool OnMouse(AppEnum button, AppEnum state, int mods, int x, int y);
+        virtual bool OnMotion(AppEnum button, int x, int y, int dx, int dy);
         virtual bool OnKeyboard (int key, AppEnum action, int mods, int x, int y);
         virtual bool isEditable() { return m_isEditable; }
 
-        std::string   getPrintedText(Vec4F& clr);
-        void          UpdateCursor();
+        std::string   getPrintedText(Vec4F& clr);        
+        void          UpdateCursor();        
 
         void LayoutIcon ();
         void LayoutText ();
 
         // button properties
         bool          m_isButton;
+        bool          m_isSlider;
         char          m_button_state;
         bool          m_button_toggleable;
 
@@ -52,6 +54,9 @@
         uchar         m_text_placex, m_text_placey;
         Vec4F         m_text_pos;
         Vec4F         m_selection;
+
+        // slider properties
+        float         m_slider_val;
 
         // edit properties
         bool          m_isEditable;           

@@ -5,9 +5,9 @@
 #include "common_defs.h"
 #include "string_helper.h"
 
-#include "g2lib.h"
-#include "g2grid.h"
-#include "g2textbox.h"
+#include "g2_lib.h"
+#include "g2_grid.h"
+#include "g2_item.h"
 
 
 using namespace glib;
@@ -309,7 +309,7 @@ g2Obj* g2Lib::AddObj ( std::string name, uchar typ )
     // create object
     switch (typ) {
     case 'g': obj = new g2Grid; break;
-    case 'i': obj = new g2TextBox; break;    
+    case 'i': obj = new g2Item; break;    
     default:
         return 0x0;
     };   
@@ -372,15 +372,16 @@ void g2Lib::BuildAll ()
 
     // Pass 2 - build layouts, sections and obj references
     uchar L;        
-    bool is_page; 
+    bool is_page, is_overlay;
     for (int n=0; n < m_objlist.size(); n++) {
 
         // get object
         obj = m_objlist[n];
 
-        // check for pages        
+        // check for pages & overlays 
         is_page = hasVal ( obj->getName(), "opt", "page" );
-        if (is_page) {
+        is_overlay = hasVal ( obj->getName(), "opt", "overlay");
+        if (is_page || is_overlay) {
             AddPage ( n );
         }               
 
@@ -592,6 +593,11 @@ int getNextWrap(int curr, int dir, int siz)
   if (dir == 1)   { next = (curr == siz - 1) ? 0 : curr + 1; }
   if (dir == -1)  { next = (curr == 0) ? siz - 1 : curr - 1; }
   return next;
+}
+
+void g2Lib::Deselect()
+{
+  m_selected = 0x0;
 }
 
 void g2Lib::OnSelect (g2Obj* obj, int x, int y)

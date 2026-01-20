@@ -61,24 +61,24 @@
         virtual int  Traverse( std::vector<g2Obj*>& list )   { list.push_back(this); return list.size(); }
         virtual bool isEditable() { return false; }
         
-        
         void SetParent ( g2Obj* p )   {m_parent = p;}
         void LoadImg ( ImageX*& img, std::string fname );
         g2Size ParseSize ( std::string sz );
-        Vec4F SetMargins ( Vec4F p, g2Size minx, g2Size maxx, g2Size miny, g2Size maxy );
+        Vec4F SetRegion ( Vec4F p, Vec4F r, g2Size minx, g2Size maxx, g2Size miny, g2Size maxy );
 
-        std::string getName()       { return m_name;}
+        std::string   getName()       { return m_name;}
+        bool          isSelected();
         
     public:
         g2Obj*          m_parent;
         int             m_id;
         std::string     m_name;
         bool            m_debug;
-        
-        
+
         Vec4F           m_pos;
         Vec4F           m_backclr;
         Vec4F           m_borderclr;
+        Vec4F           m_region;
         g2Size          m_minx, m_maxx, m_miny, m_maxy;
 
         // style options        

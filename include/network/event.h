@@ -19,7 +19,7 @@
 #ifndef DEF_EVENT_H
 	#define DEF_EVENT_H
 
-   #include "common_defs.h"
+  #include "common_defs.h"
 	#include "vec.h"
 	#include "timex.h"
 	#include <string>
@@ -30,20 +30,16 @@
 	#define ID(y)		( (const xlong) *( (const xlong*) y ) )		// for 64-bit names, but not a const expression
 
 	// Event typedefs
-	typedef TimeX			timeStamp_t;
-	typedef	uint32_t		eventStr_t;
+	typedef TimeX				timeStamp_t;
+	typedef	nameStr_t		eventStr_t;
 	typedef unsigned long	netIP;
-	typedef signed int		netPort;
-	typedef signed int		netSock;
+	typedef signed int	netPort;
+	typedef signed int	netSock;
 	typedef uint16_t		sysID_t;			// locally assigned ID
 	typedef	uint32_t		objType;
 	typedef	uint8_t			datType;
 
 	class EventPool;
-
-	// Event names
-	HELPAPI std::string	nameToStr ( eventStr_t name );
-	HELPAPI eventStr_t	strToName (	std::string str );
 
 	// Event
 	struct HELPAPI CACHE_ALIGNED Event {
@@ -63,8 +59,8 @@
 		void persist ();
 
 		// Event Accessors
-		std::string			getNameStr ();
-		std::string			getSysStr ();
+		std::string			NameToStr ();
+		std::string			SysToStr ();
 
 		inline eventStr_t	getName ()			{ return mName; }
 		inline eventStr_t	getTarget ()		{ return mTarget; }
@@ -125,6 +121,7 @@
 		void				attachInt64		(xlong i);
 		void				attachFloat		(float f);
 		void				attachDouble	(double d);
+		void				attachNameStr (nameStr_t str );
 		void				attachStr		(std::string str );
 		void				attachPrintf	(const char* format, ... );
 		void				attachVec4		(Vec4F i );
@@ -139,14 +136,15 @@
 		int					getInt ();
 		signed short		getShort ();
 		unsigned char		getUChar ();
-		unsigned short		getUShort ();
+		unsigned short	getUShort ();
 		unsigned int		getUInt ();
 		unsigned long		getULong ();
+		nameStr_t		getNameStr();
 		xlong				getInt64 ();
 		float				getFloat ();
-		double				getDouble ();
-		Vec4F			getVec4 ();
-		std::string			getStr ();
+		double			getDouble ();
+		Vec4F				getVec4 ();
+		std::string	getStr ();
 		void				getStr (char* str );
 		void				getMem (char* buf, int len );
 		void				getBuf (char* buf, int len );

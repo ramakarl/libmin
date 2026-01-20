@@ -2,7 +2,8 @@
 #include "string_helper.h"
 #include "imagex.h"
 
-#include "g2obj.h"
+#include "g2_obj.h"
+#include "g2_lib.h"
 using namespace glib;
 
 
@@ -10,9 +11,15 @@ g2Obj::g2Obj ()
 {
   m_backclr = Vec4F(0, 0, 0, 0);
   m_borderclr = Vec4F(0, 0, 0, 0);
+  m_region = Vec4F(0, 0, 1, 1);
   m_rounded = false;
   m_debug = false;
   m_isModal = false;
+}
+
+bool g2Obj::isSelected() 
+{
+  return g2.getSelected() == this; 
 }
 
 // Common properties
@@ -42,22 +49,30 @@ void g2Obj::SetProperty ( std::string key, std::string val )
     str = strSplitLeft ( val, "|" );    m_maxy = ParseSize ( str );
     //dbgprintf ( "%f %f %f %f\n", m_minx.amt, m_maxx.amt, m_miny.amt, m_maxy.amt );
 
+  } else if (key.compare("region") == 0) {
+
+    m_region = strToVec4 ( val, ',');
+
   } else if ( key.compare("debug")==0 ) {
     m_debug = true;
   }
 }
 
 
-Vec4F g2Obj::SetMargins ( Vec4F p, g2Size minx, g2Size maxx, g2Size miny, g2Size maxy )
+Vec4F g2Obj::SetRegion ( Vec4F p, Vec4F r, g2Size minx, g2Size maxx, g2Size miny, g2Size maxy )
 {
   Vec4F adv;
   g2Size spec;
 
-  // x-axis
+  // region inset
+  Vec4F dp (p.z-p.x, p.w-p.y, p.z-p.x, p.w-p.y);
+  p = Vec4F(p.x, p.y, p.x, p.y) + dp * r;
+
+  // x-axis adjust
   spec = minx;
   switch (spec.typ) {
   case '%': adv.x = (p.z-p.x) * spec.amt/100.0f; break;
-  case 'x': adv.x = spec.amt; break;      
+  case 'x': adv.x = spec.amt; break;
   }; 
   spec = maxx;
   switch (spec.typ) {
@@ -65,7 +80,7 @@ Vec4F g2Obj::SetMargins ( Vec4F p, g2Size minx, g2Size maxx, g2Size miny, g2Size
   case 'x': adv.z = -spec.amt; break;      
   }; 
 
-  // y-axis
+  // y-axis adjust
   spec = miny;
   switch (spec.typ) {
   case '%': adv.y = (p.w-p.y) * spec.amt/100.0f; break;
