@@ -26,6 +26,10 @@
   #include "quaternion.h"
 #endif
 
+// null values
+const Vec4F Vec4F::nullvec = Vec4F(NANF, NANF, NANF, NANF);
+
+
 #undef VTYPE
 #define VTYPE	float
 

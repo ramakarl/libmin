@@ -9,7 +9,6 @@
 #include "g2_grid.h"
 #include "g2_item.h"
 
-
 using namespace glib;
 
 // Global singleton
@@ -45,7 +44,7 @@ void g2Lib::LoadSpec ( std::string fname )
     }
     fclose(fp);
 
-    // 2. parse spec
+    // 2. parse spec to definitions
     //
     for (int n=0; n < m_spec.size(); n++) {
         ParseSpecToDef ( m_spec[n] );       
@@ -145,7 +144,7 @@ void g2Lib::LoadSpec ( std::string fname )
     printf ( "----\n" ); */    
 }
 
-void g2Lib::getWords ( std::string str, std::vector<std::string>& words, int maxw )
+void g2Lib::getWords ( std::string str, std::vector<std::string>& words, int num_words )
 {
   // parse words into basic sentence
   std::string word;
@@ -153,10 +152,10 @@ void g2Lib::getWords ( std::string str, std::vector<std::string>& words, int max
   for (int n=0; str.length() > 0; n++) {
       word = strTrim( strSplitLeft ( str, "|" ) );
       if ( word.length() > 0 ) {
-          if ( n <= maxw )
+          if ( n < num_words )
               words.push_back ( word );            
           else
-              words[maxw] = words[maxw] + "|" + word;
+              words[num_words-1] = words[num_words - 1] + "|" + word;
       }
   }  
 }
@@ -172,7 +171,7 @@ void g2Lib::ParseSpecToDef ( std::string lin )
   std::vector<std::string> words;
   
   // convert spec to words
-  getWords ( lin, words, 3 );
+  getWords ( lin, words, 4 );
  
   // build object definition (not actual object)
   if (words.size() > 0 ) {
@@ -520,6 +519,92 @@ void g2Lib::BuildSections ( g2Obj* obj, uchar ly )
 
     }
 }
+
+void g2Lib::ParseAction( std::string cmd, g2Action& a )
+{
+  std::vector<std::string> words;
+
+  // parse action to words
+  getWords(cmd, words, 4);
+
+  if (words.size()<3) {
+    printf("ERROR: Actions must have at least 3 arguments.\n");
+    return;
+  }
+  // ensure at least 4 words: event, action, key, value
+  while (words.size() < 4) {
+    words.push_back ("");  
+  }
+
+  // 1. first word is GUI event (onmotion, onclick, etc.)
+  if (words[0]=="onclick") a.event = EClick;
+  else if (words[0] == "onmouse") a.event = EMouse;
+  else if (words[0] == "onmotion") a.event = EMotion;
+
+  // 2. second word is action (set, move, goto, cmd)
+  if (words[1] == "SET") a.act = ASet;
+  if (words[1] == "NAV") a.act = ANav;
+  if (words[1] == "GOTO") a.act = AGoto;
+  if (words[1] == "SELECT" || words[1]=="SEL") a.act = ASel;
+  if (words[1] == "MSG") a.act = AMsg;
+  if (words[1].find("CMD") != std::string::npos) a.act = ACmd;
+
+  // 3. key
+  a.key = words[2];
+  if (a.act==ACmd ) a.key = words[1] + "|" + words[2] + "|" + words[3];     // reassemble cmd
+
+  // 4. value
+  a.value = words[3];
+}
+
+
+void g2Lib::BuildActions(actionFunc_t setup_func, actionFunc_t run_func, void* user)
+{
+  g2Obj* obj;
+  g2Action a;
+  bool found;
+    
+  m_ActionSetup = setup_func;
+  m_ActionFunc = run_func;
+  m_ActionUser = user;
+
+  // for each object
+  for (int n = 0; n < m_objlist.size(); n++) {
+    obj = m_objlist[n];    
+    
+    // get action definitons (X | has | action | ..)
+    g2Def* def = FindDef( obj->getName() );
+    if (def != 0x0) {
+
+      for (int n = 0; n < def->keys.size(); n++) {
+        if (def->keys[n] == "action" ) {
+          
+          // create new action
+          ParseAction ( def->vals[n], a );
+          
+          // application provides handle for variable mapping
+          // - must set action.var_handle and .var_type
+          found = (*setup_func) (a, user );
+
+          if (found) {
+            // assign action to object
+            obj->AddAction ( a );
+          }
+        }
+      }
+    }
+  }
+}
+
+bool g2Lib::RunAction(g2Action* a, Value_t val )
+{
+  if (!val.isNull()) a->value = val;
+
+  bool ran = (*m_ActionFunc) (*a, m_ActionUser);
+
+  return ran;
+}
+
 
 void g2Lib::LayoutAll ( Vec4F view, Vec4F region )
 {

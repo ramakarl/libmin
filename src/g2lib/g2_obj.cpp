@@ -17,6 +17,25 @@ g2Obj::g2Obj ()
   m_isModal = false;
 }
 
+void g2Obj::AddAction(g2Action& a)
+{
+  if (m_actions.size()==0) {
+    // InitActions
+    m_actions.push_back (g2Action(EClick, ANull ) );
+    m_actions.push_back (g2Action(EMouse, ANull ) );
+    m_actions.push_back (g2Action(EMotion, ANull ) );
+  }
+
+  m_actions[a.event] = a;
+}
+
+bool g2Obj::RunAction(Event_t e, Value_t val )
+{
+  if (m_actions.size()==0) return false;
+  
+  return g2.RunAction (&m_actions[e], val );
+}
+
 bool g2Obj::isSelected() 
 {
   return g2.getSelected() == this; 

@@ -19,6 +19,8 @@
   
     namespace glib {
 
+    typedef bool (*actionFunc_t) (g2Action& a, void* user);
+
     class GXAPI g2Lib {
     public:
         g2Lib () { m_selected = 0x0; m_keyboard = 0; }
@@ -48,9 +50,16 @@
         // Build GUI
         void BuildAll ();
         bool BuildLayout ( g2Obj* obj, uchar ly );        
-        void BuildSections ( g2Obj* obj, uchar ly );        
+        void BuildSections ( g2Obj* obj, uchar ly );                    
         g2Obj* AddObj ( std::string name, uchar typ );
         g2Obj* FindObj ( std::string name );    
+       
+        // Actions
+        void BuildActions(actionFunc_t setup_func, actionFunc_t run_func, void* user);
+        void ParseAction(std::string cmd, g2Action& a);
+        bool RunAction ( g2Action* a, Value_t val = Value_t::nullval );
+        void SetAction(std::string a) { m_action = a; }
+        std::string getAction() { return m_action; }
 
         // Pages
         bool AddPage (int id);
@@ -63,9 +72,6 @@
         void Render (int w, int h);
         char getKeyboardRequest()   { return m_keyboard; }
         void setKeyboard(char k)    { m_keyboard = k; }
-        void SetAction(std::string a) {m_action = a;}
-        std::string getAction()     {return m_action;}
-      
 
     public:
         std::vector< g2Def >        m_objdefs;      // object specs
@@ -80,6 +86,10 @@
         char                        m_keyboard;     // keyboard request
       
         std::string                 m_action;
+
+        actionFunc_t                m_ActionSetup;
+        actionFunc_t                m_ActionFunc;
+        void*                       m_ActionUser;
     };
 
     // Global singleton

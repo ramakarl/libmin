@@ -218,6 +218,7 @@ void Event::acquire ( Event& src)
 
 	// dest becomes new owner	(given the right to expand/reallocate)
 	mData = src.mData;
+	mName = src.mName;
 	bOwn = true;		
 
 	// src must be detached from data (to avoid bad pointers)

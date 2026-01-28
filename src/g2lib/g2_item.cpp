@@ -376,7 +376,7 @@ void g2Item::OnSelect (int x, int y)
       m_button_state = 120;      // deactivation countdown
     }
     // Find action associated with button
-    std::string action = g2.getVal( m_name, "action" );       
+    std::string action = g2.getVal( m_name, "action" );
     g2.SetAction ( action );
   }
 }
@@ -405,18 +405,17 @@ bool g2Item::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
 
 bool g2Item::OnMotion(AppEnum button, int x, int y, int dx, int dy)
 {
-  if ( isSelected() ) {
-    if (button==AppEnum::BUTTON_LEFT) {
-      if (x > m_pos.x && y > m_pos.y && x < m_pos.z && y < m_pos.w) {
+  if (button == AppEnum::BUTTON_LEFT) {
 
-        // set slide value
-        if (m_isSlider) {
-          m_slider_val = (x - m_pos.x) / (m_pos.z-m_pos.x);          
-          std::string action = g2.getVal(m_name, "action");   // getVal very slow, must fix!!
-          g2.SetAction (action);
-        }
-      }
+    if ( isSelected() ) {    
 
+      // set slide value
+      if (m_isSlider) {
+          
+        m_slider_val = clamp( (x - m_pos.x) / (m_pos.z - m_pos.x), 0, 1);
+
+        RunAction ( EMotion, Value_t(float(m_slider_val)) );   
+      }    
       // capture when selected and dragging, even if outside region
       return true;
     }

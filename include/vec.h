@@ -452,12 +452,18 @@
 	#define VNAME		4DF
 	#define VTYPE		float
 
+	#define NANF		std::numeric_limits<double>::quiet_NaN()
+
 	class HELPAPI Vec4F {
 	public:
 		VTYPE x, y, z, w;
+
+		static const Vec4F nullvec;
 	
 		Vec4F &Set (const float xa, const float ya, const float za)	{ x =xa; y= ya; z=za; w=1; return *this;}
 		Vec4F &Set (const float xa, const float ya, const float za, const float wa )	{ x =xa; y= ya; z=za; w=wa; return *this;}
+
+		bool isNull() { return (x==NANF || y==NANF || z==NANF || w==NANF); }
 
 		// Constructors/Destructors
 		Vec4F() {x=0; y=0; z=0; w=0;}

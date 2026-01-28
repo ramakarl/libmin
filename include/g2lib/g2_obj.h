@@ -14,10 +14,59 @@
     #include <string>
     #include "gxlib_types.h"
     #include "main_includes.h"
+    #include "value_t.h"
 
     class ImageX;
   
     namespace glib {
+
+    enum Event_t {      // Events - how user triggers action
+      EClick = 0,
+      EMouse = 1,
+      EMotion = 2,
+      EMax,
+      EUndef
+    };    
+    enum Act_t {        // Action - type of response
+      ANull = 0,
+      ASet = 1,
+      ANav = 2,
+      AGoto = 3,
+      ASel = 4,
+      AMsg = 5,
+      ACmd = 6,
+      AMax    
+    };
+
+    static inline std::string getActStr(Act_t a)
+    {
+      std::string s = "?";
+      switch (a) {
+      case ANull:  s = "ANull";   break;
+      case ASet:   s = "ASet";   break;
+      case ANav:   s = "ANav";   break;
+      case AGoto:  s = "AGoto";   break;
+      case ASel:   s = "ASel";   break;
+      case AMsg:   s = "AMsg";   break;
+      case ACmd:   s = "ACmd";   break;      
+      };
+      return s;
+    }
+
+    class g2Action {
+    public:
+      g2Action() { event = EUndef; act = ANull; key="";  }
+      g2Action( Event_t e, Act_t a) { event = e; act=a; }
+
+      Event_t   event;        // event:  click, mouse, motion, ..
+      Act_t     act;          // action: set, nav, goto, sel, msg, cmd
+
+      std::string key;          // name of variable
+      uint        var_handle;   // handle to variable
+      uint        var_type;     // type:  T_FLOAT, T_VEC4, T_STR
+
+      Value_t     value;        // value to set      
+    };
 
     class g2Obj;
 
@@ -61,10 +110,12 @@
         virtual int  Traverse( std::vector<g2Obj*>& list )   { list.push_back(this); return list.size(); }
         virtual bool isEditable() { return false; }
         
-        void SetParent ( g2Obj* p )   {m_parent = p;}
-        void LoadImg ( ImageX*& img, std::string fname );
-        g2Size ParseSize ( std::string sz );
-        Vec4F SetRegion ( Vec4F p, Vec4F r, g2Size minx, g2Size maxx, g2Size miny, g2Size maxy );
+        void    SetParent ( g2Obj* p )   {m_parent = p;}
+        void    LoadImg ( ImageX*& img, std::string fname );
+        g2Size  ParseSize ( std::string sz );
+        Vec4F   SetRegion ( Vec4F p, Vec4F r, g2Size minx, g2Size maxx, g2Size miny, g2Size maxy );
+        void    AddAction ( g2Action& a );
+        bool    RunAction ( Event_t e, Value_t val = Value_t::nullval);
 
         std::string   getName()       { return m_name;}
         bool          isSelected();
@@ -84,6 +135,8 @@
         // style options        
         bool            m_rounded;
         bool            m_isModal;
+
+        std::vector<g2Action>   m_actions;
     };
 
     }
