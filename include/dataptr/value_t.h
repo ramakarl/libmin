@@ -9,9 +9,9 @@
 	#include <string>	
 	#include <unordered_map>
 
-	// Primary value types
+	// Primary value types	
 	#define T_REF				0			// Date types (3-bit value)
-	#define T_INT				1
+	#define T_INT				1	
 	#define T_FLOAT			2
 	#define T_DOUBLE		3
 	#define	T_TIME			4
@@ -23,8 +23,11 @@
 	#define T_BUF				10
 	#define T_VAL				11		// Typeless value. See: DataValue class	
 	#define T_TYPE			12		// Type indicator (1 byte)
-	#define T_INTC			13		// integer in one byte
-	#define T_NULL			64
+	#define T_INTC			13		// Integer in one byte	
+	#define T_LIST			14		// Packed lists	
+	#define T_NULL			16
+	#define T_BASIC			20		// End of basic types
+
 	#define T_UNKNOWN		254
 	#define T_ERR				255
 	
@@ -47,18 +50,18 @@
 		case T_BUF:		t = "BUF"; break;
 		case T_VAL:		t = "VALUE"; break;	
 		case T_TYPE:	t = "TYPE"; break;		
+		case T_LIST:  t = "LIST"; break;
 		case T_NULL:	t = "NULL"; break;
 		};
 		return t;
 	}
 
 	// Value
-  // - this class is intended for typeless simplicity & convenience
-  // - do not use for memory or disk storage (see Event or DataTable)
+  // - this class is intended for typeless simplicity & convenience  
 	//
 	class Value_t {
 	public:
-		Value_t ()		{ dt = T_NULL; }
+		Value_t ()		{ dt = T_NULL; str.clear(); }
 		Value_t (const Value_t& op) { dt=op.dt; memcpy (buf, op.buf, 16); str=op.str; }
 		Value_t& operator= (const Value_t& op) { dt=op.dt; memcpy (buf, op.buf, 16); str=op.str; return *this; }
 		~Value_t ()		{};
@@ -77,36 +80,41 @@
 		Value_t (char* v, int l) { setBuf(v,l); }
 		Value_t (TimeX v) { setTime(v); }
 		Value_t (std::string v ) { setStr(v); }
+		void FromBuf(char* v) { dt = *v; memcpy(buf, v + 8, 16); str = std::string(buf, 16); }
+		void MakePair ( Value_t& v1, Value_t& v2 );
+		static Value_t MakeList ( Value_t& v );
+		void AppendList ( Value_t& v );
 
 		// typeless functions	  
+		void Clear ()  { dt = T_NULL; str.clear(); }
 		static Value_t Cast(Value_t& val, char dt);
 		Value_t& CastUpdate ( Value_t& val );
 
 		// typed get/set
-		void setC(uchar v)					{ c = v;		dt = T_CHAR; }
-		void setI(int v)						{ i = v;		dt = T_INT; }
-		void setF(float v)					{ f = v;		dt = T_FLOAT; }
-		void setV4(Vec4F v)					{ vec = v;	dt = T_VEC4; }
-		void setStr(std::string v)	{ str = v;	dt = T_STR; }
-		void setRef(xlong v)				{ uid = v;	dt = T_REF; }
-		void setBuf(char* v, int l) { memcpy(buf, v, l); dt = T_BUF; }
-		void setTime(TimeX v)				{ tm = v.GetSJT(); dt = T_TIME; }
-		const char* getData();
-		int			getDataLen();
-		char		getType(char lit);
-		TimeX		getTime() { return TimeX(tm); }
-		void FromBuf(char* v) { dt = *v; memcpy(buf, v + 8, 16); str = std::string(buf, 16); }
+		void				setC (uchar v)					{ c = v;		dt = T_CHAR; }
+		void				setI (int v)						{ i = v;		dt = T_INT; }
+		void				setF (float v)					{ f = v;		dt = T_FLOAT; }
+		void				setV4 (Vec4F v)					{ vec = v;	dt = T_VEC4; }
+		void				setStr (std::string v)	{ str = v;	dt = T_STR; }
+		void				setRef (xlong v)				{ uid = v;	dt = T_REF; }
+		void				setBuf (char* v, int l) { memcpy(buf, v, l); dt = T_BUF; }
+		void				setTime (TimeX v)				{ tm = v.GetSJT(); dt = T_TIME; }
+		const char* getData ();
+		int					getDataLen ();		
+		TimeX				getTime () { return TimeX(tm); }		
 
-		// nice printing		
-		std::string Write();		
+		// printing	
+		std::string Write();
+		std::string WriteTyped();
+		uchar				getType(uchar str);
+		uchar				getTypeCh(uchar dt);
 
 		static void CheckSizes();
 
 
 	public:		
-		// 8 bytes (aligned)
-		char dt;								// 1 byte, type
-		char pad[7];		
+		// 8 bytes 
+		uint64_t dt;						// 1-byte type (padded to 8)
 
 		// 16 bytes
 		union {									// anonymous union (C++)
@@ -119,8 +127,13 @@
 			char		buf[16];			// 16 bytes						
 		};
 		
-		std::string str;				// 40 bytes +heap
+		std::string str;				// 40 bytes (debug) / 32 bytes (release) + heap
+
 	};
+
+	// VecValues
+	//
+	typedef std::vector<Value_t>		VecValues;
 
 	// KeyValues
 	//
@@ -129,7 +142,7 @@
 		Value_t			value;
 	};
 
-	class KeyValues_t {
+	class KeyValues {
 	public:
 
 		void Clear ();

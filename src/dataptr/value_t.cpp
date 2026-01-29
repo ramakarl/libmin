@@ -11,12 +11,8 @@ void Value_t::CheckSizes()
   int value_sz = sizeof(Value_t);
 
   if (value_sz != expected) {
-    printf("--- Size of Value_t is wrong:\n");
-    printf("  Expected: %d,  Value_t Size: %d\n", expected, value_sz);
-    printf("---\n");
-    exit(-77);
-  }
-
+    printf("--- WARNING: Size of Value_t. Expected: %d, Value_t Size: %d\n", expected, value_sz);        
+  } 
 }
 
 const char* Value_t::getData ()
@@ -40,7 +36,7 @@ int Value_t::getDataLen()
 }
 
 // Get type from literal char
-char Value_t::getType( char lit )
+uchar Value_t::getType( uchar lit )
 {
   switch (lit) {
   case 'C': return T_CHAR; break;
@@ -50,26 +46,75 @@ char Value_t::getType( char lit )
   case 'V': return T_VEC4; break;
   case 'S': return T_STR; break;
   case 'R': return T_REF; break;
+  case 'L': return T_LIST; break;
   }
   return T_NULL;
 }
 
+uchar Value_t::getTypeCh( uchar dt)
+{
+  switch (dt) {
+  case T_CHAR:  return 'C'; break;
+  case T_INT:   return 'I'; break;
+  case T_FLOAT: return 'F'; break;
+  case T_TIME:  return 'D'; break;
+  case T_VEC4:  return 'V'; break;
+  case T_STR:   return 'S'; break;
+  case T_REF:   return 'R'; break;
+  case T_LIST:  return 'L'; break;
+  }
+  return '?';
+}
+
+void Value_t::MakePair(Value_t& v1, Value_t& v2)
+{
+  dt = T_LIST;
+  str = v1.WriteTyped() + " "+v2.WriteTyped();
+  
+  memset(buf, T_NULL, 16);
+  buf[0] = v1.dt;
+  buf[1] = v2.dt;
+}
+
+Value_t Value_t::MakeList(Value_t& v1)
+{
+  Value_t v;
+  v.dt = T_LIST;
+  v.str = v1.WriteTyped();
+  memcpy(v.buf, v1.buf, 16);
+  return v;
+}
+
+void Value_t::AppendList( Value_t& v )
+{
+  dt = T_LIST;
+  str = str.empty() ? v.WriteTyped() : str + "|" + v.WriteTyped();
+}
+
 std::string Value_t::Write()
 {  
+  std::string s = "?";
   switch (dt) {
-  case T_CHAR:   return std::string(1, c); break;
-  case T_INT:    return iToStr(i); break;
-  case T_FLOAT:  return fToStr(f); break;
-  case T_VEC4:   return vecToStr(vec); break;
-  case T_STR:    return str; break;
-  case T_REF:    return xlToStr(uid); break;
-  case T_BUF:    return std::string(buf);    break;
-  case T_TIME:   
-    TimeX t(tm);
-    return t.WriteDateTime(); 
-    break;
+  case T_CHAR:   s = std::string(1, c); break;
+  case T_INT:    s = iToStr(i); break;
+  case T_FLOAT:  s = fToStr(f); break;
+  case T_VEC4:   s = vecToStr(vec); break;
+  case T_STR:    s = str; break;
+  case T_LIST:   s = str; break;
+  case T_REF:    s = xlToStr(uid); break;
+  case T_BUF:    s = std::string(buf);    break;
+  case T_TIME:   TimeX t(tm); s = t.WriteDateTime();  break;
   };
-  return "?";
+  return s;
+}
+
+std::string Value_t::WriteTyped()
+{
+  std::string s = Write();
+  uchar ch = getTypeCh( dt );
+
+  if (dt==T_LIST) return s;
+  return std::string(1, ch) + "("+s+")";      // enclose in type char  
 }
 
 // typeless set operator
@@ -79,6 +124,7 @@ Value_t& Value_t::CastUpdate (Value_t& val)
   if (val.dt == dt) {    
     switch (dt) {
     case T_STR:   str = val.str;  break;
+    case T_LIST:  str = val.str;  break;
     case T_INT:   i = val.i;      break;
     case T_CHAR:  c = val.c;      break;
     case T_FLOAT: f = val.f;      break;
@@ -135,7 +181,7 @@ Value_t& Value_t::CastUpdate (Value_t& val)
 Value_t Value_t::Cast (Value_t& val, char dest_dt)
 {
   if (val.dt == dest_dt) return val;			// same type, return it
-  switch (dest_dt) {
+  switch (dest_dt) {  
   case T_STR:
     if (val.dt == T_NULL)    return Value_t("");
     if (val.dt == T_REF)     return Value_t("?WORD?");        // must be resolved by DB, not by casting
@@ -165,22 +211,28 @@ Value_t Value_t::Cast (Value_t& val, char dest_dt)
     if (val.dt == T_CHAR)    return Value_t(Vec4F(val.c, 0, 0, 0));
     if (val.dt == T_INT)     return Value_t(Vec4F(val.i, 0, 0, 0));
     if (val.dt == T_FLOAT)   return Value_t(Vec4F(val.f, 0, 0, 0));
-    break;  
+    break;
+  case T_LIST:
+    if (val.dt == T_NULL)    return Value_t::MakeList(Value_t(""));        // must be resolved by DB, not by casting
+    if (val.dt == T_INT)     return Value_t::MakeList(Value_t(int(val.i)));
+    if (val.dt == T_FLOAT)   return Value_t::MakeList(Value_t(float(val.f)));
+    if (val.dt == T_VEC4)    return Value_t::MakeList(Value_t(val.vec));    
+    break;
   };
   // dbgprintf( "ERROR: CastValue: Unable to cast from %s (%d) to %s (%d).\n", getDTStr(val.dt).c_str(), val.dt, getDTStr(dest_dt).c_str(), dest_dt);  
   return Value_t();
 }
 
-//------------------------------------------------- KeyValues_t
+//------------------------------------------------- KeyValues
 //
 
-void KeyValues_t::Clear()
+void KeyValues::Clear()
 {
   entries.clear ();
   index.clear ();
 }
 
-size_t KeyValues_t::Add(const std::string& name, uchar dt)
+size_t KeyValues::Add(const std::string& name, uchar dt)
 {
   size_t idx = entries.size();
   
@@ -193,7 +245,7 @@ size_t KeyValues_t::Add(const std::string& name, uchar dt)
   return idx;
 }
 
-size_t KeyValues_t::Add (const std::string& name, Value_t& val)
+size_t KeyValues::Add (const std::string& name, Value_t& val)
 {
   size_t idx = entries.size();
 
@@ -206,14 +258,14 @@ size_t KeyValues_t::Add (const std::string& name, Value_t& val)
   return idx;
 }
 
-Value_t* KeyValues_t::Find (const std::string& name)
+Value_t* KeyValues::Find (const std::string& name)
 {
   auto it = index.find(name);
   if (it == index.end()) return nullptr;
   return &entries[it->second].value;
 }
 
-size_t KeyValues_t::FindNdx(const std::string& name)
+size_t KeyValues::FindNdx(const std::string& name)
 {
   auto it = index.find(name);
   return (it == index.end()) ? nullndx : it->second;
