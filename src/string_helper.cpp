@@ -465,6 +465,8 @@ bool strArg(int argc, char** argv, const char* chk_arg, std::string& val)
 // - this func CONSUMES (removes) both the left and right separators
 // e.g. "[MATERIAL] Basic" --> value "MATERIAL", remain="Basic"
 
+// ParseOutDelim - parses out from the given separators (lseps, rseps)
+//
 std::string strParseOutDelim ( std::string& str, std::string lsep, std::string rsep )
 {
   std::string value, remain;
@@ -490,6 +492,8 @@ bool strParseOutDelim ( std::string str, std::string lseps, std::string rseps, s
   return true;
 }
 
+// ParseOutDelim - parses out from fully match left & right strings (lstr, rstr)
+//
 bool strParseOutStr (std::string str, std::string lstr, std::string rstr, std::string& outvalue, std::string& remain)
 {
   size_t f1, fL, fR;

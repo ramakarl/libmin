@@ -24,7 +24,7 @@
 	#define T_VAL				11		// Typeless value. See: DataValue class	
 	#define T_TYPE			12		// Type indicator (1 byte)
 	#define T_INTC			13		// Integer in one byte	
-	#define T_LIST			14		// Packed lists	
+	#define T_PAIR			14
 	#define T_NULL			16
 	#define T_BASIC			20		// End of basic types
 
@@ -50,7 +50,7 @@
 		case T_BUF:		t = "BUF"; break;
 		case T_VAL:		t = "VALUE"; break;	
 		case T_TYPE:	t = "TYPE"; break;		
-		case T_LIST:  t = "LIST"; break;
+		case T_PAIR:  t = "PAIR"; break;
 		case T_NULL:	t = "NULL"; break;
 		};
 		return t;
@@ -80,15 +80,17 @@
 		Value_t (char* v, int l) { setBuf(v,l); }
 		Value_t (TimeX v) { setTime(v); }
 		Value_t (std::string v ) { setStr(v); }
-		void FromBuf(char* v) { dt = *v; memcpy(buf, v + 8, 16); str = std::string(buf, 16); }
-		void MakePair ( Value_t& v1, Value_t& v2 );
-		static Value_t MakeList ( Value_t& v );
-		void AppendList ( Value_t& v );
+		void				Unpack (char* v) { dt = *v; memcpy(buf, v + 8, 16); str = std::string(v + 8); }
+		void				FromStr ( std::string str );
+		void				MakePair ( Value_t& v1, Value_t& v2 );
+		void				getPair ( Value_t& v1, Value_t& v2 );
 
 		// typeless functions	  
-		void Clear ()  { dt = T_NULL; str.clear(); }
-		static Value_t Cast(Value_t& val, char dt);
-		Value_t& CastUpdate ( Value_t& val );
+		void				Clear ()  { dt = T_NULL; str.clear(); }
+		void				SetValue( uchar dt, std::string val );
+		static void	SetBufToValue(char* buf, int pos, int len, Value_t val);
+		static Value_t	Cast(Value_t& val, char dt);
+		Value_t&		CastUpdate ( Value_t& val );
 
 		// typed get/set
 		void				setC (uchar v)					{ c = v;		dt = T_CHAR; }
@@ -99,6 +101,9 @@
 		void				setRef (xlong v)				{ uid = v;	dt = T_REF; }
 		void				setBuf (char* v, int l) { memcpy(buf, v, l); dt = T_BUF; }
 		void				setTime (TimeX v)				{ tm = v.GetSJT(); dt = T_TIME; }
+		void				toF();
+		void				toVec();
+
 		const char* getData ();
 		int					getDataLen ();		
 		TimeX				getTime () { return TimeX(tm); }		
