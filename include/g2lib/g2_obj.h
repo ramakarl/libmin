@@ -64,6 +64,7 @@
       std::string key;          // name of variable
       uint        var_handle;   // handle to variable
       uint        var_type;     // type:  T_FLOAT, T_VEC4, T_STR
+      Vec4F       var_range;
 
       Value_t     value;        // value to set      
     };

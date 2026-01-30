@@ -33,7 +33,7 @@
 	        typedef signed int			sint32_t;
 	        typedef signed long			sint64_t;
 
-            typedef	unsigned char		        uchar;
+          typedef	unsigned char	uchar;
 	        typedef uint64_t			xlong;
 	        typedef uint8_t				XCHAR;
 	        typedef uint8_t				XBYTE;
@@ -139,10 +139,14 @@
 
 	#endif
 
-    typedef	float	f32;
+    typedef	float	  f32;
     typedef	double	f64;
 
-    typedef uint32_t    nameStr_t;
+    typedef uint32_t  nameStr_t;
+
+    struct uint128_t {
+      uint64_t u[2];
+    };
 
     const f32 ROUNDING_ERROR_f32 = 0.000001f;
     const f64 ROUNDING_ERROR_f64 = 0.00000001;
