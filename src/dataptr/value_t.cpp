@@ -4,6 +4,8 @@
 
 static const Value_t nullval = Value_t();
 
+// efficient conversion between any two types
+
 ConvFn gConvTable[16][16] =
 {
 //   dst:   NULL    REF       CHAR      INT       INTC     FLOAT     DOUBLE   VEC3     VEC4      STR       BUF     TIME     FILE     VAL     TYPE     PAIR
@@ -221,10 +223,12 @@ void Value_t::SetStr (std::string src)
 
 std::string Value_t::getStr()
 {
-  if (useStr(dt)) return *(v.str);
+  // if already string, return it
+  if (useStr(dt)) return *(v.str);  
 
-  Value_t as_str ( *this);
-  as_str.Cast ( T_STR );
+  // i am not a string..
+  Value_t as_str ( *this);          // create copy to preserve self
+  as_str.Cast ( T_STR );            // cast self to string, with separate string storage
   return *(as_str.v.str);
 }
 uchar Value_t::getC()
@@ -259,7 +263,7 @@ xlong Value_t::getXL()
 }
 
 
-// typeless casting
+// casting
 //
 
 // cast self to type
@@ -308,45 +312,6 @@ Value_t Value_t::Cast (Value_t& src, char dest_dt)
 
   return dst;
 }
-
-/*   if (val.dt == dest_dt) return val;			// same type, return it
-  switch (dest_dt) {  
-  case T_STR:
-    if (val.dt == T_NULL)    return Value_t("");
-    if (val.dt == T_REF)     return Value_t("?WORD?");        // must be resolved by DB, not by casting
-    if (val.dt == T_INT)     return Value_t(iToStr(val.i));
-    if (val.dt == T_FLOAT)   return Value_t(fToStr(val.f));
-    if (val.dt == T_VEC4)    return Value_t(vecToStr(val.vec));
-    break;
-  case T_CHAR:
-    if (val.dt == T_INT)     return Value_t(char(val.i));
-    if (val.dt == T_FLOAT)   return Value_t(char(val.f));
-    if (val.dt == T_VEC4)    return Value_t(char(val.vec.x));
-    break;
-  case T_INT:
-    if (val.dt == T_REF)     return Value_t(int(val.uid));
-    if (val.dt == T_NULL)    return Value_t(int(0));
-    if (val.dt == T_CHAR)    return Value_t(int(val.c));
-    if (val.dt == T_FLOAT)   return Value_t(int(val.f));
-    if (val.dt == T_VEC4)    return Value_t(int(val.vec.x));
-    break;
-  case T_FLOAT:
-    if (val.dt == T_REF)     return Value_t(float(val.uid));
-    if (val.dt == T_NULL)    return Value_t(float(NAN));
-    if (val.dt == T_CHAR)    return Value_t(float(val.c));
-    if (val.dt == T_INT)     return Value_t(float(val.i));
-    if (val.dt == T_VEC4)    return Value_t(float(val.vec.x));
-    break;
-  case T_VEC4:
-    if (val.dt == T_REF)     return Value_t(Vec4F(0,0,0,val.uid));
-    if (val.dt == T_NULL)    return Value_t(Vec4F(NAN, NAN, NAN, NAN));
-    if (val.dt == T_CHAR)    return Value_t(Vec4F(val.c, 0, 0, 0));
-    if (val.dt == T_INT)     return Value_t(Vec4F(val.i, 0, 0, 0));
-    if (val.dt == T_FLOAT)   return Value_t(Vec4F(val.f, 0, 0, 0));
-    break;
-  };
-  // dbgprintf( "ERROR: CastValue: Unable to cast from %s (%d) to %s (%d).\n", getDTStr(val.dt).c_str(), val.dt, getDTStr(dest_dt).c_str(), dest_dt);  
-  return Value_t();*/
 
 
 //------------------------------------------------- KeyValues

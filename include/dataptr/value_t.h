@@ -35,7 +35,9 @@
 	inline static bool useStr (uchar dt)		{return (dt==T_STR || dt==T_PAIR);}
 
 	// Value
-  // - this class is intended for typeless simplicity & convenience  
+  // - this class implements a type variant	
+	// - flexible:  many built-in types including strings. conversion between types. pack/unpack
+	// - efficient: most payloads are 24 bytes. lookup tables for conversions. only str types allocate heap
 	//
 	class Value_t {
 	public:
@@ -115,7 +117,7 @@
 			float		f;						// 4 bytes
 			xlong		uid;					// 8 bytes
 			sjtime	tm;						// 8 bytes			
-			std::string* str;			// 8 bytes + 40 bytes (debug) / 32 bytes (release) + heap
+			std::string* str;			// 8 bytes + (only when T_STR => heap +40 bytes (debug) / 32 bytes (release) + str heap)
 			Vec4F		v4;						// 16 bytes
 			uint128_t u128;				// 16 bytes
 			char		buf[16];			// 16 bytes			
@@ -171,6 +173,8 @@
 	inline uchar				getTypeCh (uchar dt) { return lookupTypeCh[dt]; }
 	inline std::string	getTypeStr(uchar dt) { return lookupTypeStr[dt]; }
 	inline int					getTypeSz (uchar dt) { return lookupTypeSz[dt]; }
+
+	inline void					convert (uchar srct, uchar destt, const char* s, void* d, int dest_len)		{	(gConvTable[srct][destt]) (s, d, dest_len); }
 	
 	inline void convNo 		  (const char* s, void* d, int len)		{  }
 	inline void convCopy		(const char* s, void* d, int len)		{ memcpy(d, s, len); }
