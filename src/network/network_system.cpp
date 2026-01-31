@@ -1763,17 +1763,18 @@ int NetworkSystem::netProcessQueue ( void )
 
 // Expand any buffer (tx, rx, or pkt)
 //
-void NetworkSystem::netExpandBuf (char*& buf, char*& ptr, int& max, int& len, int new_max)
-{
-	assert ( len <= max );
-	if (new_max > max) {
-		char* new_buf = (char*) malloc ( new_max );
+#define EXPAND_FACTOR		2
+
+void NetworkSystem::netExpandBuf (char*& buf, char*& ptr, int& max, int& len, int reqd_extra )
+{	
+	if (len+reqd_extra >= max) {
+		max = (len+reqd_extra) * EXPAND_FACTOR;
+		char* new_buf = (char*) malloc ( max );
 		memcpy ( new_buf, buf, len );
 		free ( buf );
-		buf = new_buf;
-		ptr = buf + len;
-		max = new_max;
+		buf = new_buf;		
 	}
+	ptr = buf + len;
 }
 
 void NetworkSystem::netResetBuf ( char*& buf, char*& ptr, int& len )
@@ -1845,7 +1846,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 			}
 			else { 
 				// Store partial event in recv buffer					
-				netExpandBuf (s.rxBuf, s.rxPtr, s.rxMax, s.rxLen, s.rxLen + s.pktLen );				
+				netExpandBuf (s.rxBuf, s.rxPtr, s.rxMax, s.rxLen, s.pktLen );				
 				memcpy ( s.rxPtr, s.pktPtr, s.pktLen );		// transfer into recv buffer
 				s.rxPtr += s.pktLen;											// advance recv buffer
 				s.rxLen += s.pktLen;
@@ -1856,7 +1857,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 
 		} else { 
 			// Continuation of event. Store additional data in recv buffer						
-			netExpandBuf(s.rxBuf, s.rxPtr, s.rxMax, s.rxLen, s.rxLen + s.pktLen);
+			netExpandBuf(s.rxBuf, s.rxPtr, s.rxMax, s.rxLen, s.pktLen );
 			memcpy ( s.rxPtr, s.pktPtr, s.pktLen );			// transfer into recv buffer
 			s.rxPtr += s.pktLen;								// advance recv buffer
 			s.rxLen += s.pktLen;			
@@ -2331,7 +2332,7 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 				} else {
 					// partial event sent, transmit more later
 					int remain = event_len - result;
-					netExpandBuf (s.txBuf, s.txPtr, s.txMax, s.txLen, s.txLen + remain);
+					netExpandBuf (s.txBuf, s.txPtr, s.txMax, s.txLen, remain );
 					memcpy ( s.txPtr, buf + result, remain);
 					s.txLen += remain;					
 					s.txBuf[ event_len ] = '\0';
