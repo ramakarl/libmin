@@ -93,7 +93,7 @@
 		char*				getEndPos ()				{ return getData() + mMax; }
 		bool				isEnd ()					{ return mPos >= getData() + mDataLen;  }
 		bool				isEmpty ()					{ return mData == 0x0; }
-		int					getDataLength ()			{ return mDataLen; }	// daata payload
+		int					getDataLength ()			{ return mDataLen; }	// data payload
 		int					getPayloadLength()			{ return mDataLen; }	// synonym
 		int					getSerializedLength ()		{ return mDataLen + Event::staticSerializedHeaderSize(); }	// length of network packet data
 		char*				getSerializedData ()		{ return mData - Event::staticSerializedHeaderSize(); }

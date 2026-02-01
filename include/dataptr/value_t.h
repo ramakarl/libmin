@@ -72,7 +72,7 @@
 		void				Clear ();
 		void				FromStr ( uchar dt, std::string val );
 		void				FromTypedStr ( std::string str );
-		static void	SetBufToValue(char* buf, int pos, int len, Value_t val);
+		static void	SetValToBuf (Value_t val, char* buf, int pos, int len);
 		static Value_t Cast (Value_t& val, char dest_dt);
 		Value_t&		Cast ( char dest_dt );
 		Value_t&		Cast ( const Value_t& val );
@@ -95,7 +95,6 @@
 		Vec4F				getV4();
 
 		const char* getData ();
-		int					getDataLen ();		
 		TimeX				getTime () { return TimeX(v.tm); }		
 
 		// printing	

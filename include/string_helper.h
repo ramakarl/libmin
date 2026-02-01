@@ -68,6 +68,7 @@
 	HELPAPI std::string strToAscii(const std::string& s);
 	HELPAPI std::string wsToStr(const std::wstring& str);
 	HELPAPI std::wstring strToWs(const std::string& s);
+	HELPAPI int strLenUTF8 (const std::string& src, int len);
 
 	HELPAPI std::string strToLower(const std::string& s);
 	HELPAPI std::string strToUpper(const std::string& s);

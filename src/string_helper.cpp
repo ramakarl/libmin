@@ -770,6 +770,18 @@ std::wstring strToWs (const std::string& s)
   return r;
 }
 
+int strLenUTF8 (const std::string &src, int len)
+{
+	size_t sz =  0;
+	size_t chlen = 0;
+	while (sz < src.size() && sz <len) {
+		unsigned char c = static_cast<unsigned char>(src[sz]);
+		chlen = (c & 0x80) == 0x00 ? 1 : (c & 0xE0) == 0xC0 ? 2 : (c & 0xF0) == 0xE0 ? 3 : (c & 0xF8) == 0xF0 ? 4 : 1;
+		if (sz + chlen > len) break;
+		sz += chlen;	
+	}
+  return sz;
+}
 
 // trim from start
 #include <algorithm>

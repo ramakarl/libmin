@@ -45,7 +45,7 @@ void BuildTypeLookups ()
   lookupType['S'] = T_STR;
   lookupType['U'] = T_BUF;
   lookupType['D'] = T_TIME;
-  lookupType['F'] = T_FILE;
+  lookupType['X'] = T_FILE;
   lookupType['L'] = T_VAL;
   lookupType['T'] = T_TYPE;
   lookupType['P'] = T_PAIR;
@@ -90,21 +90,6 @@ void Value_t::CheckSizes()
   } */
 }
 
-int Value_t::getDataLen()
-{
-  switch (dt) {
-  case T_CHAR:   return sizeof(char); break;
-  case T_INT:    return sizeof(int); break;
-  case T_FLOAT:  return sizeof(float); break;
-  case T_VEC4:   return sizeof(Vec4F); break;
-  case T_STR:    return (v.str)->length(); break;
-  case T_REF:    return sizeof(xlong); break;
-  case T_BUF:    return 16;    break;
-  case T_TIME:   return sizeof(sjtime); break;  
-  };
-  return 0;
-}
-
 void Value_t::MakePair(Value_t& v1, Value_t& v2)
 {
   SetStr ( v1.WriteTyped() + "|" + v2.WriteTyped() );
@@ -143,7 +128,7 @@ void Value_t::FromStr (uchar t, std::string s)
     SetStr ( s ); 
   } else {
     dt = t;
-    (gConvTable[T_STR][dt]) ( (const char*) &v, (void*) &s, getTypeSz(t) );
+    (gConvTable[T_STR][dt]) ( (const char*) &s, (void*) &v, getTypeSz(t) );
   }
 }
 
@@ -174,7 +159,7 @@ std::string Value_t::WriteTyped()
 }
 
 // typeless set 
-void Value_t::SetBufToValue(char* buf, int pos, int len, Value_t src)
+void Value_t::SetValToBuf( Value_t src, char* buf, int pos, int len )
 {
   switch (src.dt) {
   case T_REF:		              *(uxlong*) &buf[pos] = src.v.uid; break;
@@ -183,6 +168,7 @@ void Value_t::SetBufToValue(char* buf, int pos, int len, Value_t src)
   case T_FLOAT:	case T_TIME:  *(float*) &buf[pos] = src.v.f;   break;
   case T_VEC4:                *(Vec4F*) &buf[pos] = src.v.v4;  break;
   case T_STR:	case T_PAIR: {
+    // string to buffer
     int sz = (src.v.str)->length(); if (sz >= len) sz = len-1;
     memcpy(&buf[pos], (src.v.str)->c_str(), sz);
     buf[pos + sz] = '\0';
