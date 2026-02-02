@@ -173,9 +173,6 @@ void g2Grid::drawChildren ( uchar what, bool dbg )
 
 void g2Grid::drawBackgrd (bool dbg)
 {
-    /*if (dbg) {
-      drawFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(0.1,0,0,1) );      
-    }*/
     if ( m_backclr.w > 0 ) {
       drawFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr );      
     }

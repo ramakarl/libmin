@@ -25,6 +25,8 @@ g2Item::g2Item ()
 {
   m_isButton = false;  
   m_isSlider = false;
+  m_isCombo = false;
+  m_combo_ndx = 0;
   m_button_state = 0;
   m_button_toggleable = false;
   m_slider_val = 0;
@@ -108,6 +110,7 @@ void g2Item::LayoutIcon ()
 }
 
 
+
 std::string g2Item::getPrintedText(Vec4F& clr)
 {
   if (!m_text.empty()) {
@@ -175,6 +178,7 @@ void g2Item::SetProperty ( std::string key, std::string val )
     if (val.compare("editable")==0)  m_isEditable = true;
     if (val.compare("button")==0)    m_isButton = true;
     if (val.compare("slider") == 0)  m_isSlider = true;
+    if (val.compare("combo") == 0)   m_isCombo = true;    
     if (val.compare("toggleable") == 0) m_button_toggleable = true;
 
   } else if ( key.compare("textclr")==0 || key.compare("text color")==0 ) {
@@ -243,11 +247,45 @@ void g2Item::SetProperty ( std::string key, std::string val )
     else if (vert.compare("top")==0)        { m_icon_placey = PLACE_TOP; }
     else if (vert.compare("bottom")==0)     { m_icon_placey = PLACE_BOTTOM; } 
     else                                    { m_icon_placey = strToI ( strSplitLeft( vert, "%" )); }    
+
+  } else if ( key.compare("combo item")==0) {
+
+     SetCombo ( val );
     
   } else {    
     g2Obj::SetProperty ( key, val );
   }
 }
+
+// populate combo box
+void g2Item::Populate ( KeyValues* list )
+{
+  m_combo_list = *list;  
+  if (m_combo_list.Size()==0) {
+    m_text = "empty";
+    m_isCombo = false;
+  } else {
+    SetCombo ( 0 );
+  }  
+}
+void g2Item::SetCombo ( int ndx )
+{
+  if (ndx < 0 || ndx >= m_combo_list.Size() ) ndx = KeyValues::nullndx;
+  m_combo_ndx = ndx;
+
+  if (m_combo_ndx != KeyValues::nullndx) {    
+    m_text = m_combo_list.GetKey( m_combo_ndx); 
+  } else {
+    m_text = "";
+  }
+}
+
+void g2Item::SetCombo ( std::string item )
+{  
+  m_combo_ndx = m_combo_list.FindNdx ( item );
+  SetCombo ( m_combo_ndx );
+}
+
 
 void g2Item::drawBackgrd (bool dbg)
 {  
@@ -392,9 +430,16 @@ bool g2Item::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
     if (x > m_pos.x && y > m_pos.y && x < m_pos.z && y < m_pos.w) {
 
       // select this item
-      if ( m_isEditable || m_isButton || m_isSlider ) {
+      if ( m_isEditable || m_isButton || m_isSlider || m_isCombo ) {
     
         g2.OnSelect ( this, x, y );
+
+        if (m_isCombo) {
+          int ndx = (m_combo_list.Size()-1) * clamp( (x - m_pos.x) / (m_pos.z - m_pos.x), 0, 1);
+          xlong val = m_combo_list.Get(ndx).getXL();
+          m_text = m_combo_list.GetKey(ndx);
+          RunAction ( ESelect, Value_t(val) );
+        }
         return true;
       }
     }
@@ -410,12 +455,19 @@ bool g2Item::OnMotion(AppEnum button, int x, int y, int dx, int dy)
     if ( isSelected() ) {    
 
       // set slide value
-      if (m_isSlider) {
-          
+      if (m_isSlider) {          
         m_slider_val = clamp( (x - m_pos.x) / (m_pos.z - m_pos.x), 0, 1);
-
         RunAction ( EMotion, Value_t(float(m_slider_val)) );   
       }    
+
+      // set combo value
+      if (m_isCombo) {
+        int ndx = (m_combo_list.Size()-1) * clamp( (x - m_pos.x) / (m_pos.z - m_pos.x), 0, 1);        
+        xlong val = m_combo_list.Get(ndx).getXL();        
+        m_text = m_combo_list.GetKey(ndx);
+        RunAction ( ESelect, Value_t(val) );
+      }
+
       // capture when selected and dragging, even if outside region
       return true;
     }

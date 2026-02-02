@@ -9,11 +9,10 @@ using namespace glib;
 
 g2Obj::g2Obj ()
 {
-  m_backclr = Vec4F(0, 0, 0, 0);
+  m_backclr = Vec4F(0, 0, 0, 0);    // purple (yet not defined)
   m_borderclr = Vec4F(0, 0, 0, 0);
   m_region = Vec4F(0, 0, 1, 1);
-  m_rounded = false;
-  m_debug = false;
+  m_rounded = false;  
   m_isModal = false;
 }
 
@@ -21,9 +20,12 @@ void g2Obj::AddAction(g2Action& a)
 {
   if (m_actions.size()==0) {
     // InitActions
+    m_actions.push_back (g2Action(EStart, ANull ) );
     m_actions.push_back (g2Action(EClick, ANull ) );
     m_actions.push_back (g2Action(EMouse, ANull ) );
     m_actions.push_back (g2Action(EMotion, ANull ) );
+    m_actions.push_back (g2Action(ESelect, ANull ) );
+    m_actions.push_back (g2Action(EAdjust, ANull ) );
   }
 
   m_actions[a.event] = a;
@@ -71,10 +73,8 @@ void g2Obj::SetProperty ( std::string key, std::string val )
   } else if (key.compare("region") == 0) {
 
     m_region = strToVec4 ( val, ',');
-
-  } else if ( key.compare("debug")==0 ) {
-    m_debug = true;
   }
+
 }
 
 

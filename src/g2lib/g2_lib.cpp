@@ -520,7 +520,7 @@ void g2Lib::BuildSections ( g2Obj* obj, uchar ly )
     }
 }
 
-void g2Lib::ParseAction( std::string cmd, g2Action& a )
+void g2Lib::ParseAction( int gid, std::string cmd, g2Action& a )
 {
   std::vector<std::string> words;
 
@@ -535,18 +535,24 @@ void g2Lib::ParseAction( std::string cmd, g2Action& a )
   while (words.size() < 4) {
     words.push_back ("");  
   }
+  // GUI object id
+  a.gid = gid;
 
   // 1. first word is GUI event (onmotion, onclick, etc.)
-  if (words[0]=="onclick") a.event = EClick;
+  if (words[0] == "onstart") a.event = EStart;
+  else if (words[0] == "onclick") a.event = EClick;
   else if (words[0] == "onmouse") a.event = EMouse;
   else if (words[0] == "onmotion") a.event = EMotion;
+  else if (words[0] == "onselect") a.event = ESelect;
+  else if (words[0] == "onadjust") a.event = EAdjust;
 
   // 2. second word is action (set, move, goto, cmd)
-  if (words[1] == "SET") a.act = ASet;
-  if (words[1] == "NAV") a.act = ANav;
-  if (words[1] == "GOTO") a.act = AGoto;
+  if (words[1] == "SET")      a.act = ASet;
+  if (words[1] == "POPULATE") a.act = APop;
+  if (words[1] == "NAV")      a.act = ANav;
+  if (words[1] == "GOTO")     a.act = AGoto;
   if (words[1] == "SELECT" || words[1]=="SEL") a.act = ASel;
-  if (words[1] == "MSG") a.act = AMsg;
+  if (words[1] == "MSG")      a.act = AMsg;
   if (words[1].find("CMD") != std::string::npos) a.act = ACmd;
 
   // 3. key
@@ -555,6 +561,15 @@ void g2Lib::ParseAction( std::string cmd, g2Action& a )
 
   // 4. value
   a.value = words[3];
+}
+
+void g2Lib::Populate ( int id, KeyValues* list )
+{
+  if (id==-1 || list==0x0 ) return;
+  g2Item* obj = dynamic_cast< g2Item* > ( m_objlist[id] );
+  if (obj == 0x0 ) return;
+
+  obj->Populate ( list );
 }
 
 
@@ -569,18 +584,18 @@ void g2Lib::BuildActions(actionFunc_t setup_func, actionFunc_t run_func, void* u
   m_ActionUser = user;
 
   // for each object
-  for (int n = 0; n < m_objlist.size(); n++) {
-    obj = m_objlist[n];    
+  for (int gid = 0; gid < m_objlist.size(); gid++) {
+    obj = m_objlist[ gid ];    
     
     // get action definitons (X | has | action | ..)
     g2Def* def = FindDef( obj->getName() );
     if (def != 0x0) {
 
-      for (int n = 0; n < def->keys.size(); n++) {
-        if (def->keys[n] == "action" ) {
+      for (int k = 0; k < def->keys.size(); k++) {
+        if (def->keys[k] == "action" ) {
           
-          // create new action
-          ParseAction ( def->vals[n], a );
+          // create new action          
+          ParseAction ( gid, def->vals[k], a );
           
           // application provides handle for variable mapping
           // - must set action.var_handle and .var_type
@@ -600,7 +615,7 @@ bool g2Lib::RunAction(g2Action* a, Value_t val )
 {
   if (!val.isNull()) a->value = val;
 
-  bool ran = (*m_ActionFunc) (*a, m_ActionUser);
+  bool ran = (*m_ActionFunc) ( *a, m_ActionUser);
 
   return ran;
 }
@@ -730,7 +745,7 @@ bool g2Lib::OnKeyboard(int key, AppEnum action, int mods, int x, int y)
   return false;  
 }
 
-void g2Lib::Render (int w, int h)
+void g2Lib::Render (int w, int h, bool debug)
 {
     // dbgprintf ( "RENDER g2lib, %d %d\n", w, h);
     
@@ -743,18 +758,17 @@ void g2Lib::Render (int w, int h)
       id = m_active_pages[p];    
     
       g2Obj* curr = m_objlist[ id ];
-
       
       start2D ( w, h );      
       
       // all objects
-      curr->drawBackgrd ( curr->m_debug );     
-      curr->drawForegrd ( curr->m_debug ); 
-      curr->drawBorder  ( curr->m_debug ); 
+      curr->drawBackgrd ( debug );     
+      curr->drawForegrd ( debug ); 
+      curr->drawBorder  ( debug ); 
 
       // selection
       if (m_selected != 0x0 ) {
-        m_selected->drawSelected ( curr->m_debug );        
+        m_selected->drawSelected ( debug );        
       }
   
       end2D();

@@ -34,7 +34,11 @@
         virtual bool isEditable() { return m_isEditable; }
 
         std::string   getPrintedText(Vec4F& clr);        
-        void          UpdateCursor();        
+        void          UpdateCursor();           
+
+        void Populate ( KeyValues* list );
+        void SetCombo ( int ndx );
+        void SetCombo ( std::string item );
 
         void LayoutIcon ();
         void LayoutText ();
@@ -61,6 +65,11 @@
         // edit properties
         bool          m_isEditable;           
         Vec4F         m_edit_pos;     // x=char, y=start char, z=pixel offset
+
+        // combo properties
+        bool          m_isCombo;
+        KeyValues     m_combo_list;
+        int           m_combo_ndx;
 
         // icon properties
         ImageX*       m_icon;        

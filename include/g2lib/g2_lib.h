@@ -53,12 +53,15 @@
         void BuildSections ( g2Obj* obj, uchar ly );                    
         g2Obj* AddObj ( std::string name, uchar typ );
         g2Obj* FindObj ( std::string name );    
+        g2Obj* getObj ( int i )       { return m_objlist[i]; }
+        std::string getName ( int i ) { return m_objlist[i]->getName(); }
        
         // Actions
         void BuildActions(actionFunc_t setup_func, actionFunc_t run_func, void* user);
-        void ParseAction(std::string cmd, g2Action& a);
+        void ParseAction( int gid, std::string cmd, g2Action& a);
         bool RunAction ( g2Action* a, Value_t val = Value_t::nullval );
         void SetAction(std::string a) { m_action = a; }
+        void Populate ( int id, KeyValues* list );
         std::string getAction() { return m_action; }
 
         // Pages
@@ -69,7 +72,7 @@
 
         // Layout & Render
         void LayoutAll ( Vec4F view, Vec4F region );
-        void Render (int w, int h);
+        void Render (int w, int h, bool debug=false );
         char getKeyboardRequest()   { return m_keyboard; }
         void setKeyboard(char k)    { m_keyboard = k; }
 

@@ -199,10 +199,9 @@ void Value_t::Unpack (char* buf)
 
 void Value_t::SetStr (std::string src)
 {
-  if ( !useStr(dt) || v.str==0x0 ) {
-    if (v.str !=0 ) delete v.str;
-    v.str = new std::string;
-  }
+  if ( useStr(dt) ) delete v.str;
+
+  v.str = new std::string;  
   *(v.str) = src;
   dt = T_STR;
 }
@@ -256,13 +255,23 @@ xlong Value_t::getXL()
 Value_t& Value_t::Cast (char dest_dt)
 {
   Value_t src = *this;
+
   if (useStr(dest_dt)) SetStr("");
+  dt = dest_dt;
 
   // function table lookup, to cast from src to dest
   if (useStr(src.dt)) {
-    (gConvTable[src.dt][dest_dt]) ( (const char*) src.v.str, (void*) &v, sizeof(v) );   // Value_t string indirect
+    if (useStr(dt)) {
+      (gConvTable[src.dt][dt]) ( (const char*) src.v.str, (void*) v.str, sizeof(v) ); 
+    } else {
+      (gConvTable[src.dt][dt]) ( (const char*) src.v.str, (void*) &v, sizeof(v) );
+    }
   } else {
-    (gConvTable[src.dt][dest_dt]) ( (const char*) &src.v, (void*) &v, sizeof(v) );
+    if (useStr(dt)) {
+      (gConvTable[src.dt][dt]) ( (const char*) &src.v, (void*) v.str, sizeof(v) );
+    } else {
+      (gConvTable[src.dt][dt]) ( (const char*) &src.v, (void*) &v, sizeof(v) );
+    }
   }
 
   return *this;
@@ -346,4 +355,14 @@ size_t KeyValues::FindNdx(const std::string& name)
 {
   auto it = index.find(name);
   return (it == index.end()) ? nullndx : it->second;
+}
+
+void KeyValues::Print()
+{
+  std::string val;
+  for (int i=0; i < entries.size(); i++) {
+    val = (entries[i].value.dt < T_BASIC) ? entries[i].value.getStr().c_str() : "Not available";
+    printf ( "%d: %s = %s\n", i, entries[i].key.c_str(), val.c_str() );
+  }
+
 }

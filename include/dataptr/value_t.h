@@ -144,9 +144,11 @@
 		size_t Add(const std::string& name, Value_t& val );
 		Value_t* Find(const std::string& name);
 		size_t FindNdx(const std::string& name);
+		std::string GetKey(size_t i)					{ return entries[i].key; }
 		Value_t& Get(size_t i)								{ return entries[i].value; }
 		const Value_t& Get(size_t i) const		{ return entries[i].value; }
 		size_t Size() const { return entries.size(); }
+		void Print();
 		
 		static constexpr size_t nullndx = size_t(-1);
 

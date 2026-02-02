@@ -21,9 +21,12 @@
     namespace glib {
 
     enum Event_t {      // Events - how user triggers action
-      EClick = 0,
-      EMouse = 1,
-      EMotion = 2,
+      EStart = 0,
+      EClick = 1,
+      EMouse = 2,
+      EMotion = 3,
+      ESelect = 4,
+      EAdjust = 5,
       EMax,
       EUndef
     };    
@@ -34,7 +37,9 @@
       AGoto = 3,
       ASel = 4,
       AMsg = 5,
-      ACmd = 6,
+      APop = 6,
+      ACmd = 7,
+      AScope = 8,
       AMax    
     };
 
@@ -42,24 +47,26 @@
     {
       std::string s = "?";
       switch (a) {
-      case ANull:  s = "ANull";   break;
+      case ANull:  s = "ANull";  break;
       case ASet:   s = "ASet";   break;
       case ANav:   s = "ANav";   break;
-      case AGoto:  s = "AGoto";   break;
+      case AGoto:  s = "AGoto";  break;
       case ASel:   s = "ASel";   break;
       case AMsg:   s = "AMsg";   break;
-      case ACmd:   s = "ACmd";   break;      
+      case APop:   s = "APop";   break;      
+      case ACmd:   s = "ACmd";   break;       
       };
       return s;
     }
 
     class g2Action {
     public:
-      g2Action() { event = EUndef; act = ANull; key="";  }
+      g2Action() { gid = -1; event = EUndef; act = ANull; key="";  }
       g2Action( Event_t e, Act_t a) { event = e; act=a; }
-
-      Event_t   event;        // event:  click, mouse, motion, ..
-      Act_t     act;          // action: set, nav, goto, sel, msg, cmd
+      
+      int         gid;          // gui object handle
+      Event_t     event;        // event:  click, mouse, motion, ..
+      Act_t       act;          // action: set, nav, goto, sel, msg, cmd
 
       std::string key;          // name of variable
       uint        var_handle;   // handle to variable
@@ -124,8 +131,7 @@
     public:
         g2Obj*          m_parent;
         int             m_id;
-        std::string     m_name;
-        bool            m_debug;
+        std::string     m_name;        
 
         Vec4F           m_pos;
         Vec4F           m_backclr;
