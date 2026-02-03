@@ -77,7 +77,7 @@
 	HELPAPI bool strToVec4(const std::string& str, char lsep, char insep, char rsep, float* vec);
 	HELPAPI Vec3F strToVec3(const std::string str, char sep);
 	HELPAPI Vec4F strToVec4(const std::string str, char sep);
-	HELPAPI std::string vecToStr ( Vec4F v );
+	HELPAPI std::string vecToStr ( Vec4F v, int digits=-1 );
 
 	//----------- Boolean returns
 	HELPAPI bool		strArg (int argc, char** argv, const char* chk_arg, std::string& val);

@@ -719,10 +719,16 @@ Vec4F strToVec4( const std::string str, char sep)
   strToVec(str, '<', sep, '>', &v.x, 4);
   return v;
 }
-std::string vecToStr ( Vec4F v )
-{
+std::string vecToStr ( Vec4F v, int digits )
+{  
   char buf[1024];  
-  sprintf ( buf, "<%f,%f,%f,%f>", v.x, v.y, v.z, v.w );
+  char fmt[128];
+  if (digits==-1) {
+    sprintf ( buf, "<%f,%f,%f,%f>", v.x, v.y, v.z, v.w );
+  } else {    
+    sprintf ( fmt, "<%%.%df,%%.%df,%%.%df,%%.%df>", digits, digits, digits, digits );
+    sprintf ( buf, fmt, v.x, v.y, v.z, v.w );
+  }
   return std::string(buf);
 }
 

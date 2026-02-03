@@ -326,7 +326,7 @@ void glib::drawGradient ( Vec2F a, Vec2F b, Vec4F c0, Vec4F c1, Vec4F c2, Vec4F 
 
 void glib::drawCircle ( Vec2F a, float r, Vec4F clr  )
 {	
-	int du = 15;	
+	int du = 30;
 	gxVert* v = gx.allocGeom2D ( 2*((360/du)+1), PRIM_LINES );	
 
 	// draw circle
@@ -343,7 +343,7 @@ void glib::drawCircle ( Vec2F a, float r, Vec4F clr  )
 void glib::drawCircleFill (Vec2F a, float r, Vec4F clr)
 {
 	int n = 0;
-	int du = 90;
+	int du = 30;
 	int segs = (360/du)+1;
 	gxVert* v = gx.allocGeom2D(3 * segs + 4, PRIM_TRI);
 
