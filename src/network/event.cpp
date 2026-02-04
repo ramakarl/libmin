@@ -533,7 +533,9 @@ bool Event::getBool ()
 
 std::string Event::getStr ()
 {
+	if ( mDataLen==0 ) return "EMPTY";
 	if ( mPos-mData >= mDataLen ) return "EVENT READ OVERFLOW";
+	
 	int i = getInt ();
 	if ( i > mDataLen ) {
 		dbgprintf ("ERROR: Event string length is corrupt.\n");
