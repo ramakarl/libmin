@@ -110,19 +110,19 @@
 	#include <string>	
 	#ifdef _MSC_VER
 		#include <windows.h>
-		typedef __int64		mstime;
-		typedef __int64		sjtime;
+		typedef uint64_t  mstime;
+		typedef uint64_t  sjtime;
 	#endif
 	#ifdef __linux__
 		#include <linux/types.h>
-		typedef __s64       mstime;
-		typedef __s64       sjtime;
+		typedef uint64_t  mstime;
+		typedef uint64_t  sjtime;
 	#endif
 
 	#ifdef __CYGWIN__	
 		#include <largeint.h>	
-		typedef __int64       mstime;
-		typedef __int64       sjtime;
+		typedef uint64_t	mstime;
+		typedef uint64_t	sjtime;
 	#endif	
 
 	#include <string>	

@@ -351,8 +351,8 @@
 	{	
 		if ( !m_Started ) {
 			m_Started = true;
-            m_BaseTime = 0;
-            SetSystemTime ();				        // Set m_CurrTime to the wall clock
+      m_BaseTime = 0;
+      SetSystemTime ();				        // Set m_CurrTime to the wall clock
 			start_basetime ( m_CurrTime );	// Start base timer at wall clock
 		}
 		m_CurrTime = 0;
