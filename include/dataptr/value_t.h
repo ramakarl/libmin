@@ -50,7 +50,7 @@
 		// null value
 		static const Value_t nullval;
 		bool isNullType() { return (dt == T_NULL); }
-		bool isNull()			{ return (dt == T_NULL) || (dt==T_VEC4 && isnan(v.v4.x)) || (dt==T_FLOAT && isnan(v.f)); }
+		bool isNull()			{ return (dt == T_NULL) || (dt==T_VEC4 && isnan(v.v4.x)) || (dt==T_FLOAT && isnan(v.f)); }		
 
 		// constructors
 		Value_t (char src)					{ setC(src); }
@@ -79,14 +79,16 @@
 		Value_t&		Copy ( const Value_t& val );
 
 		// typed get/set
-		void				setC (uchar src)					{ v.c = src;		dt = T_CHAR; }
-		void				setI (int src)						{ v.i = src;		dt = T_INT; }
-		void				setF (float src)					{ v.f = src;		dt = T_FLOAT; }
-		void				setV4 (Vec4F src)					{ v.v4 = src;	dt = T_VEC4; }		
-		void				setRef (xlong src)				{ v.uid = src;	dt = T_REF; }
-		void				setBuf (char* src, int l) { memcpy(v.buf, src, l); dt = T_BUF; }
-		void				setTime (TimeX src)				{ v.tm = src.GetSJT(); dt = T_TIME; }
+		void				setC (uchar src)					{ ClearStr();		v.c = src;		dt = T_CHAR; }
+		void				setI (int src)						{ ClearStr();		v.i = src;		dt = T_INT; }
+		void				setF (float src)					{ ClearStr();		v.f = src;		dt = T_FLOAT; }
+		void				setV4 (Vec4F src)					{ ClearStr();		v.v4 = src;		dt = T_VEC4; }		
+		void				setRef (xlong src)				{ ClearStr();		v.uid = src;	dt = T_REF; }
+		void				setBuf (char* src, int l) { ClearStr();		memcpy(v.buf, src, l); dt = T_BUF; }
+		void				setTime (TimeX src)				{ ClearStr();		v.tm = src.GetSJT(); dt = T_TIME; }
+		void				setNull()									{ ClearStr();		v.i = 0;			dt = T_NULL; }
 		void				SetStr (std::string src);
+		void				ClearStr();
 		std::string getStr();
 		uchar				getC();
 		int					getI();

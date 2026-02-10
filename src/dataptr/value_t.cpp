@@ -199,11 +199,15 @@ void Value_t::Unpack (char* buf)
 
 void Value_t::SetStr (std::string src)
 {
-  if ( useStr(dt) ) delete v.str;
+  ClearStr();
 
   v.str = new std::string;  
   *(v.str) = src;
   dt = T_STR;
+}
+void Value_t::ClearStr ()
+{
+  if ( useStr(dt) ) delete v.str;
 }
 
 std::string Value_t::getStr()
