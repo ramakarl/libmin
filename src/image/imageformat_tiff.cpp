@@ -576,7 +576,6 @@ void CImageFormatTiff::LoadTiffData (unsigned long count, unsigned long offset, 
 	} break;
 	}
 
-	bool stop=true;
 }
 
 bool CImageFormatTiff::SaveTiffData ()

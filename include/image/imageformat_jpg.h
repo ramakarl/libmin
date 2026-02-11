@@ -30,6 +30,7 @@
   // in-memory compression
 	HELPAPI bool compress_jpeg (unsigned char* in_pixels, int width, int height, int quality, unsigned char** out_pixels, unsigned long* out_size);
 	HELPAPI bool decompress_jpeg (unsigned char* in_pixels, unsigned long in_size, unsigned char** out_pixels, int* out_w, int* out_h, unsigned long* out_size);
+	HELPAPI bool headerinfo_jpeg ( unsigned char* in_buf, unsigned long in_size, int& w, int& h, int& c, int& stride, unsigned long& sz );
 
 	struct extended_error_mgr {
 		struct jpeg_error_mgr pub;

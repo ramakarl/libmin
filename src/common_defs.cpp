@@ -146,14 +146,16 @@ bool getFileLocation ( const char* filename, char* outpath, std::vector<std::str
         found = true;
         strcpy ( outpath, filename );
     } else {
+        struct stat info;
         for (int i=0; i < searchPaths.size(); i++) {            
             if (searchPaths[i].empty() ) continue;
             sprintf ( outpath, "%s%s", searchPaths[i].c_str(), filename );            
-            fp = fopen( outpath, "rb" );
-            if (fp)	{ found = true;	break; }
+            if (stat( (char*) outpath, &info) == 0) { found=true; break; }
+            //fp = fopen( outpath, "rb" );
+            //if (fp)	{ found = true;	break; }
         }
     }
-    if ( found ) fclose ( fp );
+    //if ( found ) fclose ( fp );
     return found;
 }
 

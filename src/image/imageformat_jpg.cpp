@@ -319,6 +319,35 @@ bool decompress_jpeg(unsigned char* in_pixels, unsigned long in_size,
 	return true;
 }
 
+bool headerinfo_jpeg ( unsigned char* in_buf, unsigned long in_size,
+											 int& w, int& h, int& c, int& stride, unsigned long& sz )
+{
+	jpeg_decompress_struct dinfo;
+	jpeg_error jerr;
+
+	dinfo.err = jpeg_std_error(&jerr.mgr);
+	jerr.mgr.error_exit = jpeg_error_handler;
+	if (setjmp(jerr.jmp_out)) { jpeg_destroy_decompress(&dinfo); return false; }
+
+	jpeg_create_decompress(&dinfo);
+	
+	jpeg_mem_src(&dinfo, in_buf, in_size);			// set the source buffer 
+
+	if (jpeg_read_header(&dinfo, TRUE) != JPEG_HEADER_OK) {
+		jpeg_destroy_decompress(&dinfo);
+		return false;
+	}
+
+	// just read the header, thats all
+	w = dinfo.image_width;
+	h = dinfo.image_height;
+	c = dinfo.num_components;	
+	stride = w * c;
+	sz = stride * h;
+
+	return true;
+}
+
 
 bool CImageFormatJpg::Save ( const std::string filename, ImageX* img )
 {

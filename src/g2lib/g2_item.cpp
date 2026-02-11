@@ -434,7 +434,7 @@ bool g2Item::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
     
         g2.OnSelect ( this, x, y );
 
-        if (m_isCombo) {
+        if (m_isCombo && m_combo_list.Size() > 0 ) {
           int ndx = (m_combo_list.Size()-1) * clamp( (x - m_pos.x) / (m_pos.z - m_pos.x), 0, 1);
           xlong val = m_combo_list.Get(ndx).getXL();
           m_text = m_combo_list.GetKey(ndx);
@@ -461,7 +461,7 @@ bool g2Item::OnMotion(AppEnum button, int x, int y, int dx, int dy)
       }    
 
       // set combo value
-      if (m_isCombo) {
+      if (m_isCombo && m_combo_list.Size() > 0) {
         int ndx = (m_combo_list.Size()-1) * clamp( (x - m_pos.x) / (m_pos.z - m_pos.x), 0, 1);        
         xlong val = m_combo_list.Get(ndx).getXL();        
         m_text = m_combo_list.GetKey(ndx);
