@@ -19,6 +19,7 @@
 #ifndef DEF_IMAGEFORMAT_TIFF
 	#define	DEF_IMAGEFORMAT_TIFF
 
+	#include <cstring>
 	#include "imageformat.h"
 
 	const int	TIFF_BUFFER =				(32767);

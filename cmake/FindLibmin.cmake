@@ -39,6 +39,12 @@ endfunction()
 
 message ( STATUS "\n----- RUNNING FindLibmin.cmake " )
 
+if (DEFINED ENV{LINUX_DEBUG})
+  message (STATUS "LINUX DEBUGGING enabled")
+  set(CMAKE_BUILD_TYPE Debug)           # sets -g and disables optimizations
+  set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")  # ensure no optimization
+  set(CMAKE_CUDA_FLAGS_DEBUG "-G")     # CUDA: generate debug info for kernels
+endif()
 
 # *NOTE** 
 # LIBMIN_ prefix forces the variable to be namespaced to Libmin package,
@@ -259,7 +265,7 @@ macro ( _REQUIRE_GL )
         find_package(OpenGL)
         if (OPENGL_FOUND)                    
           add_definitions(-DBUILD_OPENGL)  		
-          _ATTACH_PLATFORM_LIB ( NAME "GL" WIN "opengl32.lib" LINUX "gl glew x11")          
+          _ATTACH_PLATFORM_LIB ( NAME "GL" WIN "opengl32.lib" LINUX "GL -lGLEW -lX11") 
         endif()
     endif()
 endmacro()
@@ -359,13 +365,41 @@ macro ( _REQUIRE_CUDA BUILD_CUDA_default kernel_path)
     OPTION (BUILD_CUDA "Build with CUDA" ${BUILD_CUDA_default})
 
     if (BUILD_CUDA) 
-      message(STATUS "  CUDA support enabled")    
+
+      # specify cuda arch
+      #   60=Pascal, 70=Volta, 75=Turing, 80=Ampere, 86=RTX 3x, 89=RTX 4x, 120=RTX 5x
+      set(CMAKE_CUDA_ARCHITECTURES $ENV{CUDA_ARCH})   
+
+      # find CUDA
+      # *NOTE*: On CMake 3.18+, enable_language(CUDA) replaces find_package(CUDA),
+      #         or to provide ${CUDA_INCLUDE_DIRS} as target_include_directories
+      # find_package(CUDA REQUIRED)
+      
+      message(STATUS "  CUDA Toolkit search path: $ENV{CUDA_PATH} ")
 
       # enable CUDA language (with cmake >3.18)
       enable_language(CUDA)        
       set(CMAKE_CUDA_STANDARD 17)
-      set(CMAKE_CUDA_STANDARD_REQUIRED ON)      
+      set(CMAKE_CUDA_STANDARD_REQUIRED ON)     
 
+      # confirm version
+      if(NOT CMAKE_CUDA_VERSION)
+        execute_process(
+            COMMAND ${CMAKE_CUDA_COMPILER} --version
+            OUTPUT_VARIABLE NVCC_OUTPUT
+            ERROR_VARIABLE NVCC_OUTPUT
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        message(STATUS "${NVCC_OUTPUT}")
+        # Parse the major/minor version
+        string(REGEX MATCH "release ([0-9]+)\\.([0-9]+)" _match "${NVCC_OUTPUT}")
+        set(CUDA_VERSION_MAJOR "${CMAKE_MATCH_1}")
+        set(CUDA_VERSION_MINOR "${CMAKE_MATCH_2}")
+        set(CMAKE_CUDA_VERSION "${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}")
+      endif()
+      
+      message(STATUS "  CUDA Support enabled: ver ${CMAKE_CUDA_VERSION} at ${CMAKE_CUDA_COMPILER}")       
+      
       # attach cuda common helpers
       add_definitions(-DBUILD_CUDA)  
       LIST(APPEND CUDA_COMMON "${LIBMIN_ROOT}/src/cuda/common_cuda.cpp" "${LIBMIN_ROOT}/include/cuda/common_cuda.h")
@@ -448,26 +482,25 @@ macro ( compile_ptx )
   endif()
   unset ( PTX_FILES CACHE )
   unset ( PTX_FILES_PATH CACHE )  
+
+  # nvcc arch target (only 1 allowed when compiling to ptx)
+  foreach(arch ${CMAKE_CUDA_ARCHITECTURES} )
+    list(APPEND _ARCHS "--generate-code=arch=compute_${arch},code=[sm_${arch},compute_${arch}]")
+  endforeach()
+
+  # convey setup
+  message ( STATUS "  NVCC Options: ${ARG_OPTIONS}" )  
+  message ( STATUS "  NVCC Include: ${ARG_INCLUDE}" )
+  message ( STATUS "  NVCC Archs: ${_ARCHS}" )
   
   if ( WIN32 ) 
 
-    # Windows - PTX compile
-     
+    # Windows - PTX compile     
 	  file ( MAKE_DIRECTORY "${ARG_TARGET_PATH}/Debug" )
-	  file ( MAKE_DIRECTORY "${ARG_TARGET_PATH}/Release" )	  	  	  
-    
-    # nvcc arch target (only 1 allowed when compiling to ptx)
-    foreach(arch ${CMAKE_CUDA_ARCHITECTURES} )
-      list(APPEND _ARCHS "--generate-code=arch=compute_${arch},code=[sm_${arch},compute_${arch}]")
-    endforeach()
-
-    # convey setup
-    message ( STATUS "  NVCC Options: ${ARG_OPTIONS}" )  
-	  message ( STATUS "  NVCC Include: ${ARG_INCLUDE}" )
-    message ( STATUS "  NVCC Archs: ${_ARCHS}" )
+	  file ( MAKE_DIRECTORY "${ARG_TARGET_PATH}/Release" )
     
 	  # Custom build rule to generate ptx files from cuda files
-	  FOREACH( kernel ${ARG_SOURCES} )
+	  foreach( kernel ${ARG_SOURCES} )
 		  get_filename_component( kernel_ext ${kernel} EXT )						# Input extension
 		  get_filename_component( kernel_base ${kernel} NAME_WE )				# Input base
 		  if ( ${kernel_ext} STREQUAL ".cu" )			
@@ -476,68 +509,35 @@ macro ( compile_ptx )
 		    set( _ptx_name "${kernel_base}.ptx" )							# Output name
 		    set( _ptx_path "${ARG_TARGET_PATH}/$(Configuration)/${_ptx_name}" )	# Output with path		    
 		    LIST( APPEND PTX_FILES ${_ptx_path} )		  # Output list with paths		    
-		    add_custom_command(
+		    add_custom_command (
 			    OUTPUT ${_ptx_path}
 			    MAIN_DEPENDENCY ${kernel}
 			    COMMAND ${CMAKE_CUDA_COMPILER} --ptx ${ARG_OPTIONS} ${_ARCHS} ${kernel} -I\"${ARG_INCLUDE}\" -o \"${_ptx_path}\" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-			    )			
-		    endif()
-	  ENDFOREACH( )
+			  )
+		  endif()
+
+	  endforeach( )
 
   else ()
     
-    # Linux - PTX compile
-    #    
-    if (CMAKE_CUDA_COMPILER)
-
-      message ( STATUS "  NVCC Include: ${ARG_INCLUDE}" )
-      add_library ( PTX_FILES OBJECT ${ARG_SOURCES})
-      set_property (TARGET PTX_FILES PROPERTY CUDA_PTX_COMPILATION ON )
-      string (REPLACE "," ";" _COMPILEPTX_INCLUDE "${ARG_INCLUDE}")  
-      FOREACH(input ${ARG_SOURCES} )
-        get_filename_component( input_ext ${input} EXT )
-        get_filename_component( input_without_ext ${input} NAME_WE )
-        set( output "${input_without_ext}.ptx" )
-        set( output_with_path "${ARG_TARGET_PATH}/CMakeFiles/PTX_FILES.dir/source/${input_without_ext}.ptx" )
+    # Linux  - PTX compile  
+    
+    foreach( kernel ${ARG_SOURCES} )
+      get_filename_component( kernel_ext ${kernel} EXT )
+      get_filename_component( kernel_base ${kernel} NAME_WE )
+      if ( ${kernel_ext} STREQUAL ".cu" )		
+        # Set output names
+        set( _ptx_name "${kernel_base}.ptx" )							# Output name
+		    set( _ptx_path "${ARG_TARGET_PATH}/${_ptx_name}" )	# Output with path
         LIST(APPEND PTX_FILES ${output})
-        LIST(APPEND PTX_FILES_PATH ${output_with_path})
-      ENDFOREACH()
-      FOREACH(input ${ARG_INCLUDE})
-        message ( STATUS "  PTX INCLUDE: ${input}")
-        target_include_directories ( PTX_FILES PRIVATE ${input} )        
-      ENDFOREACH()
+        add_custom_command (
+			    OUTPUT ${_ptx_path}
+			    MAIN_DEPENDENCY ${kernel}
+			    COMMAND ${CMAKE_CUDA_COMPILER} --ptx ${ARG_OPTIONS} ${_ARCHS} ${kernel} -I\"${ARG_INCLUDE}\" -o \"${_ptx_path}\" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+			  )
+      endif()
 
-    else()      
-
-      file ( MAKE_DIRECTORY "${ARG_TARGET_PATH}" )
-      FOREACH(input ${ARG_SOURCES})
-        get_filename_component( input_ext ${input} EXT )									# Input extension
-        get_filename_component( input_without_ext ${input} NAME_WE )						# Input base
-        if ( ${input_ext} STREQUAL ".cu" )			
-          # Set output names
-          set( output "${input_without_ext}.ptx" ) # Output name
-          set( output_with_path "${ARG_TARGET_PATH}/${input_without_ext}.ptx" )	# Output with path
-
-          set( compile_target_ptx "${input_without_ext}_PTX")
-          set( custom_command_var "${input_without_ext}_OUTPUT")
-          
-          # compile ptx
-          cuda_compile_ptx(custom_command_var ${input} OPTIONS "${DEBUG_FLAGS}")
-          # This will only configure file generation, we need to add a target to
-          # generate a file cuda_generated_<counter>_${input_without_ext}.ptx
-          # Add custom command to rename to simply ${input_without_ext}.ptx
-          add_custom_command(OUTPUT ${output_with_path}
-                          COMMAND ${CMAKE_COMMAND} -E rename ${custom_command_var} ${output_with_path}
-                          DEPENDS ${custom_command_var})
-          add_custom_target(${compile_target_ptx} ALL DEPENDS ${input} ${output_with_path} SOURCES ${input})
-
-          # Add this output file to list of generated ptx files  
-          LIST(APPEND PTX_FILES ${output})
-          LIST(APPEND PTX_FILES_PATH ${output_with_path} )
-
-        endif()
-      ENDFOREACH()
-    endif()
+    endforeach()
 
   endif()
 
@@ -588,7 +588,6 @@ macro (_ATTACH_PLATFORM_LIB)
     set ( ADD_LIBS ${ARG_LINUX} )
 	endif()
   list ( APPEND LIBS_PLATFORM ${ADD_LIBS} )
-  # set (LIBS_PLATFORM "${LIBS_PLATFORM}" PARENT_SCOPE)      #-- necessary when called from functions
 
   message ( STATUS "  ---> Using ${ARG_NAME}" )
 endmacro ()
@@ -799,7 +798,12 @@ macro(_LINK )
   if (BUILD_CUDA)
       # link to cuda libraries
       target_link_libraries( ${PROJNAME} PRIVATE cuda)
+
+      # force include dirs
+      target_include_directories(${PROJ_NAME} PRIVATE "$ENV{CUDA_PATH}/include")
   endif()
+
+
   
   message ( STATUS "\n----- DONE" )	
 	string (REPLACE ";" "\n   " OUTSTR "${LIBLIST}")

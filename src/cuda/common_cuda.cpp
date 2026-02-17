@@ -105,7 +105,7 @@
 			//--- Create new context with Driver API 
 			cuCheck(cuDeviceGet(&dev, devsel), "", "cuDeviceGet", "", false);
 
-			#if CUDA_VERSION >= 11020
+			#if CUDA_VERSION >= 11020 && CUDA_VERSION <= 12000
 				CUctxCreateParams params;
 				memset(&params, 0, sizeof(params));
 				cuCheck(cuCtxCreate(&ctx, &params, CU_CTX_SCHED_AUTO, dev), "", "cuCtxCreate", "", false);
