@@ -76,7 +76,7 @@
     void startRead() { readPos = 0; }
 
   public:
-    std::vector<std::uint8_t>   buf;
+    std::vector<uint8_t>   buf;
     std::size_t readPos = 0;
   };
 
