@@ -469,7 +469,7 @@ bool Application::appStartWindow ( void* arg1, void* arg2, void* arg3, void* arg
     XFlush (m_win->_dpy);
     
     
-    #ifdef USE_OPENGL
+    #ifdef BUILD_OPENGL
 
     //-- Create glXContext 
     const char *glxExts = glXQueryExtensionsString(m_win->_dpy,DefaultScreen(m_win->_dpy));
@@ -542,7 +542,7 @@ void Application::appResizeWindow(int w, int h)
 
 bool Application::appInitGL()
 {    
-    #ifdef USE_OPENGL
+    #ifdef BUILD_OPENGL
         // additional opengl initialization
         //  (primary init of opengl occurs in WINinteral::initBase)
         initBasicGL();

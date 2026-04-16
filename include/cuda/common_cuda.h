@@ -37,6 +37,9 @@
 
 			#include <cuda.h>    
 			#include <cudaGL.h>			
+			#include <driver_types.h>			// for CUctxCreateParams
+
+			// #pragma message("CUDA VERSION: " #CUDA_VERSION )
 
 			#define DEV_FIRST		-1
 			#define DEV_CURRENT		-2

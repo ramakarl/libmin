@@ -19,6 +19,7 @@
 #ifndef DEF_IMAGEFORMAT_TIFF
 	#define	DEF_IMAGEFORMAT_TIFF
 
+	#include <cstring>
 	#include "imageformat.h"
 
 	const int	TIFF_BUFFER =				(32767);
@@ -75,7 +76,7 @@
     void startRead() { readPos = 0; }
 
   public:
-    std::vector<std::uint8_t>   buf;
+    std::vector<uint8_t>   buf;
     std::size_t readPos = 0;
   };
 

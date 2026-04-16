@@ -241,7 +241,7 @@ void CImageFormat::StartFormat ( const std::string filename, ImageX* img, ImageO
 	#ifdef WIN32
 		strcpy_s ( m_Filename, FILE_NAMELEN, filename.c_str() );
 	#else
-		strcpy ( m_Filename, filename);
+		strcpy ( m_Filename, filename.c_str() );
 	#endif
 }
 
