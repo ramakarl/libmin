@@ -411,7 +411,7 @@ void g2Item::OnSelect (int x, int y)
       m_button_state = 1 - m_button_state;
     }
     else {
-      m_button_state = 120;      // deactivation countdown
+      m_button_state = 20;      // deactivation countdown
     }
     // Find action associated with button
     std::string action = g2.getVal( m_name, "action" );
