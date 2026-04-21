@@ -22,8 +22,14 @@
 
 	#include "imageformat.h"	
 
-	#include "libjpegt/jpeglib.h"
-	#include "libjpegt/jerror.h"
+	#ifdef __ANDROID__
+		#include "libjpegt_arm/jpeglib.h"
+		#include "libjpegt_arm/jerror.h"
+	#else
+		#include "libjpegt/jpeglib.h"
+		#include "libjpegt/jerror.h"
+	#endif	
+
 	#include <setjmp.h>
 
 

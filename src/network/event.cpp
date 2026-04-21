@@ -134,7 +134,7 @@ Event& Event::operator= ( Event& src )
 	return *this;
 }
 // move operator
-Event& Event::operator= ( Event&& src )
+Event& Event::operator= ( Event&& src ) noexcept
 {
   if (this != &src) {
 	  acquire ( src );		// transfer ownership	

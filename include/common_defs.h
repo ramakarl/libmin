@@ -21,6 +21,8 @@
 
 	#pragma warning ( disable: 4005)
 
+  #define DEBUG_GL      false
+
 	#ifdef _WIN32
 
 	        #include "inttypes.h"
@@ -202,7 +204,7 @@
 
         // Basic OpenGL interface	        
         HELPAPI void initBasicGL();
-        HELPAPI void checkGL(const char* msg, bool debug=false);        
+        HELPAPI void checkGL(const char* msg, bool debug = DEBUG_GL);        
         HELPAPI void clearGL();
         HELPAPI void createTexGL(int& glid, int w, int h, int clamp = 0x812D, int fmt = 0x8058, int typ = 0x1401, int filter = 0x2601);	// defaults: GL_CLAMP_TO_BORDER, GL_RGBA8, GL_UNSIGNED_BYTE, GL_LINEAR
         HELPAPI void renderTexGL(int w, int h, int glid, char inv1 = 0);

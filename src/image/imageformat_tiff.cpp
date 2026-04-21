@@ -88,7 +88,7 @@ bool CImageFormatTiff::Load (const std::string filename, ImageX* img )
 
 	unsigned long pnt;
 
-	if ( m_DebugTif )	dbgprintf ("----- TIFF LOADING: %s\n", filename );
+	if ( m_DebugTif )	dbgprintf ("----- TIFF LOADING: %s\n", filename.c_str() );
 
 	m_Tif = fopen ( filename.c_str(), "rb" );	
 	if ( m_Tif == 0x0 ) {

@@ -17,6 +17,9 @@
 // Global abstract pointer to the application
 Application* pApp = 0x0;
 
+extern int gArgc;
+extern char** gArgv;
+
 // OSWindow
 // This structure contains Hardware/Platform specific variables
 // that would normally go into main.h, but we want to be OS specific.
@@ -117,20 +120,16 @@ extern "C"
         return false;
       }
       pApp->m_winSz[0] = wid;
-      pApp->m_winSz[1] = hgt;      
+      pApp->m_winSz[1] = hgt;
 
-      //-- App initialization (ENSURE ONE TIME)
-      if (pApp->m_startup) {      // Call user init() only ONCE per application
-        pApp->m_startup = false;
-        dbgprintf("  appInitGL().\n");
-        pApp->appInitGL();
-        dbgprintf("  init()");  // Calls init2D
-        if (!pApp->init()) { dbgprintf("ERROR: Unable to init() app.\n"); return false; }
-      }
+      pApp->appInitGL();
 
-      //-- Start the app      
+      dbgprintf("appHandleArgs() - disabled\n");
+      // pApp->appHandleArgs( gArgc, gArgv );
+
+      dbgprintf("appStartWindow()\n");
       pApp->appStartWindow();
-    
+
       return true;
     }
 
@@ -310,9 +309,15 @@ bool Application::appStart ( const std::string& title, const std::string& shortn
 
 bool Application::appStartWindow (void* arg1, void* arg2, void* arg3, void* arg4)
 {
-    dbgprintf("  activate()\n");  
-    if ( !activate(pApp->m_winSz[0], pApp->m_winSz[1]) ) { dbgprintf ( "ERROR: Activate failed.\n"); return false; }
+    //-- App initialization (ENSURE ONE TIME)
+    if (pApp->m_startup) {      // Call user init() only ONCE per application
+        pApp->m_startup = false;
+        dbgprintf("  init()");  // Calls init2D
+        if (!pApp->init()) { dbgprintf("ERROR: Unable to init() app.\n"); return false; }
+    }
 
+    // Activate
+    if ( !activate(pApp->m_winSz[0], pApp->m_winSz[1]) ) { dbgprintf ( "ERROR: Activate failed.\n"); return false; }
     m_active = true;                // yes, now active.
 
     return true;
@@ -563,12 +568,28 @@ void Application::appHandleEvent (guiEvent g)
   //  dbgprintf("Event: %d, b:%d,%d x:%f, y:%f, dx:%f, dy:%f\n", g.typeOrdinal, m_mouseButton, m_mouseState, m_mouseX, m_mouseY, m_dX, m_dY);
 }
 
-#ifdef USE_NETWORK
+#ifdef BUILD_NETWORK
+
     bool Application::appSendEventToApp ( Event* e )
     {
         return pApp->on_event ( e );
     }
+
 #endif
+
+void Application::appHandleArgs(int argc, char** argv)
+{
+    for (int i = 0; i < argc; i++) {
+        if (argv[i][0] == '-') {                // valued argument> app -i input.txt
+            std::string val = (i + 1 < argc) ? argv[i + 1] : "";
+            dbgprintf (" on_arg: %s, %s", argv[i], val.c_str() );
+            on_arg(i, argv[i], val );
+            i++;
+        } else {
+            on_arg(i, argv[i], "");                // non-valued arg> app input.txt
+        }        
+    }
+}
 
 void Application::appOpenBrowser ( std::string app, std::string query )
 {

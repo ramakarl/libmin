@@ -693,7 +693,7 @@ void Application::appHandleArgs(int argc, char** argv)
 {
     for (int i = 0; i < argc; i++) {
         if (argv[i][0] == '-') {                // valued argument> app -i input.txt
-            std::string val = (i + 1 <= argc) ? "" : argv[i + 1];
+            std::string val = (i + 1 < argc) ? argv[i + 1] : "";
             on_arg(i, argv[i], val );
             i++;
         } else if (strcmp(argv[i], "-vsync") == 0 && i + 1 < argc) {        // builtin> app -vsync 1

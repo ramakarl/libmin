@@ -258,15 +258,17 @@ endmacro()
 ###################################################################################
 # Include OpenGL 
 #
+macro ( _REQUIRE_ANDROID )
+
+  _ATTACH_PLATFORM_LIB ( NAME "Android" WIN "" LINUX "" ANDROID "android") 
+
+endmacro()
+
 macro ( _REQUIRE_GL )
     OPTION (BUILD_OPENGL "Build with OpenGL" ON)
     if (BUILD_OPENGL)            
-        message ( NOTICE "  Searching for GL.." )
-        find_package(OpenGL)
-        if (OPENGL_FOUND)                    
-          add_definitions(-DBUILD_OPENGL)  		
-          _ATTACH_PLATFORM_LIB ( NAME "GL" WIN "opengl32.lib" LINUX "GL -lGLEW -lX11") 
-        endif()
+        add_definitions(-DBUILD_OPENGL)  		
+        _ATTACH_PLATFORM_LIB ( NAME "OpenGL" WIN "opengl32.lib" LINUX "GL -lGLEW -lX11" ANDROID "GLESv3")
     endif()
 endmacro()
 
@@ -336,30 +338,34 @@ endmacro()
 # Include JPG    
 #   
 macro ( _REQUIRE_JPG )   
-  set ( OK_H "0" )    
-  set ( _jpg_srch "${LIBEXT_ROOT}/win64" )
-	_FIND_FILE ( JPG_LIBS _jpg_srch "libjpegt.lib" "" OK_H )		
+
+  if ( ANDROID )        
+    set ( JPG_PATH "${LIBEXT_ROOT}/android" )    
+    set ( JPG_REL  "libturbojpeg_arm64.a" )
+    set ( JPG_DEBUG "libturbojpeg_arm64.a" )
+  elseif ( WIN32 )
+    set ( JPG_PATH "${LIBEXT_ROOT}/win64" )    
+    set ( JPG_REL "libjpegt.lib" )
+    set ( JPG_DEBUG "libjpegt_d.lib" )
+  else()
+    set ( JPG_PATH "${LIBEXT_ROOT}/linux" )   
+    set ( JPG_REL "libturbojpeg.a" )
+    set ( JPG_DEBUG "libturbojpeg.a" )
+  endif()
+
+  set ( OK_H "0" )      
+	_FIND ( JPG_FOUND "${JPG_PATH}/${JPG_DEBUG}" OK_H )		
 	if ( OK_H EQUAL 1 )
       
-      add_definitions(-DBUILD_JPG)
+      add_definitions(-DBUILD_JPG)     
 
-      if ( WIN32 )
-        set ( JPG_PATH "${LIBEXT_ROOT}/win64" )
-        set ( JPG_REL "${LIBEXT_ROOT}/win64/libjpegt.lib" )
-        set ( JPG_DEBUG "${LIBEXT_ROOT}/win64/libjpegt_d.lib" )
-      else()
-        set ( JPG_PATH "${LIBEXT_ROOT}/linux" ) 
-        set ( JPG_REL "${LIBEXT_ROOT}/linux/libturbojpeg.a" )
-        set ( JPG_DEBUG "${LIBEXT_ROOT}/linux/libturbojpeg.a" )
-      endif()
-
-      _ATTACH_LIB ( NAME "JPG" INC "${LIBEXT_ROOT}/include/libjpegt" BIN ${JPG_PATH} DEBUG_LIBS ${JPG_DEBUG} REL_LIBS ${JPG_REL} DLLS "" )
+      _ATTACH_LIB ( NAME "JPG" INC "${LIBEXT_ROOT}/include/" BIN ${JPG_PATH} DEBUG_LIBS "${JPG_PATH}/${JPG_DEBUG}" REL_LIBS "${JPG_PATH}/${JPG_REL}" DLLS "" )
       
-      message ( NOTICE "  ---> Using libjpegt (turbo)" )
+      message ( NOTICE "  ---> Using libjpeg-turbo" )
     else ()
       message ( FATAL_ERROR "
       JPG libraries not found. 
-      Set LIBEXT_DIR to libmin/libext path for 3rd party libs.
+      Set LIBEXT_ROOT to libmin/libext path for 3rd party libs.
       ")
     endif()
 endmacro()
@@ -586,18 +592,20 @@ endmacro()
 
 macro (_ATTACH_PLATFORM_LIB)
   set (options "")
-  set (oneValueArgs NAME WIN LINUX)
+  set (oneValueArgs NAME WIN LINUX ANDROID)
   set (multiValueArgs "" )
   CMAKE_PARSE_ARGUMENTS( ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-  if (WIN32)
+  if (ANDROID)
+    set ( ADD_LIBS ${ARG_ANDROID} )
+  elseif (WIN32)
 	  set ( ADD_LIBS ${ARG_WIN} )	          
   else()
     set ( ADD_LIBS ${ARG_LINUX} )
 	endif()
   list ( APPEND LIBS_PLATFORM ${ADD_LIBS} )
 
-  message ( NOTICE "  ---> Using ${ARG_NAME}" )
+  message ( NOTICE "  ---> Using ${ARG_NAME} (${ADD_LIBS})" )
 endmacro ()
           
 macro ( _ATTACH_LIB )
@@ -621,7 +629,7 @@ macro ( _ATTACH_LIB )
   
   # message ( " LIBS_DEBUG: ${ARG_DLLS}" )  
 
-  message ( NOTICE "  ---> Using ${ARG_NAME} ")
+  message ( NOTICE "  ---> Using ${ARG_NAME} (${ARG_DEBUG_LIBS})")
 endmacro()
 
 
@@ -729,6 +737,17 @@ macro(_FIND_FILE targetVar searchDir nameWin64 nameLnx cnt)
        list(APPEND ${targetVar} ${nameFind} )
     endif() 
   endif()
+endmacro()
+
+macro(_FIND targetVar nameFind cnt)
+  unset ( fileList ) 
+  unset ( targetVar )
+  file(GLOB fileList "${nameFind}")  
+  list(LENGTH fileList NUMLIST)  
+  if (NUMLIST GREATER 0)	
+     MATH (EXPR ${cnt} "${${cnt}}+1" )	
+     list(APPEND ${targetVar} ${nameFind} )
+  endif() 
 endmacro()
 
 #----------------------------------------------- CROSS-PLATFORM FIND MULTIPLE

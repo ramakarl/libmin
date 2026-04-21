@@ -28,9 +28,6 @@
  
 #include "imageformat_jpg.h"
 
-#include "libjpg/jpeglib.h"
-#include "libjpg/jerror.h"
-
 //************************************ JPEG Error Handling
 
 
@@ -217,7 +214,8 @@ void jpeg_error_handler (j_common_ptr cinfo)
 	// print the error message
 	char buffer[JMSG_LENGTH_MAX];
 	(err->mgr.format_message)(cinfo, buffer);
-	printf( "libjpeg error: %s\n", buffer);
+
+	dbgprintf( "libjpeg error: %s\n", buffer);
 	
 	// jump back to safety (no exception handling in libjpeg)
 	longjmp(err->jmp_out, 1);
@@ -273,7 +271,7 @@ bool decompress_jpeg(unsigned char* in_pixels, unsigned long in_size,
 										unsigned char** out_pixels,
 										int* out_w, int* out_h, unsigned long* out_size )
 {
-	jpeg_decompress_struct dinfo;
+	jpeg_decompress_struct dinfo = {};
 	jpeg_error jerr;
 
 	dinfo.err = jpeg_std_error(&jerr.mgr);
@@ -283,7 +281,6 @@ bool decompress_jpeg(unsigned char* in_pixels, unsigned long in_size,
 		jpeg_destroy_decompress(&dinfo);
 		return false;
 	}
-
 	jpeg_create_decompress(&dinfo);
 
 	// set the source buffer 
@@ -302,6 +299,7 @@ bool decompress_jpeg(unsigned char* in_pixels, unsigned long in_size,
 	int row_stride = dinfo.output_width * dinfo.output_components;
 	*out_size = row_stride * dinfo.output_height;
 	if (*out_pixels==0x0) {
+		dbgprintf ( "  zero pixels" );
 		jpeg_finish_decompress(&dinfo);
 		jpeg_destroy_decompress(&dinfo);
 		return false;
@@ -312,7 +310,6 @@ bool decompress_jpeg(unsigned char* in_pixels, unsigned long in_size,
 		dest_ptr[0] = *out_pixels + dinfo.output_scanline * row_stride;
 		jpeg_read_scanlines(&dinfo, dest_ptr, 1);
 	}
-
 	jpeg_finish_decompress(&dinfo);
 	jpeg_destroy_decompress(&dinfo);
 

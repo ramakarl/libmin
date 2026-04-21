@@ -530,9 +530,12 @@ void checkMem(xlong& total, xlong& used, xlong& app)
 
     void initBasicGL()
     {
-        dbgprintf( "  initBasicGL: Initializing Glew for libmin.\n");
-
-        glewInit();      // init glew pointers for libmin.dll
+        // GLEW for Win and Linux only, should not be used on Android
+        
+        #ifndef __ANDROID__
+          dbgprintf( "  initBasicGL: Initializing Glew for libmin.\n");
+          glewInit();      // init glew pointers for libmin.dll
+        #endif  
 
         int status;
         int maxLog = 65536, lenLog;
@@ -603,13 +606,13 @@ void checkMem(xlong& total, xlong& used, xlong& app)
         glBindVertexArray(gTex.vbo[2]);
         checkGL("glGenVertexArrays (init_screenquad)");
         glBindBuffer(GL_ARRAY_BUFFER, gTex.vbo[0]);
-        glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(nvVertex), &verts[0].x, GL_STATIC_DRAW_ARB);
+        glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(nvVertex), &verts[0].x, GL_STATIC_DRAW);
         checkGL("glBufferData[V] (init_screenquad)");
         glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(nvVertex), 0);			// pos
         glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)12);	// norm
         glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(nvVertex), (void*)24);	// texcoord
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gTex.vbo[1]);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces.size() * 3 * sizeof(int), &faces[0].a, GL_STATIC_DRAW_ARB);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces.size() * 3 * sizeof(int), &faces[0].a, GL_STATIC_DRAW);
         checkGL("glBufferData[F] (init_screenquad)");
     }
 
@@ -617,14 +620,16 @@ void checkMem(xlong& total, xlong& used, xlong& app)
     {
         if (glid != -1) glDeleteTextures(1, (GLuint*)&glid);
         glGenTextures(1, (GLuint*)&glid);
-
-        int texDims[2];
         glBindTexture(GL_TEXTURE_2D, glid);
-        checkGL("glBindTexture (createTexGL)");
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &texDims[0]);
-        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &texDims[1]);
-        if (texDims[0] == w && texDims[1] == h) return;
-        checkGL("getTexLevelParam (createTexGL)");
+
+        #ifndef __ANDROID__
+            int texDims[2];
+            checkGL("glBindTexture (createTexGL)");
+            glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &texDims[0]);
+            glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &texDims[1]);
+            if (texDims[0] == w && texDims[1] == h) return;     // performance
+            checkGL("getTexLevelParam (createTexGL)");
+        #endif
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
@@ -639,7 +644,7 @@ void checkMem(xlong& total, xlong& used, xlong& app)
 
     void clearGL()
     {
-        glClearDepth(1.0);
+        glClearDepthf (1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
