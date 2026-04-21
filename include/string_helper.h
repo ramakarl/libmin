@@ -47,8 +47,8 @@
 	// str-to-type
 	HELPAPI int strToI (const std::string& s);
 	HELPAPI int strToI (const std::string& s, int &val);
-	HELPAPI float strToF(const std::string& s);
-	HELPAPI int strToF(const std::string& s, float& val);
+	HELPAPI float strToF(const std::string& s);	
+  HELPAPI float strToF_fast(const std::string& s);
 	HELPAPI bool isFloat(std::string s);	// fast	
 	HELPAPI xlong strToI64 (std::string s);	
 	HELPAPI double strToD (std::string s);	

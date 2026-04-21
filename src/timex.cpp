@@ -73,7 +73,7 @@
 		t.GetDateF(f, m, d, y);
 	}
 
-	void PERF_PRINTF ( char* format, ... )
+	void PERF_PRINTF ( const char* format, ... )
 	{
 		if ( g_perfCons == 0x0 ) {
 				va_list  vlist;
@@ -797,7 +797,7 @@
 	std::string TimeX::GetReadableSJT ()
 	{
 		char buf[200];	
-		sprintf ( buf, "%I64d", m_CurrTime );
+		sprintf ( buf, "%lu", (uint64_t) m_CurrTime );
 		return std::string ( buf );
 	}
 

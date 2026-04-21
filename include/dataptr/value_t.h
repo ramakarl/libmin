@@ -49,8 +49,8 @@
 
 		// null value
 		static const Value_t nullval;
-		bool isNullType() { return (dt == T_NULL); }
-		bool isNull()			{ return (dt == T_NULL) || (dt==T_VEC4 && isnan(v.v4.x)) || (dt==T_FLOAT && isnan(v.f)); }		
+		bool isNullType() const { return (dt == T_NULL); }
+		bool isNull() const			{ return (dt == T_NULL) || (dt==T_VEC4 && isnan(v.v4.x)) || (dt==T_FLOAT && isnan(v.f)); }		
 
 		// constructors
 		Value_t (char src)					{ setC(src); }
@@ -89,14 +89,14 @@
 		void				setNull()									{ ClearStr();		v.i = 0;			dt = T_NULL; }
 		void				SetStr (std::string src);
 		void				ClearStr();
-		std::string getStr();
-		uchar				getC();
-		int					getI();
-		float				getF();
-		xlong				getXL();
-		Vec4F				getV4();
+		std::string getStr() const;    // const: ensures Value_t is not modified, but returned value is modifiable
+		uchar				getC() const;
+		int					getI() const;
+		float				getF() const;
+		xlong				getXL() const;
+		Vec4F				getV4() const;
 
-		const char* getData ();
+		const char* getData () const ;
 		TimeX				getTime () { return TimeX(v.tm); }		
 
 		// printing	

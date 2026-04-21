@@ -22,6 +22,7 @@
 #include "string_helper.h"
 
 #include <sys/stat.h>
+#include <cstring>
 
 #ifdef _WIN32
 
@@ -117,34 +118,39 @@ bool Directory::FileExists( std::string filename )
 }
 
 
-#ifdef _MSC_VER
-
 int Directory::CreateDir ( std::string path )
 {
 	path = Directory::NormalizeSlashies( path );
-
-	int out = 0;
-
+	
 	std::vector< std::string > pathSet;
-
 	int cnt = strSplitMultiple ( path, Directory::gPathDelim, pathSet );
 
 	std::string currPath = "";
-
+  int out = 0;
 	std::vector< std::string >::iterator it;
 
-	for ( it = pathSet.begin() ; it < pathSet.end(); it++ ) {
+	for ( it = pathSet.begin() ; it < pathSet.end(); ++it ) {
 
-		out = CreateDirectory ( (currPath + *it).c_str() , NULL );
+    currPath += *it;
 
-		currPath += *it + Directory::gPathDelim ;
+    #ifdef _MSC_VER
+      // Windows - create dir
+		  out = CreateDirectoryA ( (currPath + *it).c_str() , NULL );
+      if ( out == 0 ) {
+  			DWORD d = GetLastError();
+			  if ( d == ERROR_PATH_NOT_FOUND ) return 0; 
+			  if ( d == ERROR_ALREADY_EXISTS ) { /* ignore */ }
+		  }
+    #else
+      // Linux - create dir
+      out = mkdir(currPath.c_str(), 0755);
+      if (out != 0) {
+        if (errno == ENOENT) return 0;
+        if (errno == EEXIST) { /* ignore */ }
+      }
+    #endif
 
-		if ( out == 0 ) {
-			DWORD d = GetLastError();
-			if ( d == ERROR_PATH_NOT_FOUND ) { return 0; }
-			if ( d == ERROR_ALREADY_EXISTS ) { /* continue */ }
-		}
-
+		currPath += Directory::gPathDelim;
 	}
 
 	return out;
@@ -195,44 +201,62 @@ std::string Directory::GetCollapsedPath( std::string path )
 
 std::string Directory::GetExecutablePath()
 {
-	LPTSTR szAppPath[MAX_PATH];
+  std::string path;
 
-	std::string strAppDirectory;
+  #ifdef _MSC_VER
+    // Windows - get current exe path
+    char buffer[MAX_PATH] = {0};
+    DWORD len = GetModuleFileNameA (NULL, buffer, MAX_PATH);
+    path = buffer;
+  #else
+    // Linux - get current exe path
+	  char buffer[PATH_MAX] = {0};
+    ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+    if (len <= 0) return "";
+    buffer[len] = '\0';
+    path = buffer;
+  #endif
 
-	::GetModuleFileName(NULL, szAppPath[0], (sizeof(szAppPath) - 1)/sizeof(TCHAR));
+  size_t pos = path.rfind( getPathDelim() );
+  if (pos != std::string::npos) {
+    path = path.substr(0,pos);
+  }
+  path = strReplace( path, std::string(1,getPathDelimOpposite()), std::string(1,getPathDelim()) );
 
-	// Extract directory
-	strAppDirectory = (char*) szAppPath;		// use ws2s for conversion to wchar
-	strAppDirectory = strAppDirectory.substr(0, strAppDirectory.rfind("\\"));
-
-	strAppDirectory = strReplace( strAppDirectory, "\\", "/" );
-
-	return strAppDirectory;
+	return path;
 }
 
+/* 
 std::string Directory::ws2s(const std::wstring& s)
 {
-	int len;
-	int slength = (int)s.length() + 1;
-	len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
-	char* buf = (char*) malloc ( len );		// temporary, don't register with memory checker
-	WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, buf, len, 0, 0);
-	std::string r(buf);
-	free ( buf );
-	return r;
+  #ifdef _MSC_VER
+    int slength = (int) s.length() + 1;
+    int len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
+    std::string r(len,0);
+    WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, &r[0], len, 0, 0);
+    if (!r.empty() && r.back()=='\0') r.pop_back();    
+    return r;
+  #else
+    std::wstring_convert< std::codecvt_utf8<wchar_t>> conv;
+    return conv.to_bytes(s);
+  #endif	
 }
 
 std::wstring Directory::s2ws(const std::string& s)
-{
-	int len;
-	int slength = (int)s.length() + 1;
-	len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-	wchar_t* buf = (wchar_t*) malloc ( len *sizeof(wchar_t) );		// temporary, don't register with memory checker
-	MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-	std::wstring r(buf);
-	free ( buf );
-	return r;
+{	
+  #ifdef _MSC_VER
+	  int slength = (int) s.length() + 1;
+	  int len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    std::wstring r(len,0);
+	  MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, &r[0], len);
+    if (!r.empty() && r.back()=='\0') r.pop_back();    
+    return r;
+  #else
+    std::wstring_convert< std::codecvt_utf8<wchar_t>> conv;
+    return conv.from_bytes(s);
+  #endif	
 }
+*/
 
 void Directory::LoadDir ( std::string path, std::string ext )
 {
@@ -243,149 +267,81 @@ void Directory::LoadDir ( std::string path, std::string ext )
 
 dir_list Directory::DirList( std::string path, std::string ext )
 {
-	path = Directory::NormalizeSlashies( path ) + ext;	
+	path = Directory::NormalizeSlashies( path );
 
-	//NOTE this is not unicode compliant
-	WIN32_FIND_DATAA fileData;
-	HANDLE hFind = INVALID_HANDLE_VALUE;
-	LARGE_INTEGER filesize;
+  dir_list out;
 
-	DWORD dwError=0;
-   
-	dir_list out; 
+  #ifdef _MSC_VER	
+    // Windows - list directory
+	  WIN32_FIND_DATAA fileData;
+	  HANDLE hFind = INVALID_HANDLE_VALUE;
+	  LARGE_INTEGER filesize;
 
-	hFind = FindFirstFileA( path.c_str(), &fileData );
+    path += ext;
 
-	if (hFind == INVALID_HANDLE_VALUE) 
-	{
-		out.clear();
-		return out;
-	} 
+    hFind = FindFirstFileA( path.c_str(), &fileData );
 
-	do
-	{
-	  if (( fileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) && !( fileData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN  ))
-	  {
-			dir_list_element e;
-			e.length = 0;
-			e.text = fileData.cFileName;
-			e.extension = "DIR";
-			e.type = FILE_TYPE_DIR;
-			out.push_back( e );
-	  }
-	  else
-	  {
-			filesize.LowPart = fileData.nFileSizeLow;
-			filesize.HighPart = fileData.nFileSizeHigh;
+    if (hFind == INVALID_HANDLE_VALUE)
+        return out;
 
-			dir_list_element e;
-			e.length = (int) filesize.QuadPart;
-			e.text = fileData.cFileName;
-			e.extension = strSplitRight ( e.text, "." );
-			e.type = FILE_TYPE_FILE;
-			out.push_back( e );
-	  }
-	}
-	while (FindNextFileA(hFind, &fileData) != 0);
+		do {
+      if (( fileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) && !( fileData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN  )) {
+        dir_list_element e;
+        e.length = 0;
+        e.text = fileData.cFileName;
+        e.extension = "DIR";
+        e.type = FILE_TYPE_DIR;
+        out.push_back( e );
+      } else {
+        filesize.LowPart = fileData.nFileSizeLow;
+        filesize.HighPart = fileData.nFileSizeHigh;
+        dir_list_element e;
+        e.length = (int) filesize.QuadPart;
+        e.text = fileData.cFileName;
+        e.extension = strSplitRight ( e.text, "." );
+        e.type = FILE_TYPE_FILE;
+        out.push_back( e );
+      }
+    }
+    while (FindNextFileA(hFind, &fileData) != 0);
 
-	dwError = GetLastError();
-	if (dwError != ERROR_NO_MORE_FILES) 
-	{
-	  //
-	}
+	  FindClose(hFind);
 
-	FindClose(hFind);
+  #else
+    // Linux - list directory
+    DIR* dir = opendir(path.c_str());
+    if (!dir) {
+      perror ( "opendir failed" );
+      return out;
+    }    
+
+    struct dirent* entry;    
+
+    while ((entry = readdir(dir)) != nullptr) {
+        std::string name = entry->d_name;        
+        if (name == "." || name == "..") continue;      // skip "." and ".."
+            
+        std::string fullPath = path + "/" + name;        
+        struct stat st;
+        if (stat(fullPath.c_str(), &st) != 0) continue;
+
+        dir_list_element e;
+        e.text = name;
+        if (S_ISDIR(st.st_mode)) {
+            e.length = 0;
+            e.extension = "DIR";
+            e.type = FILE_TYPE_DIR;
+        } else {
+            e.length = (int)st.st_size;
+            e.extension = strSplitRight(e.text, ".");
+            e.type = FILE_TYPE_FILE;
+        }
+        out.push_back(e);
+    }
+    closedir(dir);
+
+  #endif
+
 	return out;
 }
-#endif
 
-#ifdef BUILD_GCC
-//#ifdef __LINUX
-
-// DUMMY!!!
-int Directory::CreatePath( std::string path ) {
-  return 0;
-}
-
-std::string Directory::GetExecutablePath()
-{
-	char result[ PATH_MAX ];
-	ssize_t count = readlink( "/proc/self/exe", result, PATH_MAX );
-	return std::string( result, (count > 0) ? count : 0 );
-}
-
-/****************
- * PROBABLY NOT WORKING!!
- ****************/
-dir_list Directory::DirList( std::string path )
-{
-	path = Directory::NormalizeSlashies( path );
-
-	dir_list out;
-
-    DIR *dp;
-    struct dirent *dirp;
-    if( ( dp  = opendir( path.c_str() ) ) == NULL ) {
-        //cout << "Error(" << errno << ") opening " << dir << endl;
-        printf("Error(%i) opening\n", errno);
-        //return dir_list;
-        return out;
-    }
-
-    while ( (dirp = readdir( dp ) ) != NULL ) {
-
-		dir_list_element e;
-		e.length = dirp->d_reclen;
-		e.text = std::string( dirp->d_name );
-		//e.extension = "DIR";
-		//e.type = FILE_TYPE_DIR;
-		out.push_back( e );
-
-    }
-
-    closedir( dp );
-    //return 0;
-    return out;
-}
-
-std::string Directory::GetCollapsedPath( std::string path )
-{
-	path = Directory::NormalizeSlashies( path );
-
-	elem_vec_t	out;
-	std::vector< std::string >	temp;
-
-	std::string mFileFound = "";
-
-	temp = StringHelper::SplitString( path, Directory::mPathDelim);
-
-	for ( unsigned int i = 0; i < temp.size(); i++ )
-	{
-		if ( ( temp[i].compare("..") == 0 ) && out.size() > 0 ) {
-			out.pop_back();
-		} else if ( temp[i].size() > 0 && temp[i].find(".") == -1 ) {
-			text_element_t element;
-			element.text = temp[i];
-			element.length = -1;
-			out.push_back( element );
-		}
-
-		if (  temp[i].find(".") != -1 ) {
-			mFileFound = temp[i];
-		}
-	}
-
-	std::string outStr = "";
-
-	for ( unsigned int k = 0; k < out.size(); k++ )
-	{
-		outStr += out[k].text;
-		outStr += Directory::mPathDelim;
-	}
-
-	// remember to remove the last extraneous slash
-	return outStr.substr( 0, outStr.length() - 1 );
-}
-
-
-#endif

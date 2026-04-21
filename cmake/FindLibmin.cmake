@@ -342,10 +342,18 @@ macro ( _REQUIRE_JPG )
 	if ( OK_H EQUAL 1 )
       
       add_definitions(-DBUILD_JPG)
-      set ( JPG_REL "${LIBEXT_ROOT}/win64/libjpegt.lib" )
-      set ( JPG_DEBUG "${LIBEXT_ROOT}/win64/libjpegt_d.lib" )
 
-      _ATTACH_LIB ( NAME "JPG" INC "${LIBEXT_ROOT}/include/libjpegt" BIN "${LIBEXT_ROOT}/win64" DEBUG_LIBS ${JPG_DEBUG} REL_LIBS ${JPG_REL} DLLS "" )
+      if ( WIN32 )
+        set ( JPG_PATH "${LIBEXT_ROOT}/win64" )
+        set ( JPG_REL "${LIBEXT_ROOT}/win64/libjpegt.lib" )
+        set ( JPG_DEBUG "${LIBEXT_ROOT}/win64/libjpegt_d.lib" )
+      else()
+        set ( JPG_PATH "${LIBEXT_ROOT}/linux" ) 
+        set ( JPG_REL "${LIBEXT_ROOT}/linux/libturbojpeg.a" )
+        set ( JPG_DEBUG "${LIBEXT_ROOT}/linux/libturbojpeg.a" )
+      endif()
+
+      _ATTACH_LIB ( NAME "JPG" INC "${LIBEXT_ROOT}/include/libjpegt" BIN ${JPG_PATH} DEBUG_LIBS ${JPG_DEBUG} REL_LIBS ${JPG_REL} DLLS "" )
       
       message ( STATUS "  ---> Using libjpegt (turbo)" )
     else ()

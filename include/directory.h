@@ -62,8 +62,8 @@
 		// Static functions
 		static dir_list DirList( std::string path, std::string filter );
 		static bool FileExists( std::string filename );
-		static std::string ws2s(const std::wstring& s); 
-		static std::wstring s2ws(const std::string& s);		
+		//static std::string ws2s(const std::wstring& s); 
+		//static std::wstring s2ws(const std::string& s);		
 		static dir_list GetFileItems( dir_list input);
 		static dir_list GetDirectoryItems( dir_list input);
 		static std::string NormalizeSlashies( std::string path );

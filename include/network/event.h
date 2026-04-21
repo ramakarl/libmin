@@ -51,6 +51,7 @@
 		Event ( const Event& src );
 		Event& operator= ( Event* op );	
 		Event& operator= ( Event& op );				
+    Event& operator= ( Event&& op ) noexcept;  // move operator
 		~Event ();
 		void copyEventVars ( Event* dst, const Event* src );
 		void acquire ( Event& esrc);		// acquire - transfer of ownership
@@ -85,7 +86,7 @@
 		void				expand ( int s );
 		char*				serialize ();
 		void				deserialize ( char* buf, int len );		
-		void				rescope ( char* scope )		{ memcpy ( mScope, scope, 4 ); mScope[4]='\0'; }
+		void				rescope ( const char* scope )		{ memcpy ( mScope, scope, 4 ); mScope[4]='\0'; }
 		//int				getEventLenOffs ()			{ return int((char*) &mDataLen - (char*) &mTarget); }
 		char*				getData ()					{ return mData; }
 		char*				getPos()					{ return mPos; }
