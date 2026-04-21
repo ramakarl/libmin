@@ -2,7 +2,7 @@
 #include "value_t.h"
 #include "string_helper.h"
 
-static const Value_t nullval = Value_t();
+const Value_t Value_t::nullval = Value_t();
 
 // efficient conversion between any two types
 
@@ -75,7 +75,7 @@ Value_t& Value_t::Copy (const Value_t& op)
   return *this;
 }
 
-const char* Value_t::getData ()
+ const char* Value_t::getData () const
 {
   return useStr(dt) ? (v.str)->c_str() : (char*) &v.c;
 }
@@ -210,7 +210,7 @@ void Value_t::ClearStr ()
   if ( useStr(dt) ) delete v.str;
 }
 
-std::string Value_t::getStr()
+std::string Value_t::getStr() const
 {
   // if already string, return it
   if (useStr(dt)) return *(v.str);  
@@ -220,31 +220,31 @@ std::string Value_t::getStr()
   as_str.Cast ( T_STR );            // cast self to string, with separate string storage
   return *(as_str.v.str);
 }
-uchar Value_t::getC()
+uchar Value_t::getC() const
 {
   uchar c;
   (gConvTable[dt][T_CHAR]) ( (const char*) &v, (void*) &c, sizeof(uchar) );  
   return c;
 }
-int Value_t::getI()
+int Value_t::getI() const
 {
   int c;
   (gConvTable[dt][T_INT]) ( (const char*) &v, (void*) &c, sizeof(int) );  
   return c;
 }
-float Value_t::getF()
+float Value_t::getF() const
 {
   float c;
   (gConvTable[dt][T_FLOAT]) ( (const char*) &v, (void*) &c, sizeof(float) );  
   return c;
 }
-Vec4F Value_t::getV4()
+Vec4F Value_t::getV4() const
 {
   Vec4F c;
   (gConvTable[dt][T_VEC4]) ( (const char*) &v, (void*) &c, sizeof(Vec4F) );  
   return c;
 }
-xlong Value_t::getXL()
+xlong Value_t::getXL() const
 {
   xlong c;
   (gConvTable[dt][T_REF]) ( (const char*) &v, (void*) &c, sizeof(xlong) );  

@@ -133,6 +133,14 @@ Event& Event::operator= ( Event& src )
 	acquire ( src );		// transfer ownership	
 	return *this;
 }
+// move operator
+Event& Event::operator= ( Event&& src )
+{
+  if (this != &src) {
+	  acquire ( src );		// transfer ownership	
+  }
+	return *this;
+}
 
 void Event::expand ( int size)
 {

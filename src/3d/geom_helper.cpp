@@ -54,7 +54,7 @@ Vec3F intersectLineLine(Vec3F p1, Vec3F p2, Vec3F p3, Vec3F p4)
 bool intersectLineBox (Vec3F p1, Vec3F p2, Vec3F bmin, Vec3F bmax, float& t)
 {
 	// p1 = ray position, p2 = ray direction
-	register float ht[8];
+	float ht[8];
 	ht[0] = (bmin.x - p1.x)/p2.x;
 	ht[1] = (bmax.x - p1.x)/p2.x;
 	ht[2] = (bmin.y - p1.y)/p2.y;

@@ -89,9 +89,9 @@
 
       #else   // ANDOID and linux        
 
-			#include <math.h>
-			#include <assert.h>
-			#include <string.h>
+			   #include <math.h>
+			   #include <assert.h>
+			   #include <string.h>
             #define ALIGN(x)		__attribute__ ((aligned(x)))
             #define CACHE_ALIGNED   __attribute__ ((aligned(64)))
 

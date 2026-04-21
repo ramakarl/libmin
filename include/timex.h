@@ -39,7 +39,7 @@
 	HELPAPI float PERF_STOP ();
 	HELPAPI void PERF_INIT ( int buildbits, bool cpu, bool gpu, bool cons, int lev, const char* fname );
 	HELPAPI void PERF_SET(bool cpu, int lev, bool gpu, char* fname);
-	HELPAPI void PERF_PRINTF ( char* format, ... );
+	HELPAPI void PERF_PRINTF ( const char* format, ... );
 
 	HELPAPI float strToDateF(std::string s, int mp = 0, int mc = 2, int dp = 3, int dc = 2, int yp = 6, int yc = 4);
 	HELPAPI void strFromDateF(float f, int& m, int& d, int& y);

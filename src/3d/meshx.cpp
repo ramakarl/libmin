@@ -1036,6 +1036,8 @@
   // unordered map is faster since we only need uniqueness, ordering is not required
   #include <unordered_map>
 
+  #define BUF_MAX  16384
+
   bool MeshX::LoadObj ( const char* fname, float scal )
   {	
 	  std::vector<std::string>	fargs;
@@ -1045,7 +1047,7 @@
 	  std::vector<Vec3F>		vlist;
 
 	  FILE* fp;	
-	  char buf[4096];
+	  char buf[ BUF_MAX ];
 	  Vec3F vec;
 	  Vec3F norm, fnorm;
 	  std::string strline, word;	
@@ -1081,7 +1083,7 @@
 	  int64_t grp_start, grp_end;
 	
 	  while ( feof( fp ) == 0 ) {
-		  fgets ( buf, 16384, fp );
+		  fgets ( buf, BUF_MAX, fp );
 		  strline = buf;
 		  word = strSplitLeft ( strline, " " );
 

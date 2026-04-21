@@ -142,8 +142,9 @@ float strToF (const std::string& s)
 
 // strToF - fast, strict (stops at first non-digit)
 // eg. 43.136L => 43.136, N(43.136) => fail
-int strToF (const std::string& s, float &x)
+float strToF_fast (const std::string& s)
 {
+  float x;
   std::istringstream str_stream ( s );
   if (str_stream >> x) { return x; }
   return std::numeric_limits<float>::quiet_NaN();
