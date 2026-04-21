@@ -25,7 +25,7 @@ function(_CONFIRM_PATH outvar targetPath targetWin targetLinux varName isFatal )
     set (found "OK")
   endif()     
   if ( isFatal ) 
-    message ( STATUS "  Confirming: ${targetFile} in ${targetPath} -> ${found}")
+    message ( NOTICE "  Confirming: ${targetFile} in ${targetPath} -> ${found}")
     if ( ${found} STREQUAL "NOTFOUND" )
       message ( FATAL_ERROR "\n
 Cannot find ${varName} at ${targetPath}.
@@ -37,10 +37,10 @@ files such as ${targetFile}.\n"
   unset ( result CACHE )
 endfunction()
 
-message ( STATUS "\n----- RUNNING FindLibmin.cmake " )
+message ( NOTICE "\n----- RUNNING FindLibmin.cmake " )
 
 if (DEFINED ENV{LINUX_DEBUG})
-  message (STATUS "LINUX DEBUGGING enabled")
+  message (NOTICE "LINUX DEBUGGING enabled")
   set(CMAKE_BUILD_TYPE Debug)           # sets -g and disables optimizations
   set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")  # ensure no optimization
   set(CMAKE_CUDA_FLAGS_DEBUG "-G")     # CUDA: generate debug info for kernels
@@ -57,7 +57,7 @@ set (LIBS_PACKAGE_DLLS "" )
 ##############
 # LIBMIN_ROOT - libmin src, should be set by caller during bootstrap
 #
-message ( STATUS "  LIBMIN_ROOT: ${LIBMIN_ROOT}")
+message ( NOTICE "  LIBMIN_ROOT: ${LIBMIN_ROOT}")
 get_filename_component ( LIBMIN_ROOT "${LIBMIN_ROOT}" REALPATH)
 set ( LIBMIN_ROOT "${LIBMIN_ROOT}" CACHE PATH "Path to /libmin source" )
 _CONFIRM_PATH ( LIBMIN_ROOT "${LIBMIN_ROOT}" "/src/common_defs.cpp" "/src/common_defs.cpp" "LIBMIN_ROOT" TRUE)
@@ -133,11 +133,11 @@ if ( ${DEBUG_HEAP} )
    add_definitions( -D_CRTDBG_MAP_ALLOC)
 endif()
 
-message ( STATUS "  SOURCE Directory: ${CMAKE_CURRENT_SOURCE_DIR}" )
-message ( STATUS "  LIBMIN Root: ${LIBMIN_ROOT}" )
-message ( STATUS "  LIBEXT Root: ${LIBEXT_ROOT}" )
-message ( STATUS "  ASSET PATH:  ${ASSET_PATH}" )
-message ( STATUS "----- READY Libmin\n" )
+message ( NOTICE "  SOURCE Directory: ${CMAKE_CURRENT_SOURCE_DIR}" )
+message ( NOTICE "  LIBMIN Root: ${LIBMIN_ROOT}" )
+message ( NOTICE "  LIBEXT Root: ${LIBEXT_ROOT}" )
+message ( NOTICE "  ASSET PATH:  ${ASSET_PATH}" )
+message ( NOTICE "----- READY Libmin\n" )
 
 # BOOTSTRAP COMPLETE
 ###############################
@@ -208,9 +208,9 @@ endmacro()
 #  OpenSSL, Laszip, OptiX, PortAudio, CUFFT, PixarUSD, LibGDVB, LibOptiX
 #
 macro (_REQUIRE_LIBEXT)    
-    message (STATUS "  Searching for LIBEXT... ${LIBEXT_ROOT}")
+    message (NOTICE "  Searching for LIBEXT... ${LIBEXT_ROOT}")
     if (EXISTS "${LIBEXT_ROOT}" AND IS_DIRECTORY "${LIBEXT_ROOT}")
-        message (STATUS "  ---> Using LIBEXT: ${LIBEXT_ROOT}")
+        message (NOTICE "  ---> Using LIBEXT: ${LIBEXT_ROOT}")
         list( APPEND CMAKE_MODULE_PATH "${LIBEXT_ROOT}/cmake" )
         list( APPEND CMAKE_PREFIX_PATH "${LIBEXT_ROOT}/cmake" )        
         set( LIBEXT_FOUND TRUE )
@@ -261,7 +261,7 @@ endmacro()
 macro ( _REQUIRE_GL )
     OPTION (BUILD_OPENGL "Build with OpenGL" ON)
     if (BUILD_OPENGL)            
-        message ( STATUS "  Searching for GL.." )
+        message ( NOTICE "  Searching for GL.." )
         find_package(OpenGL)
         if (OPENGL_FOUND)                    
           add_definitions(-DBUILD_OPENGL)  		
@@ -347,7 +347,7 @@ macro ( _REQUIRE_JPG )
 
       _ATTACH_LIB ( NAME "JPG" INC "${LIBEXT_ROOT}/include/libjpegt" BIN "${LIBEXT_ROOT}/win64" DEBUG_LIBS ${JPG_DEBUG} REL_LIBS ${JPG_REL} DLLS "" )
       
-      message ( STATUS "  ---> Using libjpegt (turbo)" )
+      message ( NOTICE "  ---> Using libjpegt (turbo)" )
     else ()
       message ( FATAL_ERROR "
       JPG libraries not found. 
@@ -375,7 +375,7 @@ macro ( _REQUIRE_CUDA BUILD_CUDA_default kernel_path)
       #         or to provide ${CUDA_INCLUDE_DIRS} as target_include_directories
       # find_package(CUDA REQUIRED)
       
-      message(STATUS "  CUDA Toolkit search path: $ENV{CUDA_PATH} ")
+      message(NOTICE "  CUDA Toolkit search path: $ENV{CUDA_PATH} ")
 
       # enable CUDA language (with cmake >3.18)
       enable_language(CUDA)        
@@ -390,7 +390,7 @@ macro ( _REQUIRE_CUDA BUILD_CUDA_default kernel_path)
             ERROR_VARIABLE NVCC_OUTPUT
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-        message(STATUS "${NVCC_OUTPUT}")
+        message(NOTICE "${NVCC_OUTPUT}")
         # Parse the major/minor version
         string(REGEX MATCH "release ([0-9]+)\\.([0-9]+)" _match "${NVCC_OUTPUT}")
         set(CUDA_VERSION_MAJOR "${CMAKE_MATCH_1}")
@@ -398,7 +398,7 @@ macro ( _REQUIRE_CUDA BUILD_CUDA_default kernel_path)
         set(CMAKE_CUDA_VERSION "${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}")
       endif()
       
-      message(STATUS "  CUDA Support enabled: ver ${CMAKE_CUDA_VERSION} at ${CMAKE_CUDA_COMPILER}")       
+      message(NOTICE "  CUDA Support enabled: ver ${CMAKE_CUDA_VERSION} at ${CMAKE_CUDA_COMPILER}")       
       
       # attach cuda common helpers
       add_definitions(-DBUILD_CUDA)  
@@ -443,7 +443,7 @@ macro ( _REQUIRE_CUDA BUILD_CUDA_default kernel_path)
         # get all include paths for nvcc, as comma-separated (we are compiling ptx directly here)
         get_property (NVCC_INC GLOBAL PROPERTY CUDA_INC_PATHS )
         string (REPLACE ";" "," NVCC_INC "${NVCC_INC}")
-        message ( STATUS "  NVCC Include Paths: ${NVCC_INC}")
+        message ( NOTICE "  NVCC Include Paths: ${NVCC_INC}")
 
         if ( BUILD_DEBUG_PTX )
 	        compile_ptx ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${NVCC_INC}" OPTIONS --ptx -dc -Xptxas -v -G -g --use_fast_math --maxrregcount=32 )
@@ -451,13 +451,13 @@ macro ( _REQUIRE_CUDA BUILD_CUDA_default kernel_path)
 	        compile_ptx ( SOURCES ${CUDA_FILES} TARGET_PATH ${CMAKE_CURRENT_BINARY_DIR} GENERATED CUDA_PTX GENPATHS CUDA_PTX_PATHS INCLUDE "${NVCC_INC}" OPTIONS --ptx -dc -Xptxas -v -O3 --use_fast_math --maxrregcount=32 )
         endif()
       endif()
-      message ( STATUS "  CUDA Kernels: ${CUDA_FILES} " )
-      message ( STATUS "  ---> Using CUDA")
+      message ( NOTICE "  CUDA Kernels: ${CUDA_FILES} " )
+      message ( NOTICE "  ---> Using CUDA")
 
     
 
     else ()
-      message(STATUS "  CUDA support disabled")
+      message(NOTICE "  CUDA support disabled")
     endif()
     
 endmacro()
@@ -489,9 +489,9 @@ macro ( compile_ptx )
   endforeach()
 
   # convey setup
-  message ( STATUS "  NVCC Options: ${ARG_OPTIONS}" )  
-  message ( STATUS "  NVCC Include: ${ARG_INCLUDE}" )
-  message ( STATUS "  NVCC Archs: ${_ARCHS}" )
+  message ( NOTICE "  NVCC Options: ${ARG_OPTIONS}" )  
+  message ( NOTICE "  NVCC Include: ${ARG_INCLUDE}" )
+  message ( NOTICE "  NVCC Archs: ${_ARCHS}" )
   
   if ( WIN32 ) 
 
@@ -571,9 +571,9 @@ endfunction()
 #------------------------------------ CROSS-PLATFORM, MULTI-FILE INSTALLS
 
 macro ( _ATTACH_FILES NAME LIST)  
-  message ( STATUS "  ${NAME}: ${LIST}")
+  message ( NOTICE "  ${NAME}: ${LIST}")
   set_property (GLOBAL APPEND PROPERTY LIBMIN_FILES ${LIST} )
-  message ( STATUS "  ---> Using ${NAME} (STATIC) " ) 
+  message ( NOTICE "  ---> Using ${NAME} (STATIC) " ) 
 endmacro()
 
 macro (_ATTACH_PLATFORM_LIB)
@@ -589,7 +589,7 @@ macro (_ATTACH_PLATFORM_LIB)
 	endif()
   list ( APPEND LIBS_PLATFORM ${ADD_LIBS} )
 
-  message ( STATUS "  ---> Using ${ARG_NAME}" )
+  message ( NOTICE "  ---> Using ${ARG_NAME}" )
 endmacro ()
           
 macro ( _ATTACH_LIB )
@@ -613,7 +613,7 @@ macro ( _ATTACH_LIB )
   
   # message ( " LIBS_DEBUG: ${ARG_DLLS}" )  
 
-  message ( STATUS "  ---> Using ${ARG_NAME} ")
+  message ( NOTICE "  ---> Using ${ARG_NAME} ")
 endmacro()
 
 
@@ -656,7 +656,7 @@ macro( install_ptx )
   foreach ( f ${ARG_FILES} )
 	  get_filename_component ( name ${f} NAME ) 	    
 	  set ( out "${ARG_DESTINATION}/${name}" ) 
-    message ( STATUS "  Install ptx: ${f} --> ${out}")
+    message ( NOTICE "  Install ptx: ${f} --> ${out}")
   	add_custom_command ( TARGET ${PROJNAME} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy  ${f} ${out}
     )	
@@ -805,9 +805,9 @@ macro(_LINK )
 
 
   
-  message ( STATUS "\n----- DONE" )	
+  message ( NOTICE "\n----- DONE" )	
 	string (REPLACE ";" "\n   " OUTSTR "${LIBLIST}")
-	message ( STATUS "  Libraries used:\n   ${OUTSTR}" )
+	message ( NOTICE "  Libraries used:\n   ${OUTSTR}" )
 endmacro()
 
 macro(_STARTUP_PROJECT )
@@ -822,7 +822,7 @@ macro(_STARTUP_PROJECT )
 
 	    # Set startup PROJECT	
 	    if ( (${CMAKE_MAJOR_VERSION} EQUAL 3 AND ${CMAKE_MINOR_VERSION} GREATER 5) OR (${CMAKE_MAJOR_VERSION} GREATER 3) )
-		    message ( STATUS "  MSVC Startup: ${PROJNAME}")
+		    message ( NOTICE "  MSVC Startup: ${PROJNAME}")
 		    set_property ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJNAME} )
 	    endif()		
 
