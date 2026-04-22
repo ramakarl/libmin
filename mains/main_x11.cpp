@@ -369,6 +369,8 @@ Application::Application() : m_renderCnt(1), m_win(0), m_debugFilter(0)
     m_active = false;
     memset(m_keyPressed, 0, sizeof(m_keyPressed));
     memset(m_keyToggled, 0, sizeof(m_keyToggled));
+
+    m_internal_path = "";     // default to current binary dir
 }
 
 bool Application::appStart (const std::string& title, const std::string& shortname, int width, int height, int Major, int Minor, int MSAA, bool GLDebug )

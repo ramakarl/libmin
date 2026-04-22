@@ -621,14 +621,14 @@ bool g2Lib::RunAction(g2Action* a, Value_t val )
 }
 
 
-void g2Lib::LayoutAll ( Vec4F view, Vec4F region )
+void g2Lib::LayoutAll ( Vec4F region )
 {
     if (m_objlist.size() == 0) {
       //dbgprintf ( "WARNING: g2 Layout has 0 objects.\n" );
       return; 
     }
     
-    setViewRegion ( view, region );
+    setViewRegion ( region ); 
 
     // layout all active pages
     //

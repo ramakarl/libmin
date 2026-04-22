@@ -94,11 +94,12 @@ void glib::destroy2D ()
 }
 
 // setViewRegion
-// - used to determine font size, etc.
+// - define the view and region for GUI as equivalent
 // - can occur outside of start2D/end2D
-void glib::setViewRegion(Vec4F v, Vec4F r) 
+void glib::setViewRegion( Vec4F r) 
 { 
-	gx.m_View = v; gx.m_Region = r; 
+	gx.m_View = r; 
+	gx.m_Region = r; 
 }
 
 void glib::start2D ( int w, int h, bool bStatic )
@@ -538,8 +539,9 @@ Vec4F glib::getTextDim ( char mode, float hgt, std::string msg )
 	if (len == 0)	return Vec4F(0, 0, 0, 0);						// no text
 
 	float yhgt = hgt;
-	if (mode == 'p') {
-		yhgt = hgt * (gx.m_BasePnt / 10.0) * gx.m_PixPerPnt * fabs((gx.m_View.w - gx.m_View.y) / (gx.m_Region.w - gx.m_Region.y));
+	if (mode == 'p') {	
+		float dev_to_pnt = (gx.m_BasePnt / 10.0) * gx.m_PixPerPnt * fabs((gx.m_View.w - gx.m_View.y) / (gx.m_Region.w - gx.m_Region.y));
+		yhgt = hgt * dev_to_pnt;
 	}	
 	// get current font
 	gxFont& font = gx.getCurrFont();

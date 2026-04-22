@@ -71,10 +71,11 @@
         //int getCurrPage () { return (m_curr_page < m_pages.size()) ? m_pages [ m_curr_page ] : -1; }
 
         // Layout & Render
-        void LayoutAll ( Vec4F view, Vec4F region );
+        void LayoutAll ( Vec4F region );
         void Render (int w, int h, bool debug=false );
         char getKeyboardRequest()   { return m_keyboard; }
-        void setKeyboard(char k)    { m_keyboard = k; }
+        void RequestKeyboard(int v)    { m_keyboard = v; }
+        void RequestKeyboard(bool t)   { m_keyboard = t ? 'o' : 'x'; }
 
     public:
         std::vector< g2Def >        m_objdefs;      // object specs

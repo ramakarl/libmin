@@ -46,7 +46,7 @@
 
     // 2D Interface Functions
     GXAPI bool init2D ( const char* fontName );    
-    GXAPI void setViewRegion(Vec4F v, Vec4F r); 
+    GXAPI void setViewRegion(Vec4F r); 
     GXAPI void debug2D ( bool tf );    
     GXAPI void clear2D ();
     GXAPI void destroy2D();

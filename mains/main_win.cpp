@@ -490,6 +490,8 @@ Application::Application() : m_renderCnt(1), m_win(0), m_debugFilter(0)
     m_active = false;
     memset(m_keyPressed, 0, sizeof(m_keyPressed));
     memset(m_keyToggled, 0, sizeof(m_keyToggled));
+
+    m_internal_path = "";     // default to current binary dir
 }
 
 // appStart - called from the user function startup() to indicate desired application config

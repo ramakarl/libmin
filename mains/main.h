@@ -140,6 +140,7 @@
 		void appQuit();
 		bool appStopWindow ();
 		void appShutdown ();
+		std::string appInternalPath ()  { return m_internal_path; }
 
 		// Input functions
 		void appUpdateMouse ( float mx, float my, AppEnum button, AppEnum state);
@@ -181,37 +182,38 @@
 
 	public:
 
-		std::string   	m_title;
+	std::string   m_title;
+	std::string		m_internal_path;
 
-		OSWindow*	   	m_win;
-		int				m_renderCnt;
+	OSWindow*			m_win;
+	int						m_renderCnt;
 
-		float			m_mouseX, m_mouseY;				// mouse motion
-		float 			m_lastX, m_lastY;
-		float 			m_spanX, m_spanY;
-		float 			m_dX, m_dY;
-		float 			m_startX, m_startY;
-		AppEnum 		m_mouseButton;
-		AppEnum			m_mouseState;
-		int				m_wheel;
+	float					m_mouseX, m_mouseY;				// mouse motion
+	float					m_lastX, m_lastY;
+	float					m_spanX, m_spanY;
+	float					m_dX, m_dY;
+	float					m_startX, m_startY;
+	AppEnum				m_mouseButton;
+	AppEnum				m_mouseState;
+	int						m_wheel;
 
-		int				m_winSz[4];						// window info
-		int				m_mods;
-		ContextFlags	m_cflags;
-		bool			m_doSwap;
-		bool            m_startup;
-		bool			m_running;
-		bool			m_active;
-		bool			m_vsync;
-		bool			m_fullscreen;
+	int						m_winSz[4];						// window info
+	int						m_mods;
+	ContextFlags	m_cflags;
+	bool					m_doSwap;
+	bool					m_startup;
+	bool					m_running;
+	bool					m_active;
+	bool					m_vsync;
+	bool					m_fullscreen;
 
-		bool			m_keyPressed[ 400 ];			// keyboard
-		bool			m_keyToggled[ 400 ];
+	bool					m_keyPressed[ 400 ];			// keyboard
+	bool					m_keyToggled[ 400 ];
 
-		int				m_display_frame;				// frame capture
-		int				m_golden_frame;
+	int						m_display_frame;				// frame capture
+	int						m_golden_frame;
 
-		unsigned int  	m_debugFilter;
+	unsigned int	m_debugFilter;
 	};
 
 	// External define (for inclusion in other headers)

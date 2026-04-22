@@ -168,7 +168,7 @@ extern "C"
     {          
     }
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeStartup ( JNIEnv *env, jclass cself, jobject self)
+    Java_com_quantasciences_qtvc_MainActivity_nativeStartup ( JNIEnv *env, jclass cself, jobject self, jstring internalPath )
     {
 
       // Create a new OSwindow container
@@ -192,6 +192,9 @@ extern "C"
       win->_javaGlobalObject = jo;
       win->_javaGlobalClass = jc;
       win->_awindow = 0x0;
+
+      // Set internal path - location for temp files on device
+      pApp->m_internal_path = getStrFromJString (env, internalPath );
 
       // App startup()
       pApp->startup (); 

@@ -35,10 +35,11 @@ g2Item::g2Item ()
   m_text = "";
   m_text_size = 10;      // default 10 pnt
   m_text_placex = PLACE_LEFT;
-  m_text_placey = PLACE_CENTER;
+  m_text_placey = PLACE_TOP;
   m_text_margin.Set(2,2,2,2);   // 2% margin
 
   m_isEditable = false;  
+
   m_edit_pos.Set(0,0,0,0);
   m_selection.Set(-1,-1,0,0);
 
@@ -122,6 +123,11 @@ std::string g2Item::getPrintedText(Vec4F& clr)
   }
 }
 
+void g2Item::SetText ( std::string txt )
+{
+  m_text = txt;
+  LayoutText ();
+}
 
 void g2Item::LayoutText ()
 {
@@ -149,7 +155,8 @@ void g2Item::LayoutText ()
   default:             py = m_icon_placey / 100.0f;    break;
   };  
   Vec4F clr;
-  Vec2F sz = getTextDim( 'p', m_text_size, getPrintedText(clr) );
+  Vec2F sz = getTextDim( 'p', m_text_size, "A" );     // 'p' = pnts (device independent unit)
+  sz.x = sz.y * (area.z-area.x)/(area.w-area.y);
 
   // set top-left corner of text
   m_text_pos.x = area.x + (area.z-area.x) * px - sz.x*px;
@@ -192,7 +199,8 @@ void g2Item::SetProperty ( std::string key, std::string val )
 
   } else if (key.compare( "text align") == 0) {
 
-    vert = val; horiz = strSplitLeft(vert, "|");
+    horiz = val; 
+    vert = strSplitLeft(horiz, "|");
 
     // parse horiz pos
     if (horiz.compare("center") == 0)     { m_text_placex = PLACE_CENTER; }
@@ -201,7 +209,9 @@ void g2Item::SetProperty ( std::string key, std::string val )
     else { m_text_placex = strToI(strSplitLeft(horiz, "%")); }
     // parse vert pos
     if (vert.compare("center") == 0)      { m_text_placey = PLACE_CENTER; }
-    else if (vert.compare("top") == 0)    { m_text_placey = PLACE_TOP; }
+    else if (vert.compare("top") == 0)    { 
+      m_text_placey = PLACE_TOP; 
+    }
     else if (vert.compare("bottom") == 0) { m_text_placey = PLACE_BOTTOM; }
     else { m_text_placey = strToI(strSplitLeft(vert, "%")); }
 
@@ -342,6 +352,9 @@ void g2Item::drawForegrd ( bool dbg)
   Vec4F clr;  
   std::string txt = getPrintedText (clr);  
   setTextPnts ( m_text_size, 0 );  
+
+  if (m_isEditable) clr = Vec4F(1,0,0,1);
+
   drawText( Vec2F(m_text_pos.x, m_text_pos.y), txt, clr);  
 
   //-- debugging text area
@@ -402,7 +415,10 @@ void g2Item::OnSelect (int x, int y)
       m_edit_pos.x = 0;
     }
     // open keyboard
-    if (g2.m_selected != this) g2.m_keyboard = 'o';
+    if (g2.m_selected != this) {
+      dbgprintf ("Request keyboard.\n");
+      g2.RequestKeyboard(true);
+    }
   }  
 
   // button action
@@ -437,7 +453,7 @@ bool g2Item::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
         if (m_isCombo && m_combo_list.Size() > 0 ) {
           int ndx = (m_combo_list.Size()-1) * clamp( (x - m_pos.x) / (m_pos.z - m_pos.x), 0, 1);
           xlong val = m_combo_list.Get(ndx).getXL();
-          m_text = m_combo_list.GetKey(ndx);
+          SetText ( m_combo_list.GetKey(ndx) );
           RunAction ( ESelect, Value_t(val) );
         }
         return true;

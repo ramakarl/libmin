@@ -39,6 +39,7 @@
         void Populate ( KeyValues* list );
         void SetCombo ( int ndx );
         void SetCombo ( std::string item );
+        void SetText ( std::string txt );
 
         void LayoutIcon ();
         void LayoutText ();
