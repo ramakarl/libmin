@@ -1,32 +1,32 @@
 /* libjpeg-turbo build number */
-#define BUILD  "20260114"
+#define BUILD  "20260417"
 
 /* How to hide global symbols. */
-#define HIDDEN  
+#define HIDDEN  __attribute__((visibility("hidden")))
 
 /* Compiler's inline keyword */
 #undef inline
 
 /* How to obtain function inlining. */
-#define INLINE  __forceinline
+#define INLINE  __inline__ __attribute__((always_inline))
 
 /* How to obtain thread-local storage */
-#define THREAD_LOCAL  __declspec(thread)
+#define THREAD_LOCAL  __thread
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME  "libjpeg-turbo"
 
 /* Version number of package */
-#define VERSION  "3.0.3"
+#define VERSION  "3.1.91"
 
 /* The size of `size_t', as computed by sizeof. */
 #define SIZEOF_SIZE_T  8
 
 /* Define if your compiler has __builtin_ctzl() and sizeof(unsigned long) == sizeof(size_t). */
-/* #undef HAVE_BUILTIN_CTZL */
+#define HAVE_BUILTIN_CTZL
 
 /* Define to 1 if you have the <intrin.h> header file. */
-#define HAVE_INTRIN_H
+/* #undef HAVE_INTRIN_H */
 
 #if defined(_MSC_VER) && defined(HAVE_INTRIN_H)
 #if (SIZEOF_SIZE_T == 8)
@@ -71,6 +71,10 @@
 #define D_ARITH_CODING_SUPPORTED 1
 
 /* Use accelerated SIMD routines. */
-/* #undef WITH_SIMD */
+#define WITH_SIMD 1
+
+#define SIMD_ARCHITECTURE  X86_64
 
 #endif
+
+/* #undef WITH_PROFILE */

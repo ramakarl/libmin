@@ -25,7 +25,7 @@
 	#ifdef __ANDROID__
 		#include "libjpegt_arm/jpeglib.h"
 		#include "libjpegt_arm/jerror.h"
-	#else
+  #else
 		#include "libjpegt/jpeglib.h"
 		#include "libjpegt/jerror.h"
 	#endif	

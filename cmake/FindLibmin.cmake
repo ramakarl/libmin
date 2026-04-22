@@ -39,11 +39,13 @@ endfunction()
 
 message ( NOTICE "\n----- RUNNING FindLibmin.cmake " )
 
-if (DEFINED ENV{LINUX_DEBUG})
-  message (NOTICE "LINUX DEBUGGING enabled")
-  set(CMAKE_BUILD_TYPE Debug)           # sets -g and disables optimizations
-  set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")  # ensure no optimization
-  set(CMAKE_CUDA_FLAGS_DEBUG "-G")     # CUDA: generate debug info for kernels
+add_library(linux_flags INTERFACE)
+if (DEFINED ENV{LINUX_DEBUG} OR CMAKE_BUILD_TYPE STREQUAL "Debug")
+  message( NOTICE "LINUX DEBUGGING enabled")
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
+  target_compile_options(linux_flags INTERFACE -O0)
+  target_compile_options(linux_flags INTERFACE -g)
+  target_compile_options(linux_flags INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:-G> )
 endif()
 
 # *NOTE** 
@@ -108,8 +110,8 @@ file(GLOB LIBMIN_SRC "${LIBMIN_ROOT}/src/*.cpp" "${LIBMIN_ROOT}/src/*.c" "${LIBM
 set_property ( GLOBAL APPEND PROPERTY LIBMIN_FILES ${LIBMIN_SRC} )
 
 # Symbols in release mode
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi" CACHE STRING "" FORCE)
-set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF" CACHE STRING "" FORCE)
+# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi" CACHE STRING "" FORCE)
+# set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF" CACHE STRING "" FORCE)
 set ( CMAKE_DEBUG_POSTFIX "d" CACHE STRING "" )
 # set_target_properties( ${PROJNAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX} )
 
@@ -799,8 +801,9 @@ macro(_LINK )
     libmin::libmin 
     libext::libext
     ${_LINK_PLATFORM}
-    $<$<CONFIG:Debug>:${_LINK_DEBUG}>
-    $<$<CONFIG:Release>:${_LINK_OPT}>  
+    "$<$<CONFIG:Debug>:${_LINK_DEBUG}>"
+    "$<$<CONFIG:Release>:${_LINK_OPT}>"
+    linux_flags
   )
 
   #--- NOTE: does not work separately. VS does not respect 'debug' and 'optimized'

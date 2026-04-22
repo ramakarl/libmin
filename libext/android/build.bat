@@ -19,7 +19,7 @@ cmake -G "Ninja" ^
   -DCMAKE_TOOLCHAIN_FILE=%NDK%/build/cmake/android.toolchain.cmake ^
   -DANDROID_ABI=arm64-v8a ^
   -DANDROID_PLATFORM=android-28 ^
-  -DCMAKE_BUILD_TYPE=Release ^
+  -DCMAKE_BUILD_TYPE=Debug ^
   -DENABLE_SHARED=OFF ^
   -DENABLE_STATIC=ON ^
   ..

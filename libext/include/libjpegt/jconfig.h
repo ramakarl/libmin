@@ -1,13 +1,13 @@
 /* Version ID for the JPEG library.
  * Might be useful for tests like "#if JPEG_LIB_VERSION >= 60".
  */
-#define JPEG_LIB_VERSION  80
+#define JPEG_LIB_VERSION  62
 
 /* libjpeg-turbo version */
-#define LIBJPEG_TURBO_VERSION  3.0.3
+#define LIBJPEG_TURBO_VERSION  3.1.91
 
 /* libjpeg-turbo version in integer form */
-#define LIBJPEG_TURBO_VERSION_NUMBER  3000003
+#define LIBJPEG_TURBO_VERSION_NUMBER  3001091
 
 /* Support arithmetic encoding when using 8-bit samples */
 #define C_ARITH_CODING_SUPPORTED 1
@@ -19,7 +19,7 @@
 #define MEM_SRCDST_SUPPORTED  1
 
 /* Use accelerated SIMD routines when using 8-bit samples */
-/* #undef WITH_SIMD */
+#define WITH_SIMD 1
 
 /* This version of libjpeg-turbo supports run-time selection of data precision,
  * so BITS_IN_JSAMPLE is no longer used to specify the data precision at build
