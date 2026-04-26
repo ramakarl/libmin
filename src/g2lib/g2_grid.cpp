@@ -123,6 +123,7 @@ g2Obj* g2Grid::getChild ( Vec3I id )
 }
 
 int g2Grid::getChildren ( std::vector<g2Obj*>& list )
+{
   for (int L = 0; L <= 1; L++) {
     if (m_layout[L].active) {
       for (int n = 0; n < m_layout[L].sections.size(); n++) {
