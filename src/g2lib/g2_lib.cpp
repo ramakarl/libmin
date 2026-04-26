@@ -160,6 +160,18 @@ void g2Lib::getWords ( std::string str, std::vector<std::string>& words, int num
   }  
 }
 
+std::string g2Lib::concat ( std::vector<std::string>& list, int first, int last)
+{
+  std::string s = "";
+  if (first==-1) first = 0;
+  if (last==-1) last = list.size()-1;
+
+  for (int n = first; n <= last; n++) {
+    s += list[n] + (n!=last ? "|" : "");
+  }
+  return s;
+}
+
 void g2Lib::AddSpec ( std::string lin ) 
 {
   m_spec.push_back ( lin );
@@ -171,36 +183,40 @@ void g2Lib::ParseSpecToDef ( std::string lin )
   std::vector<std::string> words;
   
   // convert spec to words
-  getWords ( lin, words, 4 );
+  getWords ( lin, words );
  
   // build object definition (not actual object)
   if (words.size() > 0 ) {
 
       // definition
       if (words[1].compare ( "is a")==0) {
-          if (words.size() == 3) {
-            SetDef ( words[0], words[2] );
+          if (words.size() >= 3) {
+            
+            // parse object type
+            std::string ot = words[2];
+            if (ot.compare("page")==0) {ot = "grid"; words.push_back( "page" ); }
+            if (ot.compare("grid")!=0 && ot.compare("item")!=0) {
+              err = "object is_a must resolve to grid or item";
+            }
+            SetDef ( words[0], ot );
+
+            // remaining args are 'opts' 
+            for (int n=3; n < words.size(); n++) {
+              SetKeyVal ( words[0], "opt", words[n] );
+            }
+
           } else {
             err = "wrong word count for 'is a'";
           }
       } 
       // property
       if (words[1].compare ( "has")==0) {
-          if (words.size() == 4) {
-            SetKeyVal ( words[0], words[2], words[3] );
+          if (words.size() >= 4) {
+            SetKeyVal ( words[0], words[2], concat(words, 3) );
           } else {
             err = "wrong word count for 'has'";
           }
-      }
-      if (words[1].compare("action") == 0 ) {          
-          if (words.size() >= 3 ) {
-            std::string val = "";
-            for (int j=2; j < words.size(); j++) val += words[j] + " | ";
-            SetKeyVal ( words[0], words[1], val );
-          } else {
-            err = "wrong word count for 'action'";
-          }
-      }
+      }      
 
       if (!err.empty()) {
         dbgprintf ( "ERROR: Parsing: %s in: %s\n", err.c_str(), lin.c_str() );
@@ -324,14 +340,7 @@ g2Obj* g2Lib::AddObj ( std::string name, uchar typ )
 bool g2Lib::AddPage ( int id )
 {
   std::string obj_name = m_objlist[ id ]->getName();
-
   m_pages.push_back ( id );
-
-  bool is_startpage = hasVal ( obj_name, "opt", "start page" );
-  bool is_active = hasVal ( obj_name, "opt", "active" );
-  if ( is_active || is_startpage ) {
-    if (OpenPage(obj_name)) return true;      
-  }
   return false;
 }
 
@@ -339,8 +348,20 @@ bool g2Lib::OpenPage ( std::string name )
 {
   g2Obj* obj = FindObj ( name );
   if ( obj == 0x0 ) return false;
+  
+  // ** NOTE ** 
+  //  As present, Pages are exclusive. 
+  //  They can share overlay items, but do not combine
+  //  In the future provide Pages that can overlay
 
+  /* for (int n=0; n < m_active_pages.size(); n++) {
+    if (m_active_pages[n]==obj->m_id) return false;     // already active
+  }*/
+  m_active_pages.clear();
   m_active_pages.push_back ( obj->m_id );
+  obj->UpdateLayout ( m_region );
+  obj->RunAction ( EStart );
+
   return true;
 }
 
@@ -371,27 +392,32 @@ void g2Lib::BuildAll ()
 
     // Pass 2 - build layouts, sections and obj references
     uchar L;        
-    bool is_page, is_overlay;
+    bool is_page, is_visible;
     for (int n=0; n < m_objlist.size(); n++) {
 
         // get object
         obj = m_objlist[n];
+        name = obj->getName();
 
         // check for pages & overlays 
-        is_page = hasVal ( obj->getName(), "opt", "page" );
-        is_overlay = hasVal ( obj->getName(), "opt", "overlay");
-        if (is_page || is_overlay) {
+        is_page = hasVal ( name, "opt", "page" );        
+        if (is_page) {
             AddPage ( n );
-        }               
+        }          
+        is_visible = hasVal ( name, "opt", "visible" );
+        if (is_visible) {
+            OpenPage( name );
+        }
 
-        // apply layouts & sections for grids
+        // add layouts & sections for grids
         if ( obj->getType()=='g') { 
-
             if ( BuildLayout ( obj, G_LX ) ) { L = G_LX; }
             if ( BuildLayout ( obj, G_LY ) ) { L = G_LY; }
-
             BuildSections ( obj, L );            
         }        
+
+        // add overlays
+        BuildOverlays ( obj );
     }
     
     // Pass 3 - apply item styling 
@@ -475,49 +501,66 @@ bool g2Lib::BuildLayout ( g2Obj* obj, uchar ly )
     return true;    
 }
 
+void g2Lib::BuildOverlays ( g2Obj* obj )
+{
+  // add overlays to a grid
+  g2Grid* grid = dynamic_cast<g2Grid*>( obj ); 
+  
+  std::string key, val;
+  std::string obj_name;
+  g2Obj* obj_ref;  
+
+  // get overlay spec 
+  val = getVal ( obj->getName(), "overlays" );   
+  if ( val.size() > 0 ) {
+
+    // get list of objects
+    for (int n=0; val.length()>0; n++) {          
+      obj_name = strSplitLeft ( val, "|" );            
+      obj_ref = FindObj ( obj_name );
+      if (obj_ref != 0x0 ) {
+        grid->m_overlays.push_back ( obj_ref );
+      }
+    }
+  }
+}
+
+
 void g2Lib::BuildSections ( g2Obj* obj, uchar ly )
 {
-    g2Obj* obj_ref;
-    std::string obj_name;
-    std::string key, val, sz;
-    g2Grid* grid = dynamic_cast<g2Grid*>( obj );   
-    if (grid==0x0) {
-        printf ("ERROR: This is not a grid.\n");
-        exit(-2);
+  // add sections to a grid
+  g2Grid* grid = dynamic_cast<g2Grid*>( obj );   
+  if (grid==0x0) {
+      printf ("ERROR: This is not a grid.\n");
+      exit(-2);
+  }
+
+  g2Obj* obj_ref;
+  std::string obj_name;
+  std::string key, val, sz;
+
+  // get layout on object    
+  g2Layout* layout = grid->getLayout ( ly );
+  if (layout==0x0) {
+    printf ("ERROR: No layout found.\n");
+    exit(-3);
+  }
+
+  // get section spec from def
+  val = getVal ( obj->getName(), "sections" );   
+  if ( val.size() > 0 ) {
+
+    // list of objects in section
+    for (int n=0; val.length()>0; n++) {            
+      obj_name = strSplitLeft ( val, "|" );            
+      obj_ref = FindObj ( obj_name );
+      if (obj_ref==0x0 && obj_name.compare(".") != 0) {   // object not found, create placeholder              
+          obj_ref = AddObj ( obj_name, 'i' );                
+      }           
+      if (obj_ref != 0x0) obj_ref->SetParent( grid );
+      layout->sections.push_back ( obj_ref );
     }
-
-    // get layout on object    
-    g2Layout* layout = grid->getLayout ( ly );
-     if (layout==0x0) {
-      printf ("ERROR: No layout found.\n");
-      exit(-3);
-    }
-
-    // get section spec from def
-    val = getVal ( obj->getName(), "sections" );   
-
-    if ( val.size() > 0 ) {
-
-        // sections specify the *object* in each section of a grid
-        //
-        for (int n=0; val.length()>0; n++) {
-            
-            // find obj for this section
-            obj_name = strSplitLeft ( val, "|" );            
-            obj_ref = FindObj ( obj_name );
-
-            if (obj_ref==0x0 && obj_name.compare(".") != 0) {
-                // object not found, and is not a wildcard '.',
-                // so lets create a placeholder for kindness
-                obj_ref = AddObj ( obj_name, 'i' );                
-            }           
-            //printf ("%s (%p) ref by %s (%p)\n", obj_name.c_str(), obj_ref, obj->m_name.c_str(), obj );
-            if (obj_ref != 0x0) obj_ref->SetParent( grid );
-
-            layout->sections.push_back ( obj_ref );
-        }
-
-    }
+  }
 }
 
 void g2Lib::ParseAction( int gid, std::string cmd, g2Action& a )
@@ -527,12 +570,7 @@ void g2Lib::ParseAction( int gid, std::string cmd, g2Action& a )
   // parse action to words
   getWords(cmd, words, 4);
 
-  if (words.size()<3) {
-    printf("ERROR: Actions must have at least 3 arguments.\n");
-    return;
-  }
-  // ensure at least 4 words: event, action, key, value
-  while (words.size() < 4) {
+  while (words.size() < 4) {      // ensure at least 4 words
     words.push_back ("");  
   }
   // GUI object id
@@ -549,6 +587,7 @@ void g2Lib::ParseAction( int gid, std::string cmd, g2Action& a )
   // 2. second word is action (set, move, goto, cmd)
   if (words[1] == "SET")      a.act = ASet;
   if (words[1] == "POPULATE") a.act = APop;
+  if (words[1] == "SHOW")     a.act = AShow;
   if (words[1] == "NAV")      a.act = ANav;
   if (words[1] == "GOTO")     a.act = AGoto;
   if (words[1] == "SELECT" || words[1]=="SEL") a.act = ASel;
@@ -599,7 +638,7 @@ void g2Lib::BuildActions(actionFunc_t setup_func, actionFunc_t run_func, void* u
           
           // application provides handle for variable mapping
           // - must set action.var_handle and .var_type
-          found = (*setup_func) (a, user );
+          found = (*setup_func) (a, user, obj->getName() );
 
           if (found) {
             // assign action to object
@@ -611,45 +650,62 @@ void g2Lib::BuildActions(actionFunc_t setup_func, actionFunc_t run_func, void* u
   }
 }
 
+// Run action associated with event
 bool g2Lib::RunAction(g2Action* a, Value_t val )
 {
   if (!val.isNull()) a->value = val;
 
-  bool ran = (*m_ActionFunc) ( *a, m_ActionUser);
+  // handle show for g2 items
+  if (a->act==AShow) Show ( *a );
+
+  // invoke global user action handler
+  bool ran = (*m_ActionFunc) ( *a, m_ActionUser, "");
 
   return ran;
+}
+ 
+// Show a layer, page or item
+void g2Lib::Show ( g2Action& a )
+{
+  std::vector<std::string> list; 	
+  strSplitMultiple ( a.value.getStr(), "|", list );
+
+  g2Obj* obj;
+  for (int n=0; n < list.size(); n++) {
+    OpenPage ( list[n] );        
+  }
 }
 
 
 void g2Lib::LayoutAll ( Vec4F region )
 {
-    if (m_objlist.size() == 0) {
-      //dbgprintf ( "WARNING: g2 Layout has 0 objects.\n" );
-      return; 
-    }
+  m_region = region;
+
+  if (m_objlist.size() == 0) {
+    //dbgprintf ( "WARNING: g2 Layout has 0 objects.\n" );
+    return; 
+  }
     
-    setViewRegion ( region ); 
+  setViewRegion ( region ); 
 
-    // layout all active pages
-    //
-    int id;
-    for (int p=0; p < m_active_pages.size(); p++) {
+  // layout open pages
+  //
+  int id;
+  for (int p=0; p < m_active_pages.size(); p++) {
 
-      id = m_active_pages[ p ];      
+    id = m_active_pages[ p ];      
+    g2Obj* curr = m_objlist[ id ];
+    curr->UpdateLayout ( region );
 
-      g2Obj* curr = m_objlist[ id ];
-    
-      curr->UpdateLayout ( region );
-
-      //-- debugging
-      /*int ow, oh;
-      ow = curr->m_pos.z - curr->m_pos.x;
-      oh = curr->m_pos.w - curr->m_pos.y;
-      for (int n=0; n < m_objlist.size(); n++) {
-        curr = m_objlist[n];
-        dbgprintf ( "%s: %d x %d (%4.0f,%4.0f,%4.0f,%4.0f\n", curr->m_name.c_str(), ow, oh, curr->m_pos.x, curr->m_pos.y, curr->m_pos.z, curr->m_pos.w );
-      }*/
-    }
+    //-- debugging
+    /*int ow, oh;
+    ow = curr->m_pos.z - curr->m_pos.x;
+    oh = curr->m_pos.w - curr->m_pos.y;
+    for (int n=0; n < m_objlist.size(); n++) {
+      curr = m_objlist[n];
+      dbgprintf ( "%s: %d x %d (%4.0f,%4.0f,%4.0f,%4.0f\n", curr->m_name.c_str(), ow, oh, curr->m_pos.x, curr->m_pos.y, curr->m_pos.z, curr->m_pos.w );
+    }*/
+  }
 }
 
 bool g2Lib::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
@@ -751,26 +807,24 @@ void g2Lib::Render (int w, int h, bool debug)
     
     int id;
     
-    // render all active pages 
+    // render open pages (grids)
     //
     for (int p=0; p < m_active_pages.size(); p++) {
     
       id = m_active_pages[p];    
-    
       g2Obj* curr = m_objlist[ id ];
-      
-      start2D ( w, h );      
-      
-      // all objects
-      curr->drawBackgrd ( debug );     
-      curr->drawForegrd ( debug ); 
-      curr->drawBorder  ( debug ); 
+    
+      start2D ( w, h );            
 
-      // selection
-      if (m_selected != 0x0 ) {
-        m_selected->drawSelected ( debug );        
-      }
-  
+        curr->DrawBackgrd ( debug );     
+        curr->DrawForegrd ( debug ); 
+        curr->DrawBorder  ( debug ); 
+        curr->DrawOverlays ( debug );
+
+        // selection
+        if (m_selected != 0x0 ) {
+          m_selected->DrawSelected ( debug );        
+        }  
       end2D();
     }
 }

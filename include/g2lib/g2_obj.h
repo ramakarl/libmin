@@ -33,15 +33,30 @@
     enum Act_t {        // Action - type of response
       ANull = 0,
       ASet = 1,
-      ANav = 2,
-      AGoto = 3,
-      ASel = 4,
-      AMsg = 5,
-      APop = 6,
-      ACmd = 7,
-      AScope = 8,
+      AShow = 2,
+      ANav = 3,
+      AGoto = 4,
+      ASel = 5,
+      AMsg = 6,
+      APop = 7,
+      ACmd = 8,
+      AScope = 9,
       AMax    
     };
+
+    static inline std::string getEventStr(Event_t a)
+    {
+      std::string s = "?";
+      switch (a) {
+      case EStart:  s = "onstart";  break;
+      case EClick:  s = "onclick";   break;
+      case EMouse:  s = "onmouse";   break;
+      case EMotion: s = "onmotion";  break;
+      case ESelect: s = "onselect";   break;
+      case EAdjust: s = "onadjust";   break;      
+      };
+      return s;
+    }
 
     static inline std::string getActStr(Act_t a)
     {
@@ -49,6 +64,7 @@
       switch (a) {
       case ANull:  s = "ANull";  break;
       case ASet:   s = "ASet";   break;
+      case AShow:  s = "AShow";   break;
       case ANav:   s = "ANav";   break;
       case AGoto:  s = "AGoto";  break;
       case ASel:   s = "ASel";   break;
@@ -106,16 +122,19 @@
         virtual uchar getType()     { return 'o'; }              
         virtual void UpdateLayout ( Vec4F region )  {};
         virtual void SetProperty ( std::string key, std::string val );
-        virtual void drawBackgrd (bool dbg) {};
-        virtual void drawBorder (bool dbg)  {};
-        virtual void drawForegrd (bool dbg) {};      
-        virtual void drawSelected (bool dbg) {};
+        virtual void SetActive ( bool state ) {};
+        virtual void DrawBackgrd (bool dbg) {};
+        virtual void DrawBorder (bool dbg)  {};
+        virtual void DrawForegrd (bool dbg) {};      
+        virtual void DrawSelected (bool dbg) {};
+        virtual void DrawOverlays (bool dbg) {};
         virtual void OnSelect (int x, int y) {};
         virtual bool OnMouse(AppEnum button, AppEnum state, int mods, int x, int y) { return false; }
         virtual bool OnMotion(AppEnum button, int x, int y, int dx, int dy)         { return false; }
         virtual bool OnKeyboard(int  key, AppEnum action, int mods, int x, int y)   { return false; }
         virtual bool FindParent( g2Obj* obj, g2Obj*& parent, Vec3I& id )            { return false; }                
         virtual int  Traverse( std::vector<g2Obj*>& list )   { list.push_back(this); return list.size(); }
+        virtual bool HandleExclusive() { return false; }
         virtual bool isEditable() { return false; }
         
         void    SetParent ( g2Obj* p )   {m_parent = p;}
@@ -123,7 +142,7 @@
         g2Size  ParseSize ( std::string sz );
         Vec4F   SetRegion ( Vec4F p, Vec4F r, g2Size minx, g2Size maxx, g2Size miny, g2Size maxy );
         void    AddAction ( g2Action& a );
-        bool    RunAction ( Event_t e, Value_t val = Value_t::nullval);
+        bool    RunAction ( Event_t e, Value_t val = Value_t::nullval);        
 
         std::string   getName()       { return m_name;}
         bool          isSelected();
@@ -142,6 +161,7 @@
         // style options        
         bool            m_rounded;
         bool            m_isModal;
+        bool            m_isExclusive;
 
         std::vector<g2Action>   m_actions;
     };

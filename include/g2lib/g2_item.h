@@ -23,14 +23,16 @@
         virtual uchar getType()     { return 't'; }
         virtual void UpdateLayout ( Vec4F p ); 
         virtual void SetProperty ( std::string key, std::string val );
-        virtual void drawBackgrd (bool dbg);
-        virtual void drawBorder (bool dbg);
-        virtual void drawForegrd (bool dbg);
-        virtual void drawSelected (bool dbg);
+        virtual void SetActive ( bool state );
+        virtual void DrawBackgrd (bool dbg);
+        virtual void DrawBorder (bool dbg);
+        virtual void DrawForegrd (bool dbg);
+        virtual void DrawSelected (bool dbg);
         virtual void OnSelect(int x, int y);
         virtual bool OnMouse(AppEnum button, AppEnum state, int mods, int x, int y);
         virtual bool OnMotion(AppEnum button, int x, int y, int dx, int dy);
-        virtual bool OnKeyboard (int key, AppEnum action, int mods, int x, int y);
+        virtual bool OnKeyboard (int key, AppEnum action, int mods, int x, int y);        
+        virtual bool HandleExclusive();
         virtual bool isEditable() { return m_isEditable; }
 
         std::string   getPrintedText(Vec4F& clr);        
@@ -40,13 +42,15 @@
         void SetCombo ( int ndx );
         void SetCombo ( std::string item );
         void SetText ( std::string txt );
-
+        void SetButton ( bool state ) { SetActive (state); }
+        void ToggleButton ();
+        
         void LayoutIcon ();
         void LayoutText ();
 
-        // button properties
-        bool          m_isButton;
-        bool          m_isSlider;
+        // button properties        
+        bool          m_isButton;        
+        bool          m_isExclusive;
         char          m_button_state;
         bool          m_button_toggleable;
 
@@ -61,6 +65,7 @@
         Vec4F         m_selection;
 
         // slider properties
+        bool          m_isSlider;
         float         m_slider_val;
 
         // edit properties

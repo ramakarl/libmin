@@ -19,7 +19,7 @@
   
     namespace glib {
 
-    typedef bool (*actionFunc_t) (g2Action& a, void* user);
+    typedef bool (*actionFunc_t) (g2Action& a, void* user, std::string name );
 
     class GXAPI g2Lib {
     public:
@@ -44,6 +44,7 @@
         int getValList ( std::string name, std::string key, std::vector<std::string>& list );
         bool hasVal ( std::string name, std::string key, std::string val );
         void getWords ( std::string str, std::vector<std::string>& words, int maxw=1000 );
+        std::string concat ( std::vector<std::string>& list, int first=-1, int last=-1);
         g2Obj* getSelected () { return m_selected; }
         int Traverse(std::vector<g2Obj*>& list);        
 
@@ -51,6 +52,7 @@
         void BuildAll ();
         bool BuildLayout ( g2Obj* obj, uchar ly );        
         void BuildSections ( g2Obj* obj, uchar ly );                    
+        void BuildOverlays ( g2Obj* obj );
         g2Obj* AddObj ( std::string name, uchar typ );
         g2Obj* FindObj ( std::string name );    
         g2Obj* getObj ( int i )       { return m_objlist[i]; }
@@ -62,6 +64,7 @@
         bool RunAction ( g2Action* a, Value_t val = Value_t::nullval );
         void SetAction(std::string a) { m_action = a; }
         void Populate ( int id, KeyValues* list );
+        void Show ( g2Action& a );
         std::string getAction() { return m_action; }
 
         // Pages
@@ -78,6 +81,8 @@
         void RequestKeyboard(bool t)   { m_keyboard = t ? 'o' : 'x'; }
 
     public:
+        Vec4F                       m_region;       // master region
+
         std::vector< g2Def >        m_objdefs;      // object specs
 
         std::vector< g2Obj* >       m_objlist;      // object list

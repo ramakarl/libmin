@@ -23,8 +23,8 @@ using namespace glib;
 
 g2Item::g2Item ()
 {
-  m_isButton = false;  
-  m_isSlider = false;
+  m_isButton = false;    
+  m_isSlider = false;  
   m_isCombo = false;
   m_combo_ndx = 0;
   m_button_state = 0;
@@ -183,7 +183,8 @@ void g2Item::SetProperty ( std::string key, std::string val )
 
   if (key.compare("opt") == 0) {
     if (val.compare("editable")==0)  m_isEditable = true;
-    if (val.compare("button")==0)    m_isButton = true;
+    if (val.compare("button")==0)    m_isButton = true;    
+    if (val.compare("active")==0)    m_button_state = 1;
     if (val.compare("slider") == 0)  m_isSlider = true;
     if (val.compare("combo") == 0)   m_isCombo = true;    
     if (val.compare("toggleable") == 0) m_button_toggleable = true;
@@ -297,7 +298,7 @@ void g2Item::SetCombo ( std::string item )
 }
 
 
-void g2Item::drawBackgrd (bool dbg)
+void g2Item::DrawBackgrd (bool dbg)
 {  
   if (m_rounded) {
     drawRoundedFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr );
@@ -306,7 +307,7 @@ void g2Item::drawBackgrd (bool dbg)
   }
 }
 
-void g2Item::drawBorder (bool dbg)
+void g2Item::DrawBorder (bool dbg)
 {
   if (dbg) {
     drawRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(1,0.5,0,1) );
@@ -321,7 +322,25 @@ void g2Item::drawBorder (bool dbg)
   }
 }
 
-void g2Item::drawForegrd ( bool dbg)
+void g2Item::ToggleButton ()
+{
+  if (m_button_toggleable) {
+    m_button_state = 1 - m_button_state;
+  } else {
+    m_button_state = 20;      // deactivation countdown
+  }
+}
+
+void g2Item::SetActive ( bool state )
+{  
+  if (m_button_toggleable) {
+    m_button_state = (state) ? 1 : 0;
+  } else {
+    m_button_state = (state) ? 20 : 0;
+  }
+}
+
+void g2Item::DrawForegrd ( bool dbg)
 {
   // button icon  
   if (m_button_state == 0) {    
@@ -381,7 +400,7 @@ void g2Item::drawForegrd ( bool dbg)
  
 }
 
-void g2Item::drawSelected(bool dbg)
+void g2Item::DrawSelected(bool dbg)
 {
   if (m_isEditable) {        
     if (m_rounded) {
@@ -420,18 +439,23 @@ void g2Item::OnSelect (int x, int y)
       g2.RequestKeyboard(true);
     }
   }  
+  
+  // combo action
+  if (m_isCombo && m_combo_list.Size() > 0 ) {
+    int ndx = (m_combo_list.Size()-1) * clamp( (x - m_pos.x) / (m_pos.z - m_pos.x), 0, 1);
+    xlong val = m_combo_list.Get(ndx).getXL();
+    SetText ( m_combo_list.GetKey(ndx) );
+    RunAction ( ESelect, Value_t(val) );
+  }                
 
   // button action
-  if (m_isButton) {
-    if (m_button_toggleable) {
-      m_button_state = 1 - m_button_state;
+  if (m_isButton) {    
+    if (HandleExclusive()) {
+      SetButton(true);
+    } else {
+      ToggleButton ();
     }
-    else {
-      m_button_state = 20;      // deactivation countdown
-    }
-    // Find action associated with button
-    std::string action = g2.getVal( m_name, "action" );
-    g2.SetAction ( action );
+    RunAction ( EClick );   
   }
 }
 
@@ -449,19 +473,20 @@ bool g2Item::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
       if ( m_isEditable || m_isButton || m_isSlider || m_isCombo ) {
     
         g2.OnSelect ( this, x, y );
-
-        if (m_isCombo && m_combo_list.Size() > 0 ) {
-          int ndx = (m_combo_list.Size()-1) * clamp( (x - m_pos.x) / (m_pos.z - m_pos.x), 0, 1);
-          xlong val = m_combo_list.Get(ndx).getXL();
-          SetText ( m_combo_list.GetKey(ndx) );
-          RunAction ( ESelect, Value_t(val) );
-        }
+        
         return true;
       }
     }
   }  
 
   return false;
+}
+
+bool g2Item::HandleExclusive ()
+{
+  // handle exclusive buttons
+  if (m_parent==0x0) return false;
+  return m_parent->HandleExclusive();
 }
 
 bool g2Item::OnMotion(AppEnum button, int x, int y, int dx, int dy)

@@ -66,31 +66,30 @@ void g2Grid::UpdateLayout ( Vec4F p )
     // divide any remaining space equally among the '*'
     star_sz = (star_cnt==0) ? 0 : (major_res - major_used) / star_cnt;    
     
-    // Layout each section
-    for (n=0; n < m_layout[L].sections.size(); n++ ) {
-
-        // get object
-        obj = m_layout[L].sections[n];
-
-        // get size spec
-        if ( n < m_layout[L].sizes.size() )
-            spec = m_layout[L].sizes[n];  
-
-        // evaluate by size type
-        switch (spec.typ) {
+    // Layout sections
+    for (n=0; n < m_layout[L].sections.size(); n++ ) {        
+        
+        obj = m_layout[L].sections[n];        // get object        
+        if ( n < m_layout[L].sizes.size() )   // get size spec
+            spec = m_layout[L].sizes[n];          
+        switch (spec.typ) {                   // compute section size (by type)
         case '%': sz = major_res * spec.amt/100.0f; break;
         case 'x': sz = spec.amt;     break;
         case '*': sz = star_sz;      break;
         };       
-
         getDimensions ( L, sz, pos, adv );
 
-        // recursive call
+        // layout children
         if (obj != 0x0) {
           obj->UpdateLayout( pos );
         }
-
         pos += adv;
+    }
+
+    // Layout overlays
+    for (n=0; n < m_overlays.size(); n++ ) {        
+      obj = m_overlays[n];
+      obj->UpdateLayout ( m_pos );
     }
 }
 
@@ -123,6 +122,34 @@ g2Obj* g2Grid::getChild ( Vec3I id )
   return m_layout[L].sections[n];
 }
 
+int g2Grid::getChildren ( std::vector<g2Obj*>& list )
+  for (int L = 0; L <= 1; L++) {
+    if (m_layout[L].active) {
+      for (int n = 0; n < m_layout[L].sections.size(); n++) {
+        list.push_back ( m_layout[L].sections[n] );
+      }
+    }
+  }
+  return list.size();
+}
+
+bool g2Grid::HandleExclusive()
+{
+  if (!m_isExclusive) return false;
+
+  g2Obj* obj;
+  for (int L = 0; L <= 1; L++) {
+    if (m_layout[L].active) {
+      for (int n = 0; n < m_layout[L].sections.size(); n++) {
+        obj = m_layout[L].sections[n];
+        if ( obj != 0x0 ) {
+          obj->SetActive (false);   // turn off other buttons    
+        }
+      }
+    }
+  }
+}
+
 int g2Grid::Traverse(std::vector<g2Obj*>& list)
 {
   list.push_back ( this );
@@ -138,7 +165,24 @@ int g2Grid::Traverse(std::vector<g2Obj*>& list)
   return list.size();
 }
 
-void g2Grid::drawChildren ( uchar what, bool dbg )
+void g2Grid::DrawOverlays (bool dbg)
+{
+  // draw overlays
+  //  *NOTE*: For now, this func assumes they do not overlap
+
+  for (int n=0; n < m_overlays.size(); n++) {
+    m_overlays[n]->DrawBackgrd(dbg);
+  }
+  for (int n=0; n < m_overlays.size(); n++) {
+    m_overlays[n]->DrawBorder(dbg);
+  }
+  for (int n=0; n < m_overlays.size(); n++) {
+    m_overlays[n]->DrawForegrd(dbg);
+  }
+}
+
+
+void g2Grid::DrawChildren ( uchar what, bool dbg )
 {
     g2Obj* obj;
     // L = horizontal & vertical = {G_LX, G_LY}    
@@ -149,21 +193,21 @@ void g2Grid::drawChildren ( uchar what, bool dbg )
           // draw children backgrounds
           for (int n=0; n < m_layout[L].sections.size(); n++) {
             obj = m_layout[L].sections[n];
-            if (obj !=0x0 ) obj->drawBackgrd( dbg );
+            if (obj !=0x0 ) obj->DrawBackgrd( dbg );
           }
           break;
         case 'r':
           // draw children borders
           for (int n=0; n < m_layout[L].sections.size(); n++) {
             obj = m_layout[L].sections[n];
-            if (obj !=0x0 ) obj->drawBorder( dbg );
+            if (obj !=0x0 ) obj->DrawBorder( dbg );
           }
           break;
         case 'f':
           // draw children foregrounds
           for (int n=0; n < m_layout[L].sections.size(); n++) {
             obj = m_layout[L].sections[n];
-            if (obj !=0x0 ) obj->drawForegrd( dbg );
+            if (obj !=0x0 ) obj->DrawForegrd( dbg );
           }
           break;
         };
@@ -171,23 +215,23 @@ void g2Grid::drawChildren ( uchar what, bool dbg )
     }    
 }
 
-void g2Grid::drawBackgrd (bool dbg)
+void g2Grid::DrawBackgrd (bool dbg)
 {
     if ( m_backclr.w > 0 ) {
       drawFill ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_backclr );      
     }
-    drawChildren ( 'b' );    
+    DrawChildren ( 'b' );    
 }
-void g2Grid::drawBorder (bool dbg)
+void g2Grid::DrawBorder (bool dbg)
 {
     if (dbg) {
       drawRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), Vec4F(1,1,0,1) );
     } else {
       drawRect ( Vec2F(m_pos.x,m_pos.y), Vec2F(m_pos.z, m_pos.w), m_borderclr );
     }
-    drawChildren ( 'r', dbg );
+    DrawChildren ( 'r', dbg );
 }
-void g2Grid::drawForegrd (bool dbg)
+void g2Grid::DrawForegrd (bool dbg)
 {
     if ( dbg ) {
       char msg[256];
@@ -195,14 +239,23 @@ void g2Grid::drawForegrd (bool dbg)
       drawText ( Vec2F(m_pos.x, m_pos.y), msg, Vec4F(1,1,1,1));
     }
 
-    drawChildren ( 'f', dbg );
+    DrawChildren ( 'f', dbg );
 }
 
 bool g2Grid::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
 {
   g2Obj* obj;
   
-  // check all children first  
+  // check overlays first
+  for (int n=0; n < m_overlays.size(); n++) { 
+    obj = m_overlays[n];
+    if (obj != 0x0) {
+      if (obj->OnMouse( button, state, mods, x, y ))
+      return true;
+    }  
+  }
+
+  // check all children 
   for (int L = 0; L <= 1; L++) {        // L = horizontal & vertical = {G_LX, G_LY}    
     if (m_layout[L].active) {      
       for (int n = 0; n < m_layout[L].sections.size(); n++) {     // sections of grid
@@ -214,7 +267,8 @@ bool g2Grid::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
       }
     }      
   }
-  // Modal grids capture mouse activity 
+
+  // modal grids capture mouse activity 
   // - even if they do nothing with it, prevents underlying activity
   if (m_isModal) {
     if (state == AppEnum::BUTTON_PRESS) {      
@@ -228,12 +282,21 @@ bool g2Grid::OnMouse(AppEnum button, AppEnum state, int mods, int x, int y)
 
 bool g2Grid::OnMotion(AppEnum button, int x, int y, int dx, int dy)
 {
-  // Modal grids capture mouse activity 
+  // check overlays first
+  g2Obj* obj;
+  for (int n=0; n < m_overlays.size(); n++) { 
+    obj = m_overlays[n];
+    if (obj != 0x0) {
+      if (obj->OnMotion( button, x, y, dx, dy ))
+        return true;
+    }  
+  }
+
+  // modal grids capture mouse activity 
   // - even if they do nothing with it, prevents underlying activity
   if (m_isModal) {    
-    if (x > m_pos.x && y > m_pos.y && x < m_pos.z && y < m_pos.w) {
-      return true;
-    }    
+    if (x > m_pos.x && y > m_pos.y && x < m_pos.z && y < m_pos.w)
+      return true;    
   }
   return false;
 }

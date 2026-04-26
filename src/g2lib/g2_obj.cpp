@@ -14,6 +14,7 @@ g2Obj::g2Obj ()
   m_region = Vec4F(0, 0, 1, 1);
   m_rounded = false;  
   m_isModal = false;
+  m_isExclusive = false;
 }
 
 void g2Obj::AddAction(g2Action& a)
@@ -50,6 +51,7 @@ void g2Obj::SetProperty ( std::string key, std::string val )
 {
   if (key.compare("opt") == 0) {
     if (val.compare("modal")==0) m_isModal = true;
+    if (val.compare("exclusive")==0) m_isExclusive = true;
 
   } else if ( key.compare("backclr")==0 ) {
     m_backclr = strToVec4 ( val, ',' );
