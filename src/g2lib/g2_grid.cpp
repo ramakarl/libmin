@@ -149,6 +149,8 @@ bool g2Grid::HandleExclusive()
       }
     }
   }
+
+  return true;
 }
 
 int g2Grid::Traverse(std::vector<g2Obj*>& list)

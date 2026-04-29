@@ -134,19 +134,19 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeSurfaceCreated ( JNIEnv* env, jclass cself, jobject surface, jobject self)
+    Java_com_qtvc_MainActivity_nativeSurfaceCreated ( JNIEnv* env, jclass cself, jobject surface, jobject self)
     {
       ANativeWindow* window = ANativeWindow_fromSurface (env, surface);
       nativeRebuildEGL ( window );
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeSurfaceChanged (JNIEnv* env, jclass cself, jobject surface, jobject self)
+    Java_com_qtvc_MainActivity_nativeSurfaceChanged (JNIEnv* env, jclass cself, jobject surface, jobject self)
     {
       glViewport ( 0, 0, pApp->m_winSz[0], pApp->m_winSz[1] );
     }
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeSurfaceDestroyed (JNIEnv* env, jclass cself, jobject surface, jobject self)
+    Java_com_qtvc_MainActivity_nativeSurfaceDestroyed (JNIEnv* env, jclass cself, jobject surface, jobject self)
     { 
       nativeDestroyEGL();
       if (pApp->m_win->_awindow) {
@@ -155,7 +155,7 @@ extern "C"
       };
     }
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeOnPause ( jclass cself )
+    Java_com_qtvc_MainActivity_nativeOnPause ( jclass cself )
     {
       nativeDestroyEGL();
       if (pApp->m_win->_awindow) {
@@ -164,11 +164,11 @@ extern "C"
       };
     }    
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeOnResume ( JNIEnv* env, jclass cself, jobject surf, jobject self )
+    Java_com_qtvc_MainActivity_nativeOnResume ( JNIEnv* env, jclass cself, jobject surf, jobject self )
     {          
     }
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeStartup ( JNIEnv *env, jclass cself, jobject self, jstring internalPath )
+    Java_com_qtvc_MainActivity_nativeStartup ( JNIEnv *env, jclass cself, jobject self, jstring internalPath )
     {
 
       // Create a new OSwindow container
@@ -201,13 +201,13 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeRun ( JNIEnv *env, jclass cself)
+    Java_com_qtvc_MainActivity_nativeRun ( JNIEnv *env, jclass cself)
     {
       pApp->appRun();
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativePassEvent ( JNIEnv* env, jclass cself, jint type, jfloatArray vals )
+    Java_com_qtvc_MainActivity_nativePassEvent ( JNIEnv* env, jclass cself, jint type, jfloatArray vals )
     {
         guiEvent g;
         //jsize len = env->GetArrayLength(vals);
@@ -225,7 +225,7 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeLoadAssets ( JNIEnv* env, jclass cself, jobject assetManager, jstring sdpath )
+    Java_com_qtvc_MainActivity_nativeLoadAssets ( JNIEnv* env, jclass cself, jobject assetManager, jstring sdpath )
     {
         //--- This function unpacks the .apk asset folder to a set of files on the Android device
         dbgprintf ( "Unpacking assets.\n");
@@ -261,7 +261,7 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeCleanup(JNIEnv *env, jclass cself)
+    Java_com_qtvc_MainActivity_nativeCleanup(JNIEnv *env, jclass cself)
     {
         dbgprintf ( "nativeCleanup\n");
 
