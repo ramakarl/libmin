@@ -174,9 +174,9 @@ void g2Obj::LoadImg ( ImageX*& img, std::string fname )
       return;   // success
   }
 
+  // failed to load
   delete img;
-  img = 0x0;
-  
+  img = 0x0;  
   printf ( "WARNING: Unable to load image: %s\n", fbase.c_str() );  
 }
 

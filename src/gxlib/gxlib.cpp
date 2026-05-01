@@ -382,6 +382,7 @@ void glib::drawImg(ImageX* img, Vec2F a, Vec2F b, Vec4F clr)
 
 void glib::drawImg(int glid, Vec2F a, Vec2F b, Vec4F clr)
 {
+	if (glid==-1) return;
 	gxVert* v = gx.allocImg2D ( 6, PRIM_TRI, glid );
 
 	// repeat first for jump
@@ -1050,21 +1051,26 @@ gxLib::gxLib ()
 		m_sets.clear();    
 }
 
+void gxLib::resetSet ( gxSet* s )
+{
+	s->size = 0;
+	s->bufsize = 0;
+	s->max = 256;		
+	s->geom = (char*) malloc ( 256 );
+	s->lastpos = -1;
+	s->vbo = 0;
+	s->view.Set (0, 0, 0, 0);
+	s->region.Set ( 0, 0, 0, 0 );
+}
+
+
 gxSet* gxLib::addSet ( char st, bool bStatic )
 {	
 	int n = m_sets.size();	
 	if ( m_curr_set >= n ) {
-		// allocate new set
+		// allocate new set		
 		gxSet newset;
-		newset.geom = 0;
-		newset.size = 0;
-		newset.bufsize = 0;
-		newset.max = 256;		
-		newset.geom = (char*) malloc ( 256 );
-		newset.lastpos = -1;
-		newset.vbo = 0;
-		newset.view.Set (0, 0, 0, 0);
-		newset.region.Set ( 0, 0, 0, 0 );
+		resetSet ( &newset );
 		m_sets.push_back ( newset );
 		m_curr_set = n;
 	} 
@@ -1102,17 +1108,13 @@ void gxLib::destroySets()
 	for (int n = 0; n < m_sets.size(); n++) {
 		s = &m_sets[n];
 		s->size = 0;
-		if (s->geom != 0x0) {
-			free ( s->geom );
-			s->max = 256; 
-			s->geom = (char*) malloc(256);		// reset to small size
-		}
+		if (s->geom != 0x0) { free ( s->geom ); s->geom = 0; }
 		if (s->vbo != 0) {
 			#ifdef BUILD_OPENGL
 				glDeleteBuffers( 1, (GLuint*) &s->vbo);
-			#endif	
-			s->vbo = 0;
+			#endif
 		}
+		resetSet ( s );			
 	}
 }
 
@@ -1634,16 +1636,16 @@ bool gxLib::loadFont ( const char * fontName )
 void gxLib::destroy()
 {
 	// free all sets from memory
-	dbgprintf("destroy2D. Sets.\n");
+	dbgprintf("  destroy2D. Sets.\n");
 	destroySets();
 
   #ifdef BUILD_IMAGE
 	  // clear font from memory
-	  dbgprintf("destroy2D. Fonts.\n");
+	  dbgprintf("  destroy2D. Fonts.\n");
 	  m_font_img.Clear();
   #endif
 
-	dbgprintf("destroy2D. Shaders.\n");
+	dbgprintf ("  destroy2D. Shaders.\n");
 
 	#ifdef BUILD_OPENGL
 		// remove 2D shaders
@@ -1660,7 +1662,7 @@ void gxLib::destroy()
 		mVS[S3D] = 0; mFS[S3D] = 0;
 
 		// delete programs
-		dbgprintf("destroy2D. SH2: %d, SH3: %d, VAO: %d\n", mSH[S2D], mSH[S3D], mVAO);
+		dbgprintf("  destroy2D. SH2: %d, SH3: %d, VAO: %d\n", mSH[S2D], mSH[S3D], mVAO);
 		glDeleteProgram(mSH[S3D]);
 		glDeleteProgram(mSH[S2D]);
 		mSH[S3D] = 0;

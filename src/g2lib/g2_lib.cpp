@@ -35,12 +35,13 @@ void g2Lib::LoadSpec ( std::string fname )
 
     // 1. load spec
     //
-    while (fgets( buf, 2048, fp)) {        
-        lin = strTrim(buf) + "|";       // strip '\n' and add |
-        if ( lin.at(0)=='#' )           // skip comments
-          continue;
+    while (fgets( buf, 2048, fp)) {  
+      dbgprintf ( "GUI: %s", buf );
+      lin = strTrim(buf) + "|";       // strip '\n' and add |
+      if ( lin.at(0)=='#' )           // skip comments
+        continue;
 
-        AddSpec ( lin );
+      AddSpec ( lin );
     }
     fclose(fp);
 
@@ -828,4 +829,50 @@ void g2Lib::Render (int w, int h, bool debug)
       end2D();
     }
 }
-         
+ 
+// required on devices that loose context (eg. mobile apps)
+void g2Lib::ReleaseAll ()
+{
+  // release all objects with image assets
+  //
+  g2Item* item;
+  for (int n=0; n < m_objlist.size(); n++) {
+    item = dynamic_cast<g2Item*> ( m_objlist[n] );
+    if (item != 0x0 ) {
+      if (item->m_icon != 0 )     item->m_icon->Release();
+      if (item->m_icon_on != 0 )  item->m_icon_on->Release();    
+      item->m_icon = 0;
+      item->m_icon_on = 0;
+    }
+  }
+}
+
+void g2Lib::ReloadAll ()
+{
+  // reload all images
+  //
+  std::string val;
+  g2Obj* obj;
+  g2Item* item;
+  for (int n=0; n < m_objlist.size(); n++) {
+      obj = m_objlist[n];      
+      item = dynamic_cast<g2Item*> ( obj );
+      g2Def* def = FindDef ( obj->getName() );   
+      if ( def != 0x0 && item != 0x0 ) {
+
+        for (int j=0; j < def->keys.size(); j++) {
+          val = strTrim ( def->vals[j], "|" );        // do not split here (trim outer |)
+          
+          // scan for icon properties
+          if (item->m_icon==0 && def->keys[j].compare("icon")==0) {
+            obj->SetProperty ( def->keys[j], val );
+          }
+          if (item->m_icon_on==0 && def->keys[j].compare("icon on")==0) {
+            obj->SetProperty ( def->keys[j], val );
+          }
+        }     
+      }
+  }
+
+}
+
