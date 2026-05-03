@@ -27,7 +27,7 @@ int Client::InitBuf  ( char* buf, const int size, char main_pkt_char )
       memset ( buf + i, main_pkt_char, 1 );
     }
   }
-  netPrintf ( PRINT_VERBOSE, "*** Packet content:\n\n%s\n*** Size is %luB \n", buf, strlen ( buf ) );
+  NPRINTF ( VERBOSE, "*** Packet content:\n\n%s\n*** Size is %luB \n", buf, strlen ( buf ) );
   return (int)strlen ( buf );
 }
 

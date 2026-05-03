@@ -63,12 +63,6 @@
 
 #define NET_BUFSIZE			1500		// Typical UDP max packet size
 
-#define PRINT_VERBOSE 0
-#define PRINT_VERBOSE_HS 1
-#define PRINT_ERROR 2
-#define PRINT_ERROR_HS 3
-#define PRINT_FLOW 4
-
 // -- NOTES --
 // IP               = 20 bytes
 // UDP = IP + 8     = 28 bytes
@@ -81,9 +75,30 @@ typedef std::string str;
 
 class EventPool;
 
+struct NetStat {
+	float		 interval_ms;
+	uint64_t num_sent;
+	uint64_t num_recv;
+	uint64_t bytes_sent;
+	uint64_t bytes_unsent;
+	uint64_t num_sent_per_tick;
+	uint64_t bytes_remain_per_tick;
+	uint64_t failed_per_tick;
+	uint64_t bytes_sent_per_tick;
+	uint64_t bytes_recv_per_tick;
+};
+
 class HELPAPI NetworkSystem {
-	
-public:
+public:	
+
+	enum {
+		VERBOSE = 0, 
+		VERBOSE_HS = 1,
+		ERROR = 2,
+		ERROR_HS = 3,
+		FLOW = 4
+	} print;
+
 	NetworkSystem ( const char* trace_file_name = NULL );
 
 	// Network System
@@ -91,7 +106,9 @@ public:
 	void netCreate ( );
 	void netDestroy ( );
 	void netShowVerbose ( bool v ) { m_printVerbose = v; }
-    void netShowFlow ( bool v ) { m_printFlow = v; }	
+  void netShowFlow ( bool v ) { m_printFlow = v; }	
+	void netMeasureStats ();
+	void netMeasureSocketStats ( bool start, int sock_i );
 	void netList ( bool verbose = false ); // list all connections/sockets
 	str netPrintAddr ( NetAddr adr );
 	
@@ -146,6 +163,11 @@ public:
 	void netSetUserCallback ( funcEventHandler userfunc )	{ m_userEventCallback = userfunc; }
 	bool netIsConnectComplete ( int sock_i );
 	bool netCheckError ( int result, int sock_i );	
+
+	// Timing helpers
+	void sleep_ms ( int time_ms );
+	void start_time ( );
+	double get_time_elapsed ( );
 	
 	// Accessors
 	TimeX		getSysTime ( )				{ return TimeX::GetSystemNSec ( ); }
@@ -165,8 +187,8 @@ public:
 	netIP		getStrToIP ( str name );
 
 protected:
-	str netPrintf ( int flag, const char* fmt, ... );
-
+	str			netPrintf ( int flag, const char* fmt, ... );
+	
 private: // MP: Move this stuff
 	funcEventHandler m_userEventCallback; // User event handler
 
@@ -211,13 +233,11 @@ private: // Functions
 	int netSocketSelect ( fd_set* sockReadSet, fd_set* sockWriteSet );
 	void netSendResidualEvent ( int sock_i );
 
-	// Short helpers, used to simplify the program elsewhere
-	void sleep_ms ( int time_ms );
+	// Short helpers, used to simplify the program elsewhere	
 	unsigned long get_read_ready_bytes ( CX_SOCKET sock_h );		
 	bool valid_socket_index ( int sock_i );
 	
-	// Handling tracing and logging
-	double get_time ( );
+	// Handling tracing and logging	
 	void trace_setup ( const char* function_name );
 	void trace_enter ( const char* function_name );
 	void trace_exit ( const char* function_name );
@@ -273,6 +293,10 @@ private: // State
 	str m_pathPrivateKey;
 	str m_pathCertDir;
 	str m_pathCertFile;
+
+	// Network statistics
+	NetStat m_stat;
+
 };
 
 extern NetworkSystem* net;

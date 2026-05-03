@@ -94,7 +94,7 @@
 	// Network Address Abstraction
 	struct HELPAPI NetAddr {
 	public:
-    		NetAddr ( int t, std::string n, netIP i, int p ) { name = n; type = t; setAddress(AF_INET, i, p);}
+    NetAddr ( int t, std::string n, netIP i, int p ) { name = n; type = t; setAddress(AF_INET, i, p);}
 		NetAddr ()  { name = ""; type = STATE_NONE; setAddress(AF_INET, 0, 0); }
 
 		void setAddress ( int inet, unsigned long i, unsigned short p ) 
@@ -124,7 +124,10 @@
 
 	// Network Socket Abstraction
 	struct HELPAPI NetSock {
-		NetSock()	{txBuf=0;txPtr=0;rxBuf=0;rxPtr=0;pktBuf=0;pktPtr=0;}
+		NetSock()	{
+			txBuf=0;txPtr=0;rxBuf=0;rxPtr=0;pktBuf=0;pktPtr=0;
+			stat_send_wait=0; stat_rtt=0; stat_congwin=-1; stat_unack=0; stat_retrans=0; 
+		}
 	
 		std::string 		srvAddr;
 		int 			srvPort;	
@@ -144,26 +147,33 @@
 		TimeX 		lastStateChange;	// for tracking when timeouts should occur
 		
 		// Outgoing buffers
-		char*			txBuf;					// transmit buffer (per socket)
-		char*			txPtr;				
-		int				txPktSize;
-		int				txLen;					// transmit so far
-		int				txMax;					// transmit max (expandable)
+		char*		txBuf;					// transmit buffer (per socket)
+		char*		txPtr;				
+		int			txPktSize;
+		int			txLen;					// transmit so far
+		int			txMax;					// transmit max (expandable)
 
 		// Incoming buffers
-		char*			rxBuf;					// receive buffer (per socket)
-		char*			rxPtr;				
+		char*		rxBuf;					// receive buffer (per socket)
+		char*		rxPtr;				
 		int			rxLen;					// recv so far
 		int			rxMax;					// recv max (expandable)		
 
 		// Incoming packets & event
 		int			eventLen;
-		Event*			event;					// deserialized event	
-		char*			pktBuf;					// current packet
-		char*			pktPtr;					// packet offset
+		Event*	event;					// deserialized event	
+		char*		pktBuf;					// current packet
+		char*		pktPtr;					// packet offset
 		int			pktLen;
 		int			pktMax;
 		int			pktCounter;		
+
+		// Socket statistics
+		double 	stat_send_wait;
+		double 	stat_rtt;
+		int 		stat_congwin;
+		int 		stat_unack;
+		int 		stat_retrans;
 		
 		#ifdef BUILD_OPENSSL
 			SSL_CTX 	*ctx;			// MP: Need to read up on these before commenting; Same cross-platform ? Tentative: Yes

@@ -27,7 +27,7 @@ int Server::InitBuf ( char* buf, const int size, char main_pkt_char )
       memset ( buf + i, main_pkt_char, 1 );
     }
   }
-  netPrintf ( PRINT_VERBOSE, "*** Packet content:\n\n%s\n*** Size is %luB \n", buf, strlen ( buf ) );
+  NPRINTF ( VERBOSE, "*** Packet content:\n\n%s\n*** Size is %luB \n", buf, strlen ( buf ) );
   return (int)strlen ( buf );
 }
 
@@ -127,7 +127,7 @@ void Server::ReceiveBulkPkt ( Event& e )
 		std::cout << "\n=========================================== " << outcome << " \n" << std::endl;
 		std::cin.get();
 	}
-	netPrintf ( PRINT_FLOW, "Received event: %d, SEQ-%d", e.getSerializedLength(), m_rxPkt.seq_nr );
+	NPRINTF ( FLOW, "Received event: %d, SEQ-%d", e.getSerializedLength(), m_rxPkt.seq_nr );
 }
 
 
