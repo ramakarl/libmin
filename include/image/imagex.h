@@ -171,7 +171,7 @@
 		void ResizeChannel ( int chan, int xr, int yr, ImageOp::Format eFormat, uchar use_flags=0 );
 		void AddChannel ( std::string name, int xr, int yr, ImageOp::Format eFormat );		
 		// void ChangeFormat (ImageOp::Format eFormat);
-		void DeleteBuffers ();
+		void Release ();
 		void CopyIntoBuffer ( DataPtr& dest, DataPtr& src, int bpp, int w, int h );
 		void FlipY ();
 		void CopyToAlpha ();

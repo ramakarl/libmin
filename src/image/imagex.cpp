@@ -74,15 +74,18 @@ void ImageX::Create ( int xr, int yr, ImageOp::Format eFormat, uchar use_flags)
 }
 ImageX::~ImageX (void)
 {
-	DeleteBuffers ();
+	Release ();
 }
 void ImageX::Clear ()
 {
-	DeleteBuffers ();
+	Release ();
 }
-
-void ImageX::DeleteBuffers ()
+void ImageX::Release ()
 {
+	mAutocommit = true;
+	m_UseFlags = DT_CPU;	
+	mXres = 0;
+	mYres = 0;	
 	m_Pix.Clear();	
 }
 
@@ -99,7 +102,7 @@ void ImageX::Commit ( uchar use_flags )
 	if (use_flags == 0) use_flags = m_UseFlags;
 	if ( !(use_flags & DT_GLTEX) ) use_flags |= DT_GLTEX;
 	SetUsage ( use_flags );			// reserves GLID - this already does commit. See m_Pix.UpdateUsage
-	//m_Pix.Commit();							// assumes allocated on gpu
+	//m_Pix.Commit();						// assumes allocated on gpu
 }
 void ImageX::Map()
 {
@@ -634,7 +637,7 @@ bool ImageX::Load (const char* filename, const char* alphaname )
 	temp.Load ( filename );
 
 	if ( n==0 ) {
-		DeleteBuffers ();
+		Clear ();
 		
 		// Set new pixel format
 		xr = temp.GetWidth ();

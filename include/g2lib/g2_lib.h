@@ -24,6 +24,9 @@
     class GXAPI g2Lib {
     public:
         g2Lib () { m_selected = 0x0; m_keyboard = 0; }
+        
+        void ReleaseAll ();     // required on devices that loose context (eg. mobile apps)
+        void ReloadAll ();
 
         // Interaction (top-level)
         bool OnMouse ( AppEnum button, AppEnum state, int mods, int x, int y);

@@ -76,8 +76,9 @@ extern "C"
     {
       dbgprintf ( "nativeDestroyGL()\n");
 
-      dbgprintf ( "  nativeDestroyGL: appStopWindow.\n");
-      pApp->appStopWindow();      // sets active=false, stops eglSwapBuffers
+      // clear all native app resource first,
+      // also sets active=false, and stops eglSwapBuffers
+      pApp->appStopWindow();
 
       OSWindow* win = pApp->m_win;  
       if (win==0x0) return false;
@@ -105,7 +106,7 @@ extern "C"
       return true;
     }
 
-    bool nativeRebuildEGL ( ANativeWindow* window )
+    bool nativeRebuildEGL ( ANativeWindow* window, int realX, int realY )
     {
       dbgprintf("nativeRebuildEGL()\n");     
 
@@ -115,12 +116,16 @@ extern "C"
       //-- Start OpenGL GLES 3.0. Rebuild surface & context.
       int wid, hgt;
       dbgprintf( "  appCreateGL.\n");
+
+      // use the *actual* device size (from DisplayMetrics, no other API to determine it)
+      pApp->m_winSz[0] = realX;
+      pApp->m_winSz[1] = realY;
+
       if (!pApp->appCreateGL(&pApp->m_cflags, wid, hgt)) {
         dbgprintf("ERROR: appCreateGL failed.\n");
         return false;
       }
-      pApp->m_winSz[0] = wid;
-      pApp->m_winSz[1] = hgt;
+
 
       pApp->appInitGL();
 
@@ -134,19 +139,19 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeSurfaceCreated ( JNIEnv* env, jclass cself, jobject surface, jobject self)
+    Java_com_qtvc_MainActivity_nativeSurfaceCreated ( JNIEnv* env, jclass cself, jobject surface, jobject self, int realX, int realY)
     {
       ANativeWindow* window = ANativeWindow_fromSurface (env, surface);
-      nativeRebuildEGL ( window );
+      nativeRebuildEGL ( window, realX, realY );
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeSurfaceChanged (JNIEnv* env, jclass cself, jobject surface, jobject self)
+    Java_com_qtvc_MainActivity_nativeSurfaceChanged (JNIEnv* env, jclass cself, jobject surface, jobject self)
     {
       glViewport ( 0, 0, pApp->m_winSz[0], pApp->m_winSz[1] );
     }
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeSurfaceDestroyed (JNIEnv* env, jclass cself, jobject surface, jobject self)
+    Java_com_qtvc_MainActivity_nativeSurfaceDestroyed (JNIEnv* env, jclass cself, jobject surface, jobject self)
     { 
       nativeDestroyEGL();
       if (pApp->m_win->_awindow) {
@@ -155,7 +160,7 @@ extern "C"
       };
     }
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeOnPause ( jclass cself )
+    Java_com_qtvc_MainActivity_nativeOnPause ( jclass cself )
     {
       nativeDestroyEGL();
       if (pApp->m_win->_awindow) {
@@ -164,11 +169,11 @@ extern "C"
       };
     }    
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeOnResume ( JNIEnv* env, jclass cself, jobject surf, jobject self )
+    Java_com_qtvc_MainActivity_nativeOnResume ( JNIEnv* env, jclass cself, jobject surf, jobject self )
     {          
     }
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeStartup ( JNIEnv *env, jclass cself, jobject self, jstring internalPath )
+    Java_com_qtvc_MainActivity_nativeStartup ( JNIEnv *env, jclass cself, jobject self, jstring internalPath )
     {
 
       // Create a new OSwindow container
@@ -201,13 +206,13 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeRun ( JNIEnv *env, jclass cself)
+    Java_com_qtvc_MainActivity_nativeRun ( JNIEnv *env, jclass cself)
     {
       pApp->appRun();
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativePassEvent ( JNIEnv* env, jclass cself, jint type, jfloatArray vals )
+    Java_com_qtvc_MainActivity_nativePassEvent ( JNIEnv* env, jclass cself, jint type, jfloatArray vals )
     {
         guiEvent g;
         //jsize len = env->GetArrayLength(vals);
@@ -225,7 +230,7 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeLoadAssets ( JNIEnv* env, jclass cself, jobject assetManager, jstring sdpath )
+    Java_com_qtvc_MainActivity_nativeLoadAssets ( JNIEnv* env, jclass cself, jobject assetManager, jstring sdpath )
     {
         //--- This function unpacks the .apk asset folder to a set of files on the Android device
         dbgprintf ( "Unpacking assets.\n");
@@ -261,7 +266,7 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL
-    Java_com_quantasciences_qtvc_MainActivity_nativeCleanup(JNIEnv *env, jclass cself)
+    Java_com_qtvc_MainActivity_nativeCleanup(JNIEnv *env, jclass cself)
     {
         dbgprintf ( "nativeCleanup\n");
 
@@ -317,6 +322,14 @@ bool Application::appStartWindow (void* arg1, void* arg2, void* arg3, void* arg4
         pApp->m_startup = false;
         dbgprintf("  init()");  // Calls init2D
         if (!pApp->init()) { dbgprintf("ERROR: Unable to init() app.\n"); return false; }
+    }
+
+    // Confirm valid context
+    EGLContext ctx = eglGetCurrentContext();
+    EGLSurface srf = eglGetCurrentSurface(EGL_DRAW);
+    EGLDisplay dsp = eglGetCurrentDisplay();
+    if (ctx == EGL_NO_CONTEXT || srf == EGL_NO_SURFACE || dsp == EGL_NO_DISPLAY ) {
+        dbgprintf ( "ERROR: Invalid context (%p), surface (%p) or display (%p) before activate.\n", ctx, srf, dsp) ;
     }
 
     // Activate
@@ -391,11 +404,23 @@ bool Application::appCreateGL (const Application::ContextFlags *cflags, int& wid
         return false;
     }
 
-    if (!eglQuerySurface(display, surface, EGL_WIDTH, &m_win->_width) ||
+    checkGL ( "GL Context ready." );
+
+    /* if (!eglQuerySurface(display, surface, EGL_WIDTH, &m_win->_width) ||
         !eglQuerySurface(display, surface, EGL_HEIGHT, &m_win->_height)) {
         dbgprintf("ERROR: eglQuerySurface() returned error %d", eglGetError());
         return false;
-    }
+    }*/
+
+    // get correct viewport dimension from native window (not eglQuerySurface)
+    m_win->_width = ANativeWindow_getWidth( m_win->_awindow );
+    m_win->_height = ANativeWindow_getHeight( m_win->_awindow );
+
+    // override with real *actual* device resolution. passed in from nativeSurfaceCreate -> nativeRebuildEGL
+    // m_win->_width = m_winSz[0];
+    // m_win->_height = m_winSz[1];
+
+    dbgprintf ( "VIEWPORT SIZE: %d x %d\n", m_win->_width, m_win->_height);
 
     m_win->_display = display;
     m_win->_surface = surface;
@@ -426,8 +451,12 @@ bool Application::appInitGL()
 bool Application::appStopWindow ()
 {
     dbgprintf ( "  appStopWindow\n" );
-
     m_active = false;                 // No longer active
+
+    EGLContext ctx = eglGetCurrentContext();
+    if (ctx == EGL_NO_CONTEXT) {
+        return true;    // already destroyed
+    }
 
     dbgprintf("  deactivate()");        // Call user deactivate() each time window/surface is destroyed
     if (!deactivate()) { dbgprintf("ERROR: Deactivate failed.\n"); return false; }

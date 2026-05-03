@@ -393,7 +393,7 @@ LRESULT CALLBACK WinProc (HWND m_hWnd,
     // Message handling    
     switch (msg) {
     case WM_ACTIVATE:        
-        pApp->m_active = true;
+        // pApp->m_active = true;
         break;
     case WM_SHOWWINDOW:        
         pApp->m_active = (wParam ? true : false);

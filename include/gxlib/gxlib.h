@@ -48,7 +48,7 @@
     GXAPI bool init2D ( const char* fontName );    
     GXAPI void setViewRegion(Vec4F r); 
     GXAPI void debug2D ( bool tf );    
-    GXAPI void clear2D ();
+    GXAPI void clear2D ();    
     GXAPI void destroy2D();
     GXAPI void start2D ( int w, int h, bool bStatic = false );    
     GXAPI void setview2D ( int w, int h );
@@ -119,6 +119,7 @@
         gxSet*      addSet ( char st, bool bStatic=false );        
         gxSet*      getCurrSet ()      {return (m_curr_set < m_sets.size()) ? &m_sets[m_curr_set] : 0x0;}
         gxSet*      getSet (int set)   {return (set < m_sets.size()) ? &m_sets[set] : 0x0;}
+        void        resetSet ( gxSet* s );
         float       getTextAspect()    {return m_sets[m_curr_set].text_aspect; }        
         void        clearSet (int set);
         void        clearSets ();
