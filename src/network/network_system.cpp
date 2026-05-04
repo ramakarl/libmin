@@ -78,7 +78,7 @@ void NetworkSystem::trace_setup ( const char* trace_file_path )
 {
 	m_trace = fopen ( trace_file_path, "w" );
 	if ( m_trace == 0 ) {
-		NPRINTF ( ERROR, "Could not open trace file: Errno: %d", errno );
+		NPRINTF ( DERROR, "Could not open trace file: Errno: %d", errno );
 		return;
 	}
 	start_time();
@@ -108,7 +108,7 @@ void NetworkSystem::trace_exit ( const char* function_name )
 	}
 	m_indentCount--;
 	if ( m_indentCount < 0 ) {
-		NPRINTF ( ERROR, "Bad indent: Call from: %s", function_name );
+		NPRINTF ( DERROR, "Bad indent: Call from: %s", function_name );
 		m_indentCount = 0;
 	}
 	str pad ( m_indentCount * 2, ' ' );
@@ -162,13 +162,13 @@ inline void NetworkSystem::CXSetHostname ( )
 	int ret;
 	char name [ 512 ];
 	if ( ( ret = gethostname ( name, sizeof ( name ) ) ) != 0 ) {
-		NPRINTF ( ERROR, "Cannot get local host name: Return %d", ret );
+		NPRINTF ( DERROR, "Cannot get local host name: Return %d", ret );
 	}
 	
 	#ifdef _WIN32
 		struct hostent* phe = gethostbyname ( name );
 		if ( phe == 0 ) {
-			NPRINTF ( ERROR, "Bad host lookup in gethostbyname" );
+			NPRINTF ( DERROR, "Bad host lookup in gethostbyname" );
 		}
 		for ( int i = 0; phe->h_addr_list [ i ] != 0; ++i ) {
 			memcpy ( &addr, phe->h_addr_list [ i ], sizeof ( struct in_addr ) );
@@ -182,10 +182,10 @@ inline void NetworkSystem::CXSetHostname ( )
 		ic.ifc_req = ifreqs;
 		sock_fd = socket ( AF_INET, SOCK_DGRAM, 0 );
 		if ( sock_fd < 0 ) {
-			dbgprintf ( "netSys ERROR: Cannot create socket to get host name.\n" );
+			dbgprintf ( "netSys DERROR: Cannot create socket to get host name.\n" );
 		}
 		if ( ioctl ( sock_fd, SIOCGIFCONF, &ic ) < 0 ) {
-			dbgprintf ( "netSys ERROR: Cannot do ioctl to get host name.\n" );
+			dbgprintf ( "netSys DERROR: Cannot do ioctl to get host name.\n" );
 		}
 
 		dbgprintf ("Network Interfaces:\n");
@@ -213,7 +213,7 @@ inline void NetworkSystem::CXSocketApiInit ( )
 		if ( ( status = WSAStartup ( MAKEWORD ( 1,1 ), &WSAData ) ) == 0 ) {
 			NPRINTF ( VERBOSE, "Started Winsock" );
 		} else {
-			NPRINTF ( ERROR, "Unable to start Winsock: Return: %d", status );
+			NPRINTF ( DERROR, "Unable to start Winsock: Return: %d", status );
 		}
 	#endif
 	TRACE_EXIT ( (__func__) );
@@ -228,7 +228,7 @@ inline void NetworkSystem::CXSocketSetBlockMode ( CX_SOCKET sock, bool block )
 	#else // linux
 		int flags = fcntl ( sock, F_GETFL, 0 ), ret;
 		if ( flags == -1 ) {
-			NPRINTF ( ERROR, "Failed at fcntl F_GETFL: Return: %d", flags );
+			NPRINTF ( DERROR, "Failed at fcntl F_GETFL: Return: %d", flags );
 			TRACE_EXIT ( (__func__) );
 			return;
 		}		
@@ -238,7 +238,7 @@ inline void NetworkSystem::CXSocketSetBlockMode ( CX_SOCKET sock, bool block )
 			flags |= O_NONBLOCK;
 		}
 		if ( ( ret = fcntl ( sock, F_SETFL, flags ) ) == -1 ) {
-			NPRINTF ( ERROR, "Failed at fcntl F_SETFL: Return: %d", ret );
+			NPRINTF ( DERROR, "Failed at fcntl F_SETFL: Return: %d", ret );
 		} else {
 			NPRINTF ( VERBOSE, "Call to set block mode succeded" );
 		}
@@ -253,13 +253,13 @@ unsigned long NetworkSystem::CXSocketReadBytes ( CX_SOCKET sock_h )
 	int ret;
 	#ifdef _WIN32 // windows
 		if ( ( ret = ioctlsocket ( sock_h, FIONREAD, &bytes_avail ) ) == -1 ) {
-			NPRINTF ( ERROR, "Failed at ioctlsocket FIONREAD: Return: %d", ret );
+			NPRINTF ( DERROR, "Failed at ioctlsocket FIONREAD: Return: %d", ret );
 			bytes_avail = -1;
 		} 
 	#else		
 	    int bytes_avail_int;
 		if ( ( ret = ioctl ( sock_h, FIONREAD, &bytes_avail_int ) ) == -1 ) {
-			NPRINTF ( ERROR, "Failed at ioctl FIONREAD: Return: %d", ret );
+			NPRINTF ( DERROR, "Failed at ioctl FIONREAD: Return: %d", ret );
 			bytes_avail = -1;
 		} else {
 			bytes_avail = (unsigned long) bytes_avail_int;
@@ -360,7 +360,7 @@ inline void NetworkSystem::CXSocketClose ( CX_SOCKET sock_h )
 		int ret, err = 1;
 		CX_SOCKLEN len = sizeof ( err );
 		if ( ( ret = getsockopt ( sock_h, SOL_SOCKET, SO_ERROR, (char*) &err, &len ) ) == -1 ) {
-			NPRINTF ( ERROR , "Failed at getsockopt SO_ERROR: Return: %d", ret );
+			NPRINTF ( DERROR , "Failed at getsockopt SO_ERROR: Return: %d", ret );
 		}
 		if ( err ) {
 			errno = err;  
@@ -457,7 +457,7 @@ void NetworkSystem::CXSocketMakeNoDelay ( CX_SOCKET sock_h )
 	TRACE_ENTER ( (__func__) );
 	int no_delay = 1, ret;
 	if ( ( ret = setsockopt ( sock_h, IPPROTO_TCP, TCP_NODELAY, (char *) &no_delay, sizeof ( no_delay ) ) ) < 0 ) {
-		NPRINTF ( ERROR,  "    **** Failed at set no delay: Return: %d", ret );
+		NPRINTF ( DERROR,  "    **** Failed at set no delay: Return: %d", ret );
 	}  
 	else {
 		NPRINTF ( VERBOSE,"    Call to no delay succeded" );
@@ -698,7 +698,7 @@ bool NetworkSystem::netServerStart ( netPort srv_port, int security )
 	CX_SOCKOPT opt = 1;
 	ret = setsockopt(s.socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(CX_SOCKOPT));
 	if ( netFuncError(ret) ) {	
-		NPRINTF ( ERROR, "Fail to set SO_REUSEADDR. Ret: %d", ret );
+		NPRINTF ( DERROR, "Fail to set SO_REUSEADDR. Ret: %d", ret );
 		return false;
 	}
 	if ( security != NET_SECURITY_UNDEF ) {
@@ -708,12 +708,12 @@ bool NetworkSystem::netServerStart ( netPort srv_port, int security )
 	// Bind & Listen
 	ret = netSocketBind ( srv_sock_i );
 	if (netFuncError(ret)) {
-		NPRINTF(ERROR, "Server fail to bind listen sock.");
+		NPRINTF(DERROR, "Server fail to bind listen sock.");
 		return false;
 	}
 	ret = netSocketListen ( srv_sock_i );	
 	if (netFuncError(ret)) {
-		NPRINTF(ERROR, "Server fail to listen on sock.");
+		NPRINTF(DERROR, "Server fail to listen on sock.");
 		return false;
 	}
 
@@ -737,7 +737,7 @@ void NetworkSystem::netServerAcceptClient ( int sock_i )
 	TRACE_ENTER ( (__func__) );
 	/* int srv_sock_svc = netFindSocket ( NET_SRV, NET_TCP, NTYPE_ANY ); // MP: Check that this is OK
 	if ( srv_sock_svc == -1 ) {
-		NPRINTF ( ERROR, "Unable to find server listen socket" );
+		NPRINTF ( DERROR, "Unable to find server listen socket" );
 	} */
 
 	str srv_name;
@@ -1661,7 +1661,7 @@ int NetworkSystem::netManageTransmitError ( int sock_i, std::string reason, int 
 	
 	if (m_printVerbose) {	
 		// display as error, but managed, so only when verbose
-		NPRINTF( ERROR, "    Manage error: %s", reason.c_str());
+		NPRINTF( DERROR, "    Manage error: %s", reason.c_str());
 	}
 
 	// Error during transmission
@@ -1977,7 +1977,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 
 				// check for serialize issue
 				if (m_packeten < Event::staticSerializedHeaderSize()) {
-					NPRINTF(ERROR, "Serialize issue. Buffer len %d less than event header %d. CORRUPT AFTER THIS POINT!", m_packetLen, Event::staticSerializedHeaderSize() );
+					NPRINTF(DERROR, "Serialize issue. Buffer len %d less than event header %d. CORRUPT AFTER THIS POINT!", m_packetLen, Event::staticSerializedHeaderSize() );
 				}
 
 				// Deserialize of actual buffer length (EventLen or packetLen)
@@ -2010,7 +2010,7 @@ void NetworkSystem::netDeserializeEvents(int sock_i)
 			int hsz = Event::staticSerializedHeaderSize();
 			NPRINTF(VERBOSE, "RX %d bytes, %s", m_event.mDataLen + hsz, m_event.NameToStr().c_str());
 			if ( m_event.mDataLen + hsz != m_eventLen ) {
-				NPRINTF(ERROR, "Serialize issue. Event length %d != expected %d.", m_event.mDataLen + hsz, m_eventLen);
+				NPRINTF(DERROR, "Serialize issue. Event length %d != expected %d.", m_event.mDataLen + hsz, m_eventLen);
 			}
 
 			// Reset event length
@@ -2044,7 +2044,7 @@ void NetworkSystem::netReceiveByInjectedBuf(int sock_i, char* buf, int buflen )
 	// inject buffer
 	NetSock& s = m_socks[sock_i];
 	if ( buflen > s.pktMax ) {
-		NPRINTF ( ERROR, "Injected packet too large. %d > %d max", buflen, s.pktMax );
+		NPRINTF ( DERROR, "Injected packet too large. %d > %d max", buflen, s.pktMax );
 		exit(-77);
 	}
 	memcpy ( s.pktBuf, buf, buflen );
@@ -2194,7 +2194,7 @@ void NetworkSystem::netList ( bool verbose )
 	if ( m_printVerbose || verbose ) { // Print the network
 		str side, mode, stat, src, dst, msg, secur;
 		if ( int(m_socks.size()) < 0) {
-			dbgprintf ( "ERROR: Corruption in m_socks.size(): %d\n", m_socks.size() );
+			dbgprintf ( "DERROR: Corruption in m_socks.size(): %d\n", m_socks.size() );
 			exit(-11);
 		}
 		dbgprintf ( "\n------ NETWORK. Sockets: %d. MyIP: %s, %s\n", m_socks.size(), m_hostName.c_str ( ), getIPStr ( m_hostIp ).c_str ( ) );
@@ -2270,8 +2270,6 @@ void NetworkSystem::netMeasureStats ()
 
 void NetworkSystem::netMeasureSocketStats ( bool start, int sock_i )
 {
-	tcp_info info{};
-	socklen_t len = sizeof(info);
 	NetSock& sock = m_socks[sock_i];
 
 	if (start) {		
@@ -2282,12 +2280,17 @@ void NetworkSystem::netMeasureSocketStats ( bool start, int sock_i )
 		double send_wait = get_time_elapsed ();
 		if (send_wait > sock.stat_send_wait) sock.stat_send_wait = send_wait;
 
-		getsockopt ( sock.socket, IPPROTO_TCP, TCP_INFO, &info, &len);
-	
-		if (info.tcpi_rtt/1000.0 > sock.stat_rtt) 	sock.stat_rtt = info.tcpi_rtt / 1000.0;	// current round-trip time (latency)
-		if (info.tcpi_snd_cwnd < sock.stat_congwin || sock.stat_congwin ==-1 ) sock.stat_congwin = info.tcpi_snd_cwnd;		// congestion window
-		if (info.tcpi_unacked > sock.stat_unack ) 	sock.stat_unack = info.tcpi_unacked;			// in-flight packets
-		if (info.tcpi_total_retrans > sock.stat_retrans ) sock.stat_retrans = info.tcpi_total_retrans;	// loss indicator
+		#ifndef _WIN32
+			tcp_info info{};
+			socklen_t len = sizeof(info);
+			getsockopt ( sock.socket, IPPROTO_TCP, TCP_INFO, &info, &len);
+
+			if (info.tcpi_rtt/1000.0 > sock.stat_rtt) 	sock.stat_rtt = info.tcpi_rtt / 1000.0;	// current round-trip time (latency)
+			if (info.tcpi_snd_cwnd < sock.stat_congwin || sock.stat_congwin ==-1 ) sock.stat_congwin = info.tcpi_snd_cwnd;		// congestion window
+			if (info.tcpi_unacked > sock.stat_unack ) 	sock.stat_unack = info.tcpi_unacked;			// in-flight packets
+			if (info.tcpi_total_retrans > sock.stat_retrans ) sock.stat_retrans = info.tcpi_total_retrans;	// loss indicator
+		#endif	
+		
 	}
 }
 
@@ -2311,7 +2314,7 @@ bool NetworkSystem::netSendLiteral ( str str_lit, int sock_i )
 						return SSL_ERROR_WANT_WRITE;
 					} else {
 						str msg = netGetErrorStringSSL ( result, s.ssl );
-						NPRINTF ( ERROR, "Failed at ssl write (1): Returned: %d: %s", result, msg.c_str ( ) );
+						NPRINTF ( DERROR, "Failed at ssl write (1): Returned: %d: %s", result, msg.c_str ( ) );
 					}
 				}
 			#endif
@@ -2332,7 +2335,7 @@ bool NetworkSystem::netCheckError ( int result, int sock_i )
 	TRACE_ENTER ( (__func__) );
 	if ( !CXSocketIsValid ( m_socks[ sock_i ].socket ) ) {
 		netManageTransmitError ( sock_i, "unexpected error" );		// Peer has shutdown (unexpected shutdown)
-		NPRINTF ( ERROR, "Unexpected shutdown" );
+		NPRINTF ( DERROR, "Unexpected shutdown" );
 		TRACE_EXIT ( (__func__) );
 		return false;
 	}
@@ -2483,7 +2486,7 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 						NPRINTF ( VERBOSE, "1 Partial TX: %d < %d", result, event_len);					
 						std::cin.get();						
 					}	else {
-						NPRINTF(ERROR, "Unexpected TX: %d > %d", result, event_len );
+						NPRINTF(DERROR, "Unexpected TX: %d > %d", result, event_len );
 						exit(-77);
 					}
 					
@@ -2495,12 +2498,12 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 					if ( netNonFatalErrorSSL ( sock_i, result ) ) { 
 						str msg = netGetErrorStringSSL ( result, s.ssl );
 						s.txLen = 0;
-						NPRINTF ( ERROR, "Non fatal SSL error: Return: %d: %s", result, msg.c_str ( ) );
+						NPRINTF ( DERROR, "Non fatal SSL error: Return: %d: %s", result, msg.c_str ( ) );
 						TRACE_EXIT ( (__func__) );
 						return false;						
 					} else {
 						str msg = netGetErrorStringSSL ( result, s.ssl );
-						NPRINTF ( ERROR, "1 Failed ssl write (2): Return: %d: %s", result, msg.c_str ( ) );
+						NPRINTF ( DERROR, "1 Failed ssl write (2): Return: %d: %s", result, msg.c_str ( ) );
 					}
 				} 
 			#endif
@@ -2548,7 +2551,7 @@ int NetworkSystem::netSocketBind ( int sock_i )
 	int ret = 0;
 	ret = bind ( s->socket, (sockaddr*) &s->src.addr, addr_size );
 	if ( netFuncError(ret) ) {
-		NPRINTF ( ERROR, "Cannot bind to source: Return: %d", ret );
+		NPRINTF ( DERROR, "Cannot bind to source: Return: %d", ret );
 	}
 	TRACE_EXIT ( (__func__) );
 	return ret;
@@ -2617,7 +2620,7 @@ int NetworkSystem::netSocketListen ( int sock_i )
 //	NPRINTF ( VERBOSE, "Listen: ip %s, port %i", getIPStr(s.src.ip).c_str(), s.src.port );
 	int ret = listen ( s.socket, SOMAXCONN );
 	if ( netFuncError( ret ) ) {
-		NPRINTF ( ERROR, "TCP listen error: Return: %d", ret );
+		NPRINTF ( DERROR, "TCP listen error: Return: %d", ret );
 	}
 	TRACE_EXIT ( (__func__) );
 	return ret;
@@ -2690,7 +2693,7 @@ int NetworkSystem::netSocketRecv ( int sock_i, char* buf, int bufmax )
 						return SSL_ERROR_WANT_READ;
 					} else {
 						str msg = netGetErrorStringSSL ( result, s.ssl );
-						NPRINTF ( ERROR, "Failed at ssl read: Returned: %d: %s", result, msg.c_str ( ) );
+						NPRINTF ( DERROR, "Failed at ssl read: Returned: %d: %s", result, msg.c_str ( ) );
 					}
 				}
 			#endif
@@ -2791,7 +2794,7 @@ int NetworkSystem::netSocketSelect ( fd_set* sockReadSet, fd_set* sockWriteSet )
 
 str NetworkSystem::netPrintf ( int flag, const char* fmt_raw, ... )
 {
-	if (flag == FLOW && !m_printFlow) {
+	if (flag == DFLOW && !m_printFlow) {
 		return str("");
 	}
 	if ( ( flag == VERBOSE || flag == VERBOSE_HS ) && ! m_printVerbose ) {
@@ -2802,9 +2805,9 @@ str NetworkSystem::netPrintf ( int flag, const char* fmt_raw, ... )
 
 	str tag;
   char buffer[ 2048 ];
-  if ( flag == ERROR_HS ) {
+  if ( flag == DERROR_HS ) {
 		tag = "    ";
-		flag = ERROR;
+		flag = DERROR;
 	} else if ( flag == VERBOSE_HS ) {
 		tag = "    ";
 		flag = VERBOSE;
@@ -2825,17 +2828,17 @@ str NetworkSystem::netPrintf ( int flag, const char* fmt_raw, ... )
 			dbgprintf ( msg.c_str ( ) );
 		}
 		break;
-	case FLOW:						// enable with netShowFlow()
+	case DFLOW:						// enable with netShowFlow()
 		if ( m_printFlow ) {
 			msg = tag + msg;
 			dbgprintf ( msg.c_str ( ) );
 		}
 		break;
-	case ERROR:
+	case DERROR:
 		int error_id = 0;			// request last err
 		str error_str = CXGetErrorMsg ( error_id );
 		str delim = tag +  "=================================================\n";
-		msg = delim + srvcli + tag + str("ERROR: ") + msg + ": " + error_str + "\n" + delim;
+		msg = delim + srvcli + tag + str("DERROR: ") + msg + ": " + error_str + "\n" + delim;
 		dbgprintf ( msg.c_str ( ) );
 		break;
 	}
@@ -2950,7 +2953,7 @@ bool NetworkSystem::netSetPathToPublicKey ( str path )
 	str found_path;
 	if ( ! getFileLocation ( path, found_path ) ) {
 		sprintf ( msg, "Public key not found: %s", path.c_str ( ) );
-		NPRINTF ( ERROR, msg );
+		NPRINTF ( DERROR, msg );
 		return false;
 	}
 	m_pathPublicKey = found_path;	
@@ -2963,7 +2966,7 @@ bool NetworkSystem::netSetPathToPrivateKey ( str path )
 	str found_path;
 	if ( ! getFileLocation ( path, found_path ) ) {
 		sprintf ( msg, "Private key not found: %s", path.c_str ( ) );
-		NPRINTF ( ERROR, msg );
+		NPRINTF ( DERROR, msg );
 		return false;	
 	}
 	m_pathPrivateKey = found_path;	
@@ -2985,7 +2988,7 @@ bool NetworkSystem::netSetPathToCertFile ( str path )
 	str found_path;
 	if ( ! getFileLocation ( path, found_path ) ) {
 		sprintf ( msg, "Cert file not found: %s\n", path.c_str ( ) );
-		NPRINTF ( ERROR, msg );
+		NPRINTF ( DERROR, msg );
 		return false;	
 	}
 	m_pathCertFile = found_path;		

@@ -94,9 +94,9 @@ public:
 	enum {
 		VERBOSE = 0, 
 		VERBOSE_HS = 1,
-		ERROR = 2,
-		ERROR_HS = 3,
-		FLOW = 4
+		DERROR = 2,
+		DERROR_HS = 3,
+		DFLOW = 4
 	} print;
 
 	NetworkSystem ( const char* trace_file_name = NULL );

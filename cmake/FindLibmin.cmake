@@ -138,7 +138,7 @@ endif()
 message ( NOTICE "  SOURCE Directory: ${CMAKE_CURRENT_SOURCE_DIR}" )
 message ( NOTICE "  LIBMIN Root: ${LIBMIN_ROOT}" )
 message ( NOTICE "  LIBEXT Root: ${LIBEXT_ROOT}" )
-message ( NOTICE "  ASSET PATH:  ${ASSET_PATH}" )
+message ( NOTICE "  APP ASSET PATH:  ${ASSET_PATH}" )
 message ( NOTICE "----- READY Libmin\n" )
 
 # BOOTSTRAP COMPLETE
