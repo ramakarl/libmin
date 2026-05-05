@@ -1346,6 +1346,9 @@ int NetworkSystem::netClientStartUDP ()
 	// We use the server socket, established during TCP, as the session identifier.
 	// EVERY UDP packet must include this id first.
 
+	// Enable UDP
+	m_udp_sock.state = STATE_CONNECTED;
+
 	// Send first UDP packet
 	Event e;
 	netMakeEvent (e, 'cONU' );
@@ -1361,9 +1364,6 @@ int NetworkSystem::netClientStartUDP ()
 	netSend ( e, sock_i );					// Send event to server*/ 
 
 	NPRINTF( VERBOSE, "UDP READY. port: %d", cliSock.udp_dest.port );
-
-	// Enable UDP
-	m_udp_sock.state = STATE_CONNECTED;
 
 	return cliSock.udp_dest.port;
 }
@@ -2650,6 +2650,8 @@ void NetworkSystem::netSendResidualEvent ( int sock_i )
 
 bool NetworkSystem::netSendUDP ( Event& e, int sock_i )
 {
+	if (m_udp_sock.state==STATE_NONE) return false;
+
 	// get tcp socket (for dest address)
 	if (!valid_socket_index(sock_i)) 							{ TRACE_EXIT ( (__func__) ); return false; }
 	NetSock& s = m_socks[ sock_i ];	
