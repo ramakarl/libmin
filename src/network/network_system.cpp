@@ -2345,7 +2345,7 @@ void NetworkSystem::netReceiveUDP ()
 		// Update the client UDP port (dynamic)		
 		int sock_i = * (int*) (m_udp_sock.rxBuf + Event::staticSerializedHeaderSize() );
 		if (sock_i < 0 || sock_i >= m_socks.size() ) {
-			NPRINTF ( ERROR, "Client not found UDP: %d\n", sock_i );
+			NPRINTF ( DERROR, "Client not found UDP: %d\n", sock_i );
 			return;
 		}
 		NetSock& s = m_socks[ sock_i];
@@ -2993,7 +2993,12 @@ int NetworkSystem::CXSocketRecvFrom ( CX_SOCKET sock, char* buf, int bufmax, Net
 	TRACE_ENTER ( (__func__) );	
 	
 	// Handle UDP recv	
-	int recvlen = sizeof(recv.addr);
+	#ifdef _WIN32	
+		int recvlen = sizeof(recv.addr);		
+	#else		
+		socklen_t recvlen = sizeof(recv.addr);
+	#endif
+
 	int result = recvfrom ( sock, buf, bufmax, 0, (sockaddr*) &recv.addr, &recvlen );		// UDP	
 	
 	TRACE_EXIT ( (__func__) );
