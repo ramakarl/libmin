@@ -36,7 +36,7 @@ void g2Lib::LoadSpec ( std::string fname )
     // 1. load spec
     //
     while (fgets( buf, 2048, fp)) {  
-      dbgprintf ( "GUI: %s", buf );
+      // dbgprintf ( "GUI: %s", buf );
       lin = strTrim(buf) + "|";       // strip '\n' and add |
       if ( lin.at(0)=='#' )           // skip comments
         continue;

@@ -94,8 +94,9 @@
 	// Network Address Abstraction
 	struct HELPAPI NetAddr {
 	public:
+		NetAddr ()					{ type = STATE_NONE; name = ""; setAddress(AF_INET, 0, 0); }
+		NetAddr (char typ)	{ type = typ; name = ""; setAddress(AF_INET,0,0); }
     NetAddr ( int t, std::string n, netIP i, int p ) { name = n; type = t; setAddress(AF_INET, i, p);}
-		NetAddr ()  { name = ""; type = STATE_NONE; setAddress(AF_INET, 0, 0); }
 
 		void setAddress ( int inet, unsigned long i, unsigned short p ) 
 		{
@@ -113,38 +114,45 @@
 #endif						
 			memset( addr.sin_zero, 0, sizeof(addr.sin_zero ));
 		}
+		void getAddress ()
+		{			
+			ip = addr.sin_addr.s_addr;
+			port = ntohs(addr.sin_port);
+		}
 
-		std::string		name;
-		char			type;			// type (any, broadcast, search, connect)
-		int			sock;
-		int			port;
-		netIP			ip;
-		sockaddr_in		addr;
+		std::string	name;
+		char				type;			// type (any, broadcast, search, connect)
+		int					sock;
+		int					port;
+		netIP				ip;
+		sockaddr_in	addr;
 	};
 
 	// Network Socket Abstraction
 	struct HELPAPI NetSock {
 		NetSock()	{
-			txBuf=0;txPtr=0;rxBuf=0;rxPtr=0;pktBuf=0;pktPtr=0;
+			socket=0; txBuf=0;txPtr=0;rxBuf=0;rxPtr=0;pktBuf=0;pktPtr=0; num_udp=0;
 			stat_send_wait=0; stat_rtt=0; stat_congwin=-1; stat_unack=0; stat_retrans=0; 
 		}
 	
-		std::string 		srvAddr;
-		int 			srvPort;	
-		char			side;			// side (client, server)
-		char			mode;			// mode (TCP, UDP)		
-		char			state;			// stat (off, connected)
+		std::string	srvAddr;
+		int					srvPort;	
+		char				side;				// side (client, server)
+		char				mode;				// mode (TCP, UDP)		
+		char				state;			// stat (off, connected)
+		char				num_udp;		// number of extra udp pipes
 		timeval			timeout;		
-		NetAddr			src;			// source socket (ip, port, name, sockID)		
-		NetAddr			dest;			// dest socket (ip, port, name, sockID)	
+		NetAddr			src;				// source socket (ip, port, name, sockID)		
+		NetAddr			dest;				// dest socket (ip, port, name, sockID)	
+		NetAddr			udp_dest;		// udp address info
 		CX_SOCKET		socket;			// hard socket
-		bool			blocking;		// is blocking
-		bool			broadcast;		// is broadcast
-		int 			security; 		// indicates the security level; e.g., OpenSSL
-		int 			reconnectMaxCount;	// limits the number of reconnection attempts 
-		int 			reconnectCount;			// remaining allowed reconnect attempts
-		int				reconnectInterval;	// interval for this socket
-		TimeX 		lastStateChange;	// for tracking when timeouts should occur
+		bool				blocking;		// is blocking
+		bool				broadcast;	// is broadcast
+		int					security;						// indicates the security level; e.g., OpenSSL
+		int					reconnectMaxCount;	// limits the number of reconnection attempts 
+		int					reconnectCount;			// remaining allowed reconnect attempts
+		int					reconnectInterval;	// interval for this socket
+		TimeX				lastStateChange;		// for tracking when timeouts should occur
 		
 		// Outgoing buffers
 		char*		txBuf;					// transmit buffer (per socket)

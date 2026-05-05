@@ -105,8 +105,9 @@ public:
 	void netInitialize ( );
 	void netCreate ( );
 	void netDestroy ( );
-	void netShowVerbose ( bool v ) { m_printVerbose = v; }
-  void netShowFlow ( bool v ) { m_printFlow = v; }	
+	void netShowVerbose ( bool v )	{ m_printVerbose = v; }
+  void netShowFlow ( bool v )			{ m_printFlow = v; }	
+	void netShowStats ( bool v )		{ m_printStats = v; }
 	void netMeasureStats ();
 	void netMeasureSocketStats ( bool start, int sock_i );
 	void netList ( bool verbose = false ); // list all connections/sockets
@@ -135,12 +136,14 @@ public:
 	void netServerCompleteConnection ( int sock_i );
 
 	// Client API
-	void netClientStart ( netPort srv_port, str srv_addr="127.0.0.1" );
+	void netClientStart ();
 	int netClientConnectToServer ( str srv_name, netPort srv_port, bool block = false, int sock_i = -1 );
+	void netClientConnectUDP ( int tcp_sock_i );	
+	int  netClientStartUDP ();
 	void netClientCheckConnectionHandshakes ( );
 	void netClientProcessIO ( );
 	void netClientHandshake ( int sock_i );
-	void netClientCompleteConnection( int sock_i );
+	void netClientCompleteConnection( int sock_i );	
 	
 	// Client & server common API
 	int netCloseConnection ( int sock_i );
@@ -153,10 +156,13 @@ public:
 	void netResetBuf ( char*& buf, char*& ptr, int& len);
 	void netExpandBuf ( char*& buf, char*& ptr, int& max, int& len, int new_max );
 	void netReceiveData ( int sock_i );
+	void netReceiveUDP ();
 	void netReceiveByInjectedBuf ( int sock_i, char* buf, int buflen );
+	void netDeserializeUDP ( NetSock& s, int sock_i );
 	void netDeserializeEvents ( int sock_i );
-	void netMakeEvent ( Event& e, eventStr_t name, eventStr_t sys );	
+	void netMakeEvent ( Event& e, eventStr_t name );	
 	bool netSend ( Event& e, int sock=-1 );
+	bool netSendUDP ( Event& e, int sock_i=-1 );
 	bool netSendLiteral ( str str_lit, int sock_i );
 	void netQueueEvent ( Event& e ); // Place incoming event on recv queue
 	int netEventCallback ( Event& e ); // Processes network events (dispatch)
@@ -177,6 +183,7 @@ public:
 	bool		isServer ( )					{ return m_hostType == 's'; }
 	bool		isClient ( )					{ return m_hostType == 'c'; }
 	bool 		netIsQueueEmpty ( )		{ return m_eventQueue.getSize ( ) == 0; }
+	int			getSrvPort ()					{ return m_socks[0].src.port; }
 	
 	EventPool*  	getNetPool ( )		{ return m_eventPool; }		
 	NetSock*	getSock ( int i );		// socket itself
@@ -206,22 +213,24 @@ private: // Functions
   #endif
 
 	// Abtract socket functions
+	NetSock netCreateSocket ( int side, int mode, int state, bool block, NetAddr src, NetAddr dest );
 	int netAddSocket ( int side, int mode, int state, bool block, NetAddr src, NetAddr dest );
 	int netFindSocket ( int side, int mode, int type );
-	int netFindSocket ( int side, int mode, int state, NetAddr dest );
+	int netFindSocket ( int state, NetAddr& dest );
+	int netFindSocket ( int side, int mode, int state, NetAddr& dest );
 	int netFindOrCreateSocket(str srv_name, netPort srv_port, netIP srv_ip, bool block );
 	int netFindOutgoingSocket ( bool bTcp );
 	int netManageHandshakeError ( int sock_i, std::string reason );
 	int netManageTransmitError ( int sock_i, std::string reason, int force = 0 );
 	int netDeleteSocket ( int sock_i, int force=0 );
+	int netAddSocketsUDP ( int sock_i=0 );
 	netIP netResolveServerIP(str name, netPort port);	
 	void netReportError ( int result );
-	bool netFuncError (int ret );		// check if TCP/IP func return is valid
+	bool netFuncError (int ret );		// check if TCP/IP func return is valid	
 
 	// Low level handling of sockets
 	void netStartSocketAPI ( );
-	void netSetHostname ( );
-	int netSocketCreate ( int sock_i );
+	void netSetHostname ( );	
 	int netSocketBind ( int sock_i );	
 	int netSocketConnect ( int sock_i );
 	int netSocketListen ( int sock_i );
@@ -246,53 +255,61 @@ private: // Functions
 	
 	// Cross-platform socket interactions
 	void CXSetHostname ( );
+	CX_SOCKET CXSocketCreate ( int mode );
 	void CXSocketApiInit ( );
 	void CXSocketSetBlockMode ( CX_SOCKET sock, bool block = false );
 	void CXSocketMakeNoDelay ( CX_SOCKET sock );
+	int CXSocketRecv ( CX_SOCKET sock, int secur, int state, char* buf, int bufmax );
+	int CXSocketRecvFrom ( CX_SOCKET sock, char* buf, int bufmax, NetAddr& recv );
+
 	unsigned long CXSocketReadBytes ( CX_SOCKET sock );
 	bool CXSocketIsValid ( CX_SOCKET sock);			// check if a socket is valid	
 	bool CXSocketBlockError ( );
 	str CXGetErrorMsg ( int& error_id );
-	void CXSocketUpdateAddr ( int sock_i, bool src = true );
+	void CXSocketUpdateMode ( int sock_i, char side );
+	void CXSocketUpdateAddr ( NetAddr& addr );	
+	void CXSocketUnpackAddr ( NetAddr& addr );
 	void CXSocketClose ( CX_SOCKET sock_h );
 	bool CXSocketWouldBlock (std::string& msg);
-	str CXGetIpStr ( netIP ip );
+	str CXGetIpStr ( netIP ip );	
 
 	xlong ComputeChecksum (char* buf, int len);
 	
 private: // State
 	
 	// General
-	uchar m_hostType;
-	str m_hostName;
-	netIP m_hostIp;
-	int m_readyServices;
-	timeval m_rcvSelectTimout;	
-	TimeX m_lastClientConnectCheck;
-	TimeX m_lastNetProcess;
-	int m_processInterval;
+	uchar			m_hostType;
+	str				m_hostName;
+	netIP			m_hostIp;	
+	int				m_readyServices;
+	timeval		m_rcvSelectTimout;	
+	TimeX			m_lastClientConnectCheck;
+	TimeX			m_lastNetProcess;
+	int				m_processInterval;
 	std::vector< NetSock > m_socks;
+	NetSock		m_udp_sock;
 	
 	// Event related
 	EventPool* m_eventPool; 
 	EventQueue m_eventQueue;
 	
 	// Debug and trace related
-	int	m_check;
-	int m_indentCount;
-	bool m_printVerbose;
-	bool m_printFlow;
-	FILE* m_trace;
-	TimeX m_refTime;
+	int				m_check;
+	int				m_indentCount;
+	bool			m_printVerbose;
+	bool			m_printFlow;
+	bool			m_printStats;
+	FILE*			m_trace;
+	TimeX			m_refTime;
 	
 	// Security related
-	int m_security;
-	int m_reconnectInterval;
-	int m_reconnectMaxCount;
-	str m_pathPublicKey;
-	str m_pathPrivateKey;
-	str m_pathCertDir;
-	str m_pathCertFile;
+	int				m_security;
+	int				m_reconnectInterval;
+	int				m_reconnectMaxCount;
+	str				m_pathPublicKey;
+	str				m_pathPrivateKey;
+	str				m_pathCertDir;
+	str				m_pathCertFile;
 
 	// Network statistics
 	NetStat m_stat;
