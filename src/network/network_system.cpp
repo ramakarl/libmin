@@ -2766,7 +2766,7 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 				netExpandBuf (s.txBuf, s.txPtr, s.txMax, s.txLen, remain );
 				memcpy ( s.txPtr, buf + result, remain);
 				s.txLen += remain;					
-				s.txBuf[ event_len ] = '\0';
+				
 				NPRINTF ( DFLOW, "TX %d/%d, %d remain (txLen=%d)", result, event_len, remain, s.txLen );
 			}
 				
