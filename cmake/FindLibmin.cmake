@@ -39,15 +39,6 @@ endfunction()
 
 message ( NOTICE "\n----- RUNNING FindLibmin.cmake " )
 
-add_library(linux_flags INTERFACE)
-if (DEFINED ENV{LINUX_DEBUG} OR CMAKE_BUILD_TYPE STREQUAL "Debug")
-  message( NOTICE "LINUX DEBUGGING enabled")
-  set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
-  target_compile_options(linux_flags INTERFACE -O0)
-  target_compile_options(linux_flags INTERFACE -g)
-  target_compile_options(linux_flags INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:-G> )
-endif()
-
 # *NOTE** 
 # LIBMIN_ prefix forces the variable to be namespaced to Libmin package,
 # and allows it to be initialized & updated here but visible to project
@@ -803,7 +794,6 @@ macro(_LINK )
     ${_LINK_PLATFORM}
     "$<$<CONFIG:Debug>:${_LINK_DEBUG}>"
     "$<$<CONFIG:Release>:${_LINK_OPT}>"
-    linux_flags
   )
 
   #--- NOTE: does not work separately. VS does not respect 'debug' and 'optimized'
@@ -833,8 +823,6 @@ macro(_LINK )
       target_include_directories(${PROJ_NAME} PRIVATE "$ENV{CUDA_PATH}/include")
   endif()
 
-
-  
   message ( NOTICE "\n----- DONE" )	
 	string (REPLACE ";" "\n   " OUTSTR "${LIBLIST}")
 	message ( NOTICE "  Libraries used:\n   ${OUTSTR}" )

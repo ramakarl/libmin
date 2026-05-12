@@ -900,10 +900,12 @@ void NetworkSystem::netServerCheckConnectionHandshakes ( )
 void NetworkSystem::netServerProcessIO ( )
 {
 	// network interval
-	TimeX current_time;
+	TimeX current_time; 
 	current_time.SetTimeNSec();
 	m_stat.interval_ms = current_time.GetElapsedMSec(m_lastNetProcess);
+
 	if (m_stat.interval_ms < m_processInterval) return;
+
 	m_lastNetProcess = current_time;
 
 	// connection handling
