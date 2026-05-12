@@ -185,6 +185,8 @@ public:
 	bool 		netIsQueueEmpty ( )		{ return m_eventQueue.getSize ( ) == 0; }
 	int			getSrvPort ()					{ return m_socks[0].src.port; }
 	
+
+	float		getSockRTT ( int i );
 	EventPool*  	getNetPool ( )		{ return m_eventPool; }		
 	NetSock*	getSock ( int i );		// socket itself
 	str			getSockSrcIP(int i);			// src IP of socket

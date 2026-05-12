@@ -2521,7 +2521,6 @@ void NetworkSystem::netSetHostname ()
 	TRACE_EXIT ( (__func__) );
 }
 
-
 void NetworkSystem::netMeasureStats ()
 {
 	if (m_stat.num_sent_per_tick==0) return;
@@ -2570,9 +2569,25 @@ void NetworkSystem::netMeasureSocketStats ( bool start, int sock_i )
 			if (info.tcpi_unacked > sock.stat_unack ) 	sock.stat_unack = info.tcpi_unacked;			// in-flight packets
 			if (info.tcpi_total_retrans > sock.stat_retrans ) sock.stat_retrans = info.tcpi_total_retrans;	// loss indicator
 		#endif	
-		
 	}
 }
+
+float NetworkSystem::getSockRTT ( int sock_i )
+{
+	NetSock& sock = m_socks[sock_i];
+
+	#ifndef _WIN32	
+	
+		tcp_info info{};
+		socklen_t len = sizeof(info);
+		getsockopt ( sock.socket, IPPROTO_TCP, TCP_INFO, &info, &len);
+		return info.tcpi_rtt / 1000.0;
+
+	#else
+		return 0;
+	#endif
+}
+
 
 
 bool NetworkSystem::netSendLiteral ( str str_lit, int sock_i )
@@ -2753,7 +2768,7 @@ bool NetworkSystem::netSend ( Event& e, int sock_i )
 				netExpandBuf (s.txBuf, s.txPtr, s.txMax, s.txLen, remain );
 				memcpy ( s.txPtr, buf + result, remain);
 				s.txLen += remain;					
-				s.txBuf[ event_len ] = '\0';
+				
 				NPRINTF ( DFLOW, "TX %d/%d, %d remain (txLen=%d)", result, event_len, remain, s.txLen );
 			}
 				
