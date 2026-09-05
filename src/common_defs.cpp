@@ -29,15 +29,39 @@
 
 #if defined(__ANDROID__)
     #include <android/log.h>               // for Android printf logs
+    // 64-bit stat
+    #define _FILE_OFFSET_BITS 64    
     #include <sys/stat.h>
+    struct stat        stinfo;
+    #define osStat	   stat
+
 #elif defined(_WIN32)
     #ifndef BUILD_CMDLINE
       #include <windows.h>
       #include <processthreadsapi.h>      // Process memory usage on Win32
       #include <psapi.h>  
     #endif
-#else
+    // 64-bit stat
     #include <sys/stat.h>
+    struct _stat64		 stinfo;
+	  #define osStat	   _stat64
+
+#else
+    // 64-bit stat
+    #define _FILE_OFFSET_BITS 64  
+    #include <sys/stat.h>
+    struct stat         stinfo;
+    #define osStat	    stat
+#endif
+
+
+#ifdef __linux__
+  
+  #include <sys/stat.h>
+	struct stat stinfo;
+	
+#else
+  
 #endif
 
 static std::vector<std::string> gPaths;
@@ -117,13 +141,21 @@ void addSearchPath(const std::string& path)
     p += getPathDelim();
   }
 
-  // check for path existence  
-  struct stat info;
-  if (stat(p.c_str(), &info) == 0) {    
+  // check for path existence   
+  std::string msg;
+  if (getFileStat(p.c_str(), msg) == 0) {    
     gPaths.push_back(p);
   }   
 }
 
+int getFileStat ( const char* filename, std::string& msg)
+{
+  int result = osStat( filename, &stinfo );
+  if (result==0) {msg=""; return 0;}
+  
+  msg = strerror(errno);
+  return result;
+}
 
 bool getFileLocation ( const char* filename, char* outpath )
 {
@@ -132,18 +164,20 @@ bool getFileLocation ( const char* filename, char* outpath )
 }
 bool getFileLocation ( const char* filename, char* outpath, std::vector<std::string> searchPaths )
 {
+    std::string msg;
+    int result = 0;
     bool found = false;
     FILE* fp = fopen( filename, "rb" );
     if (fp) {
         found = true;
         strcpy ( outpath, filename );
-    } else {
-        struct stat info;
+    } else {        
         for (int i=0; i < searchPaths.size(); i++) {            
             if (searchPaths[i].empty() ) continue;
             sprintf ( outpath, "%s%s", searchPaths[i].c_str(), filename );            
-            if (stat( (char*) outpath, &info) == 0) { found=true; break; }
-            //fp = fopen( outpath, "rb" );
+            result = getFileStat ( (char*) outpath, msg );            
+            if (result == 0) { found=true; break; }            
+		        //fp = fopen( outpath, "rb" );
             //if (fp)	{ found = true;	break; }
         }
     }

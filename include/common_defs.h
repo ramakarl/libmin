@@ -172,6 +172,7 @@
     HELPAPI unsigned long getFilePos ( FILE* fp );
     HELPAPI void getFileParts(std::string fname, std::string& path, std::string& name, std::string& ext);
     HELPAPI void dbgprintf(const char * fmt, ...);
+    HELPAPI int getFileStat ( const char* buf, std::string& msg);
 
     typedef std::multimap<std::string, std::string>   argList_t;
 
