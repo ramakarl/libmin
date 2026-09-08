@@ -179,9 +179,8 @@
     HELPAPI void strParseArgs(int argc, char* argv[], argList_t& list);
     HELPAPI void strParseArgs( std::string args, argList_t& list);
     HELPAPI std::string getArg(std::string chk, argList_t& list);    
-    HELPAPI bool getArgExists(std::string chk, argList_t& list);
-    HELPAPI bool getArgBool(std::string chk, argList_t& list);
-    HELPAPI bool getArgBool(std::string chk, std::string val, argList_t& list);
+    HELPAPI bool getArgExists(std::string chk, argList_t& list);    
+    HELPAPI bool getArgBool(std::string chk, std::string match, argList_t& list);
 
     //--- report CUDA availability 
     HELPAPI bool cuAvailable ();

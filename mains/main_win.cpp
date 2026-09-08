@@ -497,8 +497,6 @@ Application::Application() : m_renderCnt(1), m_win(0), m_debugFilter(0)
 // appStart - called from the user function startup() to indicate desired application config
 bool Application::appStart(const std::string& title, const std::string& shortname, int width, int height, int Major, int Minor, int MSAA, bool GLDebug )
 {
-    bool vsyncstate = true;
-
     m_winSz[0] = width;             // desired width & height, may not be actual/final
     m_winSz[1] = height;
 

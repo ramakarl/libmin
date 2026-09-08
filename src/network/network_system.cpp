@@ -12,7 +12,7 @@
 //--------- DEBUGGING BUILD
 // (disable all for highest performance)
 
-// -DNET  netShowVerbose			// enable connection & client info (via arg or func)
+// -DSHOW  netShowVerbose			// enable connection & client info (via arg or func)
 // -DFLOW netShowFlow					// enable detailed trace flow (via arg or func)
 // -DSTAT netShowStats				// enable network performance stats
 #define DEBUG_NETPRINT			// enable printf calls throughout net system
@@ -1261,6 +1261,13 @@ int NetworkSystem::netClientConnectToServer ( str srv_name, netPort srv_port, bo
 	if ( netFuncError(ret) ) {
 		NPRINTF ( DERROR_HS, "Failed to set SO_REUSEADDR: Return: %d", ret );
 	}
+	int buf_size = 4*1024*1024;
+	ret = setsockopt(s.socket, SOL_SOCKET, SO_RCVBUF, (const char*) &buf_size, sizeof(buf_size));
+	if ( netFuncError(ret) ) {	
+		NPRINTF ( DERROR, "Fail to set SO_RCVBUF. Ret: %d", ret );
+		return false;
+	}
+
 
 	// Set server endpoint (for reconnection)
 	s.srvAddr = srv_name;
@@ -2331,37 +2338,41 @@ void NetworkSystem::netReceiveUDP ()
 {
 	std::string msg;
 	NetAddr recv_src;
+	bool reading = true;
 	
-	int result = CXSocketRecvFrom ( m_udp_sock.socket, m_udp_sock.rxBuf, m_udp_sock.rxMax, recv_src );
+	while (reading) {
+		int result = CXSocketRecvFrom ( m_udp_sock.socket, m_udp_sock.rxBuf, m_udp_sock.rxMax, recv_src );
 	
-	if ( netFuncError(result)  ) {
-		if (!CXSocketWouldBlock ( msg )) {
-			NPRINTF( DERROR_HS, "Recvfrom UDP error.");
-		}
+		if ( netFuncError(result)  ) {
+			if (!CXSocketWouldBlock ( msg )) {
+				NPRINTF( DERROR_HS, "Recvfrom UDP error.");
+			}
+			reading = false;
 
-	} else if ( result > 0 ) {
+		} else {
 
-		// Received bytes
-		m_udp_sock.rxLen = result; 
+			// Received bytes
+			m_udp_sock.rxLen = result; 
 		
-		// Update the client UDP port (dynamic)		
-		int sock_i = * (int*) (m_udp_sock.rxBuf + Event::staticSerializedHeaderSize() );
-		if (sock_i < 0 || sock_i >= m_socks.size() ) {
-			NPRINTF ( DERROR, "Client not found UDP: %d\n", sock_i );
-			return;
-		}
-		NetSock& s = m_socks[ sock_i];
-		CXSocketUnpackAddr ( recv_src );		
-		s.udp_dest.type = NTYPE_CONNECT;
-		s.udp_dest.port = recv_src.port;
-		s.udp_dest.ip = recv_src.ip;
-		CXSocketUpdateAddr ( s.udp_dest );
+			// Update the client UDP port (dynamic)		
+			int sock_i = * (int*) (m_udp_sock.rxBuf + Event::staticSerializedHeaderSize() );
+			if (sock_i < 0 || sock_i >= m_socks.size() ) {
+				NPRINTF ( DERROR, "Client not found UDP: %d\n", sock_i );
+				return;
+			}
+			NetSock& s = m_socks[ sock_i];
+			CXSocketUnpackAddr ( recv_src );		
+			s.udp_dest.type = NTYPE_CONNECT;
+			s.udp_dest.port = recv_src.port;
+			s.udp_dest.ip = recv_src.ip;
+			CXSocketUpdateAddr ( s.udp_dest );
 
-		// Deserialize
-		netDeserializeUDP ( m_udp_sock, sock_i );		
+			// Deserialize
+			netDeserializeUDP ( m_udp_sock, sock_i );		
 
-		if (m_printFlow) {
-			dbgprintf ( "recvfrom: %s, %d bytes, sock %d, %s\n", netPrintAddr(s.udp_dest).c_str(), result, sock_i, m_udp_sock.event->NameToStr().c_str() );
+			if (m_printFlow) {
+				dbgprintf ( "recvfrom: %s, %d bytes, sock %d, %s\n", netPrintAddr(s.udp_dest).c_str(), result, sock_i, m_udp_sock.event->NameToStr().c_str() );
+			}
 		}
 	}
 
@@ -2687,9 +2698,10 @@ bool NetworkSystem::netSendUDP ( Event& e, int sock_i )
 	if ( netFuncError(result) ) {
 		NPRINTF( DERROR, "Failed sendto by UDP. %s\n", netPrintAddr(s.udp_dest).c_str() );
 		// send error
-
-	} else if (result < event_len) {
+	} else if (result > 0 && result < event_len) {
 		// partial event sent
+	} else {
+		// sent ok
 	}
 
 	if (m_printFlow) {

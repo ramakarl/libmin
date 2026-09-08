@@ -323,28 +323,16 @@ bool getArgExists(std::string key, argList_t& list)
   return false;
 }
 
-bool getArgBool(std::string key, argList_t& list)
+bool getArgBool(std::string key, std::string match, argList_t& list)
 {
-  // return true if the key's value is "true", otherwise false
-  auto it = list.find(key);
-  if (it != list.end()) {
-    return (it->second.at(0) == 't');
+  // return true if the key's value is found as 'match', otherwise false
+  for (auto it = list.begin(); it != list.end(); it++) {
+    if (it->first == key) {
+      if (it->second == match) return true;
+    }
   }
   return false;
 }
-
-bool getArgBool(std::string key, std::string val, argList_t& list)
-{
-  // for duplicate keys, check if 'val' is among them
-  std::pair<argList_t::iterator, argList_t::iterator> range = list.equal_range( key );
-  for (argList_t::iterator it = range.first; it != range.second; it++) {
-    if (it->second.compare(val) != std::string::npos) return true;    
-  }
-  return false;
-
-}
-
-
 
 void strncpy_sc ( char *dst, const char *src, size_t len)
 {

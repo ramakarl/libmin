@@ -149,7 +149,6 @@ void Event::expand ( int size)
 
 void Event::clear ()
 {
-	
 	if ( mData != 0x0 ) {
 		// reuse data if possible
 		memset ( mData, 'C', mMax );
@@ -158,7 +157,8 @@ void Event::clear ()
 		mCID = event_alloc;	
 		mData = new_event_data ( mMax, mMax, mOwner, mName, "clear" );
 	}
-	mPos = 0;	
+	mPos = mData;
+	mDataLen = 0;
 }
 
 Event::~Event ()

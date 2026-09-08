@@ -108,6 +108,7 @@ public:
 	void netShowVerbose ( bool v )	{ m_printVerbose = v; }
   void netShowFlow ( bool v )			{ m_printFlow = v; }	
 	void netShowStats ( bool v )		{ m_printStats = v; }
+	bool netStats ()								{ return m_printStats; }
 	void netMeasureStats ();
 	void netMeasureSocketStats ( bool start, int sock_i );
 	void netList ( bool verbose = false ); // list all connections/sockets

@@ -272,6 +272,9 @@
 		float GetElapsedWeeks ( TimeX& base );
 		float GetElapsedMonths ( TimeX& base );
 		float GetElapsedYears ( TimeX& base );
+		
+		float GetElapsedMSec ();							// relative to internal base m_BaseTime
+
 		long GetFracDay ( TimeX& base );			// Return Unit = 5 mins
 		long GetFracWeek ( TimeX& base );			// Return Unit = 1 hr
 		long GetFracMonth ( TimeX& base );		// Return Unit = 4 hrs

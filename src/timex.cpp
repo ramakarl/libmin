@@ -609,6 +609,11 @@
 		return int((mjd_curr - mjd_start + dow -1 ) / 7 );
 	}
 
+	float TimeX::GetElapsedMSec ()							// relative to internal base m_BaseTime
+	{
+		return float( sjtime(m_CurrTime - m_BaseTime ) ) / sjtime( SEC_SCALAR );
+	}
+
 	float TimeX::GetElapsedSec ( TimeX& base )
 	{
 		return float( sjtime(m_CurrTime - base.GetSJT() ) ) / sjtime( SEC_SCALAR );
@@ -778,7 +783,8 @@
 		int hr, min, m, d, y, s, ms, ns;
 
 		GetTime ( hr, min, m, d, y, s, ms, ns );	
-		sprintf ( buf, "%04d-%02d-%02d %02d:%02d:%02d", y, m, d, hr, min, s );
+
+		sprintf ( buf, "%04d-%02d-%02d %02d:%02d:%02d.%04d", y, m, d, hr, min, s, ms );
 		return std::string ( buf );
 	}
 
