@@ -4,7 +4,6 @@
 #include "g2_item.h"
 #include "g2_lib.h"
 #include "gxlib.h"
-#include "event_system.h"
 
 using namespace glib;
 

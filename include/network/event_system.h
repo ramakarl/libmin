@@ -41,6 +41,8 @@
 	HELPAPI void new_event ( Event& e, size_t size, eventStr_t targ, eventStr_t name, eventStr_t state, EventPool* pool, const char* msg=0 );
 	HELPAPI void free_event ( Event& e, const char* msg=0 );
 	HELPAPI void expand_event ( Event& e, size_t size );	
+	HELPAPI void reserve_event ( Event&p, size_t new_max );
+	HELPAPI void clear_event ( Event&p );
 	
 	// event memory debugging
 	#ifdef DEBUG_EVENT_MEM

@@ -113,6 +113,11 @@ void glib::start2D ( int w, int h, bool bStatic )
 	set->view.Set( 0, 0, w, h );
 	set->text_aspect = 1.0;						// default text aspect
 
+	if (w==0 || h==0) {
+		dbgprintf ( "ERROR: start2D width or height is 0.\n");
+		exit(-77);
+	}
+	
 	setview2D ( w, h );
 }
 
@@ -139,18 +144,27 @@ void glib::setview2D (int w, int h)
   gx.m_Xres = w;
   gx.m_Yres = h;
 
+	Vec4F view (0, h, w, 0);				// <-- screen view is inverted here
+	Vec4F region (0, 0, w, h);
+
 	gxSet* s = gx.getCurrSet();
 	if (s == 0x0) return;
-	s->view.Set(0, 0, w, h);				// default, screen-space view
-	s->region.Set (0, 0, w, h);
+	s->view = view;
+	s->region = region;
+	gx.m_View = view;
+	gx.m_Region = region;
 
-	Matrix4F proj, view, model;
-	view.Scale ( 2.0/w, -2.0/h, 1.0 );	
-  model.Translate ( -w/2.0, -h/2.0, 0 );
-  view *= model;
-  model.Identity();
-  proj.Identity();
-	setMatrices ( model, view, proj );   
+	// 2D matrices - same for both screen views & world views	
+	Matrix4F mmodel, mview, mproj;
+	mmodel.Identity();
+  mproj.Scale ( 2.0f, 2.0f, 1.0 );
+  mproj.PostTranslate ( Vec3F(-1.0, -1.0, 0) );
+  mview.Scale ( 1.0/(view.z-view.x), 1.0/(view.w-view.y), 1);  
+	mview.PreTranslate ( Vec3F(-view.x, -view.y, 0.f) );
+
+	memcpy ( s->model_mtx, mmodel.GetDataF(), 16 * sizeof(float) );
+	memcpy ( s->view_mtx,  mview.GetDataF(), 16 * sizeof(float) );
+	memcpy ( s->proj_mtx,  mproj.GetDataF(), 16 * sizeof(float) );
 }
 
 // set view matrices explicitly
@@ -163,6 +177,8 @@ void glib::setview2D ( int w, int h, Vec4F view, Vec4F region, Matrix4F& model, 
 	if (s == 0x0) return;
 	s->view = view;							// custom view & region
 	s->region = region;
+	gx.m_View = view;
+	gx.m_Region = region;
 
 	setMatrices ( model, viewmtx, projmtx );		// custom matrices
 }
@@ -426,9 +442,15 @@ float glib::getPntToWorld ()
 {
 	gxSet* s = gx.getCurrSet(); if (s==0) return 1;
 
+	float dr = (s->region.w - s->region.y);
+	if (dr == 0 ) {
+		dbgprintf ("ERROR: Must set gx device region.\n");
+		exit(-77);
+	}
+
   // pnt_to_world = point factor --> pixels --> world
   //  (actual measure of pnt_to_world is in: units/pixels)
-	return (gx.m_BasePnt/10.0) * gx.m_PixPerPnt * fabs((s->view.w - s->view.y) / (s->region.w - s->region.y));
+	return (gx.m_BasePnt/10.0) * gx.m_PixPerPnt * fabs((s->view.w - s->view.y) / dr);
 }
 Vec4F glib::getView()			{ return gx.m_sets[gx.m_curr_set].view; }
 Vec4F glib::getRegion()		{ return gx.m_sets[gx.m_curr_set].region; }
@@ -478,13 +500,16 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	char ch;
 	
 	// Font rendering:
-  // - font glyph contains type dimension in bitmap pixel units
-  // - fontPixToWorld = converts from font bitmap pixel to world units = text_hgt / font.ascent;
-  // - text_hgt    = already contains point -> pixel -> world conversions
-  // - text_aspect = text aspect adjustment (y only)
+  // - font glyph contains type dimension in bitmap pixel units  
+	// - text_aspect = text aspect adjustment (x only)
+  // - text_hgt  = already contains point -> pixel -> world conversions
+	// - fontSz    = converts from font bitmap pixel to world units = text_hgt / font.ascent;
   
-	float fontPixToWorld = gx.m_text_hgt / font.ascent;			
+	float fontSz = gx.m_text_hgt / font.ascent;			
 	float text_aspect = gx.getTextAspect();
+	float yscal = (gx.m_View.w-gx.m_View.y < 0) ? -1 : 1;				// handle screen space views (inverted y)
+	float ascent = (yscal<0) ? 0 : font.ascent;
+
 	int cused = 0;
 
 	for (int c=0; c < len; c++ ) {
@@ -492,16 +517,17 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 		if ( ch == '\n' ) {
 			// line return
 			lX = lLinePosX;
-			lLinePosY += gx.m_text_hgt / text_aspect;
+			lLinePosY += gx.m_text_hgt;
 			lY = lLinePosY;
 		
 		} else if ( ch >= 0 && ch <= 128 ) {
+
 			// printable character
 			gxGlyph& gly = font.glyphs[ ch ];
-			float pX = lX + gly.offX * fontPixToWorld;
-			float pY = lY + (gly.offY * fontPixToWorld / text_aspect);
-			float pW = gly.width * fontPixToWorld;
-			float pH = gly.height * fontPixToWorld * -1.0 / text_aspect;
+			float pX = lX + gly.offX * fontSz * text_aspect;
+			float pY = lY + (ascent - yscal*gly.offY) * fontSz;
+			float pW = gly.width * fontSz * text_aspect;
+			float pH = gly.height * fontSz * yscal;
 	
 			// GRP_TRITEX is a triangle strip!
 			// repeat first point (jump), zero alpha
@@ -516,7 +542,7 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 			// repeat last point (jump), zero alpha
 			v->x = pX+pW;	v->y = pY-pH;	v->z = 0;			vclr(v,clr, 0);		v->tx = gly.u + gly.du; v->ty = gly.v; v++;
 	
-			lX += (gly.advance + gx.m_text_kern) * fontPixToWorld;
+			lX += (gly.advance + gx.m_text_kern) * fontSz * text_aspect;
 			lY += 0;			
 			cused++;
 
@@ -1074,6 +1100,7 @@ gxSet* gxLib::addSet ( char st, bool bStatic )
 		m_sets.push_back ( newset );
 		m_curr_set = n;
 	} 
+
 	// get set
   gxSet* s = getSet( m_curr_set );
 	s->stype = st;

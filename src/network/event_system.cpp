@@ -86,9 +86,11 @@ void new_event ( Event& p, size_t size, eventStr_t targ, eventStr_t name, eventS
 	p.mDataLen = 0;
 	p.mCID = event_alloc;			// creation ID
 	
-	// reuse payload
-	if (p.mData == 0x0 || size > p.mMax ) {
-		p.mData = new_event_data ( size, p.mMax, pool, name, msg );	  // payload allocation			
+	// new or reuse payload
+	int max = p.mMax;
+	if (p.mData == 0x0 || size > max ) {
+		p.mData = new_event_data ( size, max, pool, name, msg );	  // payload allocation	
+		p.mMax = max;
 	}
 	// memset ( p.mData, '0', p.mMax );			//--- debugging
 
@@ -107,6 +109,8 @@ void free_event ( Event& p, const char* msg )
 	p.bDestroy = false;
 }
 
+// expand - change event size *and* preserve contents and position
+//
 void expand_event (Event& p, size_t new_size)
 {
 	EventPool* pool = p.mOwner;	
@@ -131,6 +135,44 @@ void expand_event (Event& p, size_t new_size)
 	p.mData = new_data;
 	p.mPos = new_data + old_pos;
 }
+
+// reserve - change event size but *do not* preserve contents
+//
+void reserve_event ( Event&p, size_t new_max )
+{
+	int max = p.mMax;	
+	if (p.mData == 0x0 || max > new_max ) {
+		p.mData = new_event_data ( new_max, max, p.mOwner, p.mName, "rsrv" );
+		p.mMax = max;
+	}
+	p.mPos = p.mData;
+	p.mDataLen = 0;
+
+	p.bOwn = true;		
+	p.bDestroy = true;
+}
+
+// clear - keep size, *do not* preserve contents (reset pos). must have been created earlier.
+//
+void clear_event ( Event&p )
+{
+	if ( p.mData == 0x0 ) {
+		// new data
+		p.mCID = event_alloc;
+		p.mData = new_event_data ( p.mMax, p.mMax, p.mOwner, p.mName, "clr" );
+	} else {
+		// reuse data 		
+	} 
+	// max size kept the same
+	p.mPos = p.mData;
+	p.mDataLen = 0;
+
+	p.bOwn = true;		
+	p.bDestroy = true;
+}
+
+
+
 
 void free_event_data ( char*& data, EventPool* pool, eventStr_t name, int cid, const char* msg )
 {
