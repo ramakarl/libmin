@@ -110,8 +110,7 @@ void glib::start2D ( int w, int h, bool bStatic )
 	
 	gxSet* set = gx.addSet ( '2', bStatic );	
 	set->region.Set ( 0, 0, w, h );		// default view & region
-	set->view.Set( 0, 0, w, h );
-	set->text_aspect = 1.0;						// default text aspect
+	set->view.Set( 0, 0, w, h );	
 
 	if (w==0 || h==0) {
 		dbgprintf ( "ERROR: start2D width or height is 0.\n");
@@ -124,7 +123,7 @@ void glib::start2D ( int w, int h, bool bStatic )
 void glib::setTextAspect (float a)
 {
 	gxSet* s = gx.getCurrSet();
-	if (s==0x0) return;
+	if (s==0x0) return;	
 	s->text_aspect = a;
 }
 
@@ -154,6 +153,9 @@ void glib::setview2D (int w, int h)
 	gx.m_View = view;
 	gx.m_Region = region;
 
+	// text aspect
+	s->text_aspect = fabs((region.w-region.y)/(region.z-region.x)) * fabs((view.z-view.x)/(view.w-view.y));
+
 	// 2D matrices - same for both screen views & world views	
 	Matrix4F mmodel, mview, mproj;
 	mmodel.Identity();
@@ -179,6 +181,9 @@ void glib::setview2D ( int w, int h, Vec4F view, Vec4F region, Matrix4F& model, 
 	s->region = region;
 	gx.m_View = view;
 	gx.m_Region = region;
+
+	// text aspect
+	s->text_aspect = fabs((region.w-region.y)/(region.z-region.x)) * fabs((view.z-view.x)/(view.w-view.y));
 
 	setMatrices ( model, viewmtx, projmtx );		// custom matrices
 }
@@ -452,6 +457,14 @@ float glib::getPntToWorld ()
   //  (actual measure of pnt_to_world is in: units/pixels)
 	return (gx.m_BasePnt/10.0) * gx.m_PixPerPnt * fabs((s->view.w - s->view.y) / dr);
 }
+Vec2F glib::getPixToWorld ()
+{
+	gxSet* s = gx.getCurrSet(); if (s==0) return Vec2F(1,1);
+
+	return Vec2F( fabs( (s->view.z - s->view.x)/(s->region.z - s->region.x) ),
+								fabs( (s->view.w - s->view.y)/(s->region.w - s->region.y) ) );
+
+}
 Vec4F glib::getView()			{ return gx.m_sets[gx.m_curr_set].view; }
 Vec4F glib::getRegion()		{ return gx.m_sets[gx.m_curr_set].region; }
 
@@ -494,9 +507,7 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	// get current font
 	gxFont& font = gx.getCurrFont ();		
 	float lX = a.x;
-	float lY = a.y;
-	float lLinePosX = a.x;
-	float lLinePosY = a.y;			
+	float lY = a.y;	
 	char ch;
 	
 	// Font rendering:
@@ -510,15 +521,16 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 	float yscal = (gx.m_View.w-gx.m_View.y < 0) ? -1 : 1;				// handle screen space views (inverted y)
 	float ascent = (yscal<0) ? 0 : font.ascent;
 
+	lY -= gx.m_text_hgt * yscal;
+
 	int cused = 0;
 
 	for (int c=0; c < len; c++ ) {
 		ch = msg.at(c);
 		if ( ch == '\n' ) {
 			// line return
-			lX = lLinePosX;
-			lLinePosY += gx.m_text_hgt;
-			lY = lLinePosY;
+			lX = a.x;
+			lY -= gx.m_text_hgt * yscal;			
 		
 		} else if ( ch >= 0 && ch <= 128 ) {
 
@@ -542,8 +554,7 @@ void glib::drawText ( Vec2F a, std::string msg, Vec4F clr )
 			// repeat last point (jump), zero alpha
 			v->x = pX+pW;	v->y = pY-pH;	v->z = 0;			vclr(v,clr, 0);		v->tx = gly.u + gly.du; v->ty = gly.v; v++;
 	
-			lX += (gly.advance + gx.m_text_kern) * fontSz * text_aspect;
-			lY += 0;			
+			lX += (gly.advance + gx.m_text_kern) * fontSz * text_aspect;			
 			cused++;
 
 		}	else if ( ch=='\0' ) {
@@ -565,30 +576,34 @@ Vec4F glib::getTextDim ( char mode, float hgt, std::string msg )
 	int len = (int) msg.size();
 	if (len == 0)	return Vec4F(0, 0, 0, 0);						// no text
 
-	float yhgt = hgt;
 	if (mode == 'p') {	
 		float dev_to_pnt = (gx.m_BasePnt / 10.0) * gx.m_PixPerPnt * fabs((gx.m_View.w - gx.m_View.y) / (gx.m_Region.w - gx.m_Region.y));
-		yhgt = hgt * dev_to_pnt;
+		hgt *= dev_to_pnt;
 	}	
 	// get current font
 	gxFont& font = gx.getCurrFont();
 	if (font.ascent == 0)	return Vec4F(0, 0, 0, 0);		// we don't have a font yet
-	float yworld = yhgt / font.ascent;								// font to world scale
+
+	float fontSz = hgt / font.ascent;								// font to world scale
+	// note: this is a placeholder - need to find proper place to compute and cache
+	float text_aspect = ((gx.m_Region.w-gx.m_Region.y)/(gx.m_Region.z-gx.m_Region.x)) * (gx.m_View.z-gx.m_View.x)/(gx.m_View.w-gx.m_View.y);
 	
 	// world size width of text
-	float ymax, x = 0, xmax = 0;
+	float ymax, lX = 0, xmax = 0;
 	int ln = 1;
 	char ch;
 	for (int c=0; c < len; c++) {
 		ch = msg.at(c);
 		if (ch == '\n') {
-			x = 0; ln++;
+			lX = 0; ln++;
 		}	else if (ch >= 0 && ch <= 128) {			
-			x += (font.glyphs[ch].advance + gx.m_text_kern) * yworld;
-			if (x > xmax) xmax = x;
+			lX += (font.glyphs[ch].advance + gx.m_text_kern) * fontSz * text_aspect;
+			if (lX > xmax) xmax = lX;
+		} else if (ch=='\0') {
+			break;
 		}
 	}
-	ymax = yhgt * ln;
+	ymax = hgt * ln;
 
 	// world space to pixels
 	// px = sz * Vec2F( float(s->region.z - s->region.x) / (view.z - view.x), float(region.w - region.y) / (view.w - view.y) );
@@ -889,9 +904,7 @@ void glib::drawText3D ( Vec3F a, float sz, char* msg, Vec4F clr )
 	gxFont& font = gx.getCurrFont ();	
 	int glyphHeight = font.ascent + font.descent + font.linegap;
 	float lX = 0;
-	float lY = 0;
-	float lLinePosX = 0;
-	float lLinePosY = 0;
+	float lY = 0;	
 	const char* c = msg;
 	int cnt = 0;
 
@@ -905,9 +918,8 @@ void glib::drawText3D ( Vec3F a, float sz, char* msg, Vec4F clr )
 	
 	while (*c != '\0' && cnt < len ) {
 		if ( *c == '\n' ) {
-			lX = lLinePosX;
-			lLinePosY += gx.m_text_hgt;
-			lY = lLinePosY;
+			lX = 0;
+			lY += gx.m_text_hgt;			
 		} else if ( *c >=0 && *c <= 128 ) {
 			gxGlyph& gly = font.glyphs[*c];
 			float pX = lX + gly.offX * textSz;

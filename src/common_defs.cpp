@@ -143,7 +143,7 @@ void addSearchPath(const std::string& path)
 
   // check for path existence   
   std::string msg;
-  if (getFileStat(p.c_str(), msg) == 0) {    
+  if (getFileStat(p.c_str(), msg) > 0) {    
     gPaths.push_back(p);
   }   
 }
@@ -151,10 +151,12 @@ void addSearchPath(const std::string& path)
 int getFileStat ( const char* filename, std::string& msg)
 {
   int result = osStat( filename, &stinfo );
-  if (result==0) {msg=""; return 0;}
-  
-  msg = strerror(errno);
-  return result;
+  if (result != 0 ) {
+    msg = strerror(errno);
+    return 0;
+  }
+  msg = "";
+  return stinfo.st_size;
 }
 
 bool getFileLocation ( const char* filename, char* outpath )
@@ -176,7 +178,7 @@ bool getFileLocation ( const char* filename, char* outpath, std::vector<std::str
             if (searchPaths[i].empty() ) continue;
             sprintf ( outpath, "%s%s", searchPaths[i].c_str(), filename );            
             result = getFileStat ( (char*) outpath, msg );            
-            if (result == 0) { found=true; break; }            
+            if (result > 0) { found = true; break; }            
 		        //fp = fopen( outpath, "rb" );
             //if (fp)	{ found = true;	break; }
         }

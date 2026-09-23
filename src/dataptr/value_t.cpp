@@ -181,7 +181,10 @@ void Value_t::Pack (char* buf, int maxlen)
   *buf = dt;
 
   if (useStr(dt)) {
-    memcpy ( buf+8, (v.str)->c_str(), imin(maxlen, (v.str)->length()) );    
+    int len = imin(maxlen, (v.str)->length());
+    memcpy ( buf+8, (v.str)->c_str(), len );
+    buf[8+len] = '\0';
+
   } else {
     memcpy ( buf+8, &v, imin(maxlen, sizeof(v) ) );	
   }
