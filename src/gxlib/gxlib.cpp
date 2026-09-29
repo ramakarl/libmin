@@ -586,7 +586,7 @@ Vec4F glib::getTextDim ( char mode, float hgt, std::string msg )
 
 	float fontSz = hgt / font.ascent;								// font to world scale
 	// note: this is a placeholder - need to find proper place to compute and cache
-	float text_aspect = ((gx.m_Region.w-gx.m_Region.y)/(gx.m_Region.z-gx.m_Region.x)) * (gx.m_View.z-gx.m_View.x)/(gx.m_View.w-gx.m_View.y);
+	float text_aspect = fabs((gx.m_Region.w-gx.m_Region.y)/(gx.m_Region.z-gx.m_Region.x)) * fabs((gx.m_View.z-gx.m_View.x)/(gx.m_View.w-gx.m_View.y));
 	
 	// world size width of text
 	float ymax, lX = 0, xmax = 0;
