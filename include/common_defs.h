@@ -282,9 +282,10 @@
 	    #define VECCLR(v)			( COLORA( v.x, v.y, v.z, v.w ) )
     #endif
 
-	// math defs
+	  // math defs
     #ifndef PI
         #define PI					(3.14159265358979f)			// sometimes useful :)
+        #define TWO_PI      (2.0f*PI)
     #endif
     #ifndef DEGtoRAD
 	    #define DEGtoRAD			(3.14159265358979f/180.0f)
