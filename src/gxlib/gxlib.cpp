@@ -1744,6 +1744,7 @@ void gxLib::drawSet ( int g )
 	#ifdef BUILD_OPENGL
 		// viewport clipping
 		if ( s->region.z != 0 ) {	
+			// printf ( "viewport: %f %f %f %f\n", s->region.x, s->region.y, s->region.z, s->region.w );
 			glViewport ( s->region.x, s->region.y, s->region.z, s->region.w );
 		}
 		// bind shader	

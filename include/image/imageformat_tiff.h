@@ -42,6 +42,13 @@
     void clear() {
       buf.clear(); readPos = 0;
     }
+		void pack_quad ( uint16_t tag, uint16_t type, uint64_t count, uint64_t val ) 
+		{
+			write<uint16_t> ( tag );
+			write<uint16_t> ( type );
+			write<uint32_t> ( count );			
+			write<uint32_t> ( val );
+		}
     void write(const void* data, std::size_t size) {
       const uint8_t* bytes = static_cast<const uint8_t*>(data);
       buf.insert(buf.end(), bytes, bytes + size);

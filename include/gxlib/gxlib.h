@@ -26,7 +26,7 @@
     #define DEF_GX
     
     #include "gxlib_types.h"    
-    #include "camera3d.h"
+    #include "camera3d.h"    
 
     #ifdef BUILD_IMAGE
       #include "imagex.h"
@@ -40,6 +40,38 @@
         char* pix;
       };
     #endif
+
+    struct RenderTarget {
+
+      void Update ( Vec4F v, Vec4F r, float scalar = 1.0) 
+      {
+        model_mtx.Identity();          
+        proj_mtx.Identity();
+        proj_mtx.Scale ( 2.0f, 2.0f, 1.0 );
+        proj_mtx.PostTranslate ( Vec3F(-scalar, -scalar, 0) );
+        view_mtx.Identity();
+        view_mtx.Scale (scalar / (v.z-v.x), scalar / (v.w-v.y), 1);
+        view_mtx.PreTranslate ( Vec3F(-v.x, -v.y, 0.f) );
+
+        view = v;
+        region = r;        
+      };
+    
+      int   width, height;
+      Vec4F view;
+      Vec4F region;
+
+      Matrix4F model_mtx, view_mtx, proj_mtx;
+
+      Vec4F fullview;
+      Vec4F outSz;
+      Vec2I outRes;
+      Vec2I tileres;
+      Vec2I tilecnt;
+      Vec2I subtile;
+      int   ppi;
+      bool  printing;      
+    };
     
     // GX Library
     namespace glib {

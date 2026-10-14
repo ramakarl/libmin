@@ -849,8 +849,8 @@ bool CImageFormatTiff::SaveTiffDirectory ()
 
 	SaveTiffExtras (TifBitsPerSample);
 
-	// at this point, we should have written exactly TIFF_SAVE_POFOSSETS bytes	
-	int offs = m_Buf.getPos();
+	// at this point, we should have exactly TIFF_SAVE_POFOSSETS bytes	
+	int offs = m_Buf.size();		
 	assert ( offs == TIFF_SAVE_POSOFFSETS );
 
 	int strip_header_size = (m_yres*4) * 2;		// 2x = counts & offsets
@@ -937,7 +937,7 @@ bool CImageFormatTiff::Save (const std::string filename, ImageX* img )
 	m_Buf.clear();
 	m_Buf.write<uint16_t>( TIFF_BYTEORDER );
 	m_Buf.write<uint16_t>( TIFF_MAGIC );
-	m_Buf.write<uint64_t>( TIFF_SAVE_POSIFD );
+	m_Buf.write<uint32_t>( TIFF_SAVE_POSIFD );
 	
 	SaveTiffDirectory ();			// Write IFD
 	
