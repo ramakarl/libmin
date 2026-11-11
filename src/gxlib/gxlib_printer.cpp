@@ -20,9 +20,9 @@ GXPrinter::~GXPrinter()
 void GXPrinter::Destroy()
 {
   #ifdef BUILD_OPENGL
-    if (m_depth) glDeleteRenderbuffers(1, &m_depth);
-    if (m_color) glDeleteTextures(1, &m_color);
-    if (m_fbo)   glDeleteFramebuffers(1, &m_fbo);
+    if (m_depth) glDeleteRenderbuffers(1, (GLuint*) &m_depth);
+    if (m_color) glDeleteTextures(1, (GLuint*) &m_color);
+    if (m_fbo)   glDeleteFramebuffers(1, (GLuint*)  &m_fbo);
   #endif
 
   m_depth = m_color = m_fbo = 0;
@@ -52,12 +52,12 @@ bool GXPrinter::Create (int w, int h)
   #ifdef BUILD_OPENGL
 
     // Frame buffer object
-    glGenFramebuffers(1, &m_fbo);
+    glGenFramebuffers(1, (GLuint*) &m_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     checkGL ( "GXPrinter::frame_buffer", true );
 
     // Color target
-    glGenTextures(1, &m_color);
+    glGenTextures(1, (GLuint*) &m_color);
     glBindTexture(GL_TEXTURE_2D, m_color);
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -68,7 +68,7 @@ bool GXPrinter::Create (int w, int h)
     checkGL ( "GXPrinter::color_target", true );
 
     // Depth target
-    glGenRenderbuffers(1, &m_depth);
+    glGenRenderbuffers(1, (GLuint*) &m_depth);
     glBindRenderbuffer(GL_RENDERBUFFER, m_depth);
     glRenderbufferStorage( GL_RENDERBUFFER,  GL_DEPTH_COMPONENT24, w, h);
     glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
