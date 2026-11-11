@@ -19,12 +19,14 @@ GXPrinter::~GXPrinter()
 
 void GXPrinter::Destroy()
 {
+  #ifdef BUILD_OPENGL
     if (m_depth) glDeleteRenderbuffers(1, &m_depth);
     if (m_color) glDeleteTextures(1, &m_color);
     if (m_fbo)   glDeleteFramebuffers(1, &m_fbo);
+  #endif
 
-    m_depth = m_color = m_fbo = 0;
-    m_target.tileres = Vec2I(0,0);
+  m_depth = m_color = m_fbo = 0;
+  m_target.tileres = Vec2I(0,0);
 }
 
 void GXPrinter::Setup ( float width, float height, int ppi, RenderFunc func, void* context )
@@ -40,45 +42,51 @@ void GXPrinter::Setup ( float width, float height, int ppi, RenderFunc func, voi
 
 bool GXPrinter::Create (int w, int h)
 {
+  bool ok = false;
+
   Destroy();
 
   m_target.tileres.x = w;
   m_target.tileres.y = h;
 
-  // Frame buffer object
-  glGenFramebuffers(1, &m_fbo);
-  glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
-  checkGL ( "GXPrinter::frame_buffer", true );
+  #ifdef BUILD_OPENGL
 
-  // Color target
-  glGenTextures(1, &m_color);
-  glBindTexture(GL_TEXTURE_2D, m_color);
-  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // Frame buffer object
+    glGenFramebuffers(1, &m_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+    checkGL ( "GXPrinter::frame_buffer", true );
 
-  glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
-                                GL_TEXTURE_2D, m_color, 0 );
-  checkGL ( "GXPrinter::color_target", true );
+    // Color target
+    glGenTextures(1, &m_color);
+    glBindTexture(GL_TEXTURE_2D, m_color);
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-  // Depth target
-  glGenRenderbuffers(1, &m_depth);
-  glBindRenderbuffer(GL_RENDERBUFFER, m_depth);
-  glRenderbufferStorage( GL_RENDERBUFFER,  GL_DEPTH_COMPONENT24, w, h);
-  glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                GL_RENDERBUFFER, m_depth );
-  checkGL ( "GXPrinter::depth_target", true );
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
+                                  GL_TEXTURE_2D, m_color, 0 );
+    checkGL ( "GXPrinter::color_target", true );
 
-  GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
-  glDrawBuffers(1, drawBuffers);
-  checkGL ( "GXPrinter::draw_buffers", true );
+    // Depth target
+    glGenRenderbuffers(1, &m_depth);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_depth);
+    glRenderbufferStorage( GL_RENDERBUFFER,  GL_DEPTH_COMPONENT24, w, h);
+    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                                  GL_RENDERBUFFER, m_depth );
+    checkGL ( "GXPrinter::depth_target", true );
 
-  bool ok = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
-  if (!ok) {
-    printf ( "ERROR: Creating frame buffers for printing.\n");
-  }
+    GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
+    glDrawBuffers(1, drawBuffers);
+    checkGL ( "GXPrinter::draw_buffers", true );
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    ok = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+    if (!ok) {
+      printf ( "ERROR: Creating frame buffers for printing.\n");
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  #endif
 
   return ok;
 }
@@ -255,19 +263,23 @@ bool GXPrinter::Print ( Vec4F fullview )
       // compute matrices
        m_target.Update ( view, m_target.region );      
 
-      // render scene to fbo      
-      glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);      
+      #ifdef BUILD_GL
+        // render scene to fbo      
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);      
 
-      m_renderFunc( m_context, m_target );
 
-      // actual opengl render
-      drawAll ();
+        m_renderFunc( m_context, m_target );
 
-      // readback pixels
-      glReadBuffer ( GL_COLOR_ATTACHMENT0 );
-      glPixelStorei(GL_PACK_ALIGNMENT, 1);
-      glReadPixels(0, 0, m_target.width, m_target.height, GL_RGB, GL_UNSIGNED_BYTE, img.GetData() );
-      img.FlipY();
+        // actual opengl render
+        drawAll ();
+
+        // readback pixels
+        glReadBuffer ( GL_COLOR_ATTACHMENT0 );
+        glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        glReadPixels(0, 0, m_target.width, m_target.height, GL_RGB, GL_UNSIGNED_BYTE, img.GetData() );
+        img.FlipY();
+
+      #endif    
 
       // stream to TIF
       WriteToTIF ( img, x, y );
@@ -278,7 +290,9 @@ bool GXPrinter::Print ( Vec4F fullview )
     }
   }
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0 );
+  #ifdef BUILD_GL
+    glBindFramebuffer(GL_FRAMEBUFFER, 0 );
+  #endif  
 
   CloseTIF();
 

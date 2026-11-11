@@ -43,9 +43,9 @@
 
       void*         m_context;
 
-      GLuint        m_fbo;
-      GLuint        m_color;
-      GLuint        m_depth;
+      int           m_fbo;
+      int           m_color;
+      int           m_depth;
 
       std::string   m_fname;
       FILE*         m_tif;
