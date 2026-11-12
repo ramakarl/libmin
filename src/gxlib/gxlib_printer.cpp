@@ -263,7 +263,7 @@ bool GXPrinter::Print ( Vec4F fullview )
       // compute matrices
        m_target.Update ( view, m_target.region );      
 
-      #ifdef BUILD_GL
+      #ifdef BUILD_OPENGL
         // render scene to fbo      
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);      
 
@@ -290,7 +290,7 @@ bool GXPrinter::Print ( Vec4F fullview )
     }
   }
 
-  #ifdef BUILD_GL
+  #ifdef BUILD_OPENGL
     glBindFramebuffer(GL_FRAMEBUFFER, 0 );
   #endif  
 
